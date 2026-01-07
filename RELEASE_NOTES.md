@@ -5,6 +5,41 @@ order.
 
 ## Unreleased
 
+## v0.1.1 (2026-01-07)
+
+Rate limit management and stability improvements.
+
+Highlights:
+
+- **Rate limit admin commands**: New `namelens rate-limit list` and
+  `namelens rate-limit reset` commands to inspect and clear persisted rate
+  limit state without manual database access
+- **SQLite concurrency fix**: Batch checks no longer fail with "database is
+  locked" errors thanks to WAL mode and connection serialization
+- **CI update**: macOS runner updated from retired macos-13 to macos-15-intel
+
+### Rate Limit Commands
+
+```bash
+# List all stored rate limits
+namelens rate-limit list
+
+# List endpoints matching a prefix
+namelens rate-limit list --prefix=rdap.
+
+# Reset all rate limits (requires confirmation)
+namelens rate-limit reset --all --yes
+
+# Reset a specific endpoint
+namelens rate-limit reset --endpoint=rdap.verisign.com
+
+# Dry run to see what would be deleted
+namelens rate-limit reset --all --dry-run
+
+# JSON output for automation
+namelens rate-limit list --output=json
+```
+
 ## v0.1.0 (2026-01-04)
 
 Initial release of NameLens.

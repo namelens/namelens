@@ -7,6 +7,25 @@ Versioning.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-01-07
+
+### Added
+
+- `namelens rate-limit list` command to inspect stored rate limit state
+- `namelens rate-limit reset` command to clear persisted rate limits
+- Rate limit filtering by endpoint (exact match) or prefix
+- Dry-run mode (`--dry-run`) for rate limit reset operations
+- JSON output format for rate limit commands (`--output=json`)
+
+### Fixed
+
+- SQLite "database is locked" errors during batch checks by enabling WAL mode,
+  busy timeout, and single-connection serialization for local libsql stores
+
+### Changed
+
+- CI: Updated macOS runner from deprecated macos-13 to macos-15-intel
+
 ## [0.1.0] - 2026-01-04
 
 ### Added
