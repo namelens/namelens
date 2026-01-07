@@ -6,7 +6,7 @@ app:
   env_prefix: NAMELENS_
   config_name: namelens
   description: Check name availability across domains, package registries, and social handles
-  version: 0.1.0
+  version: 0.1.1
 metadata:
   repository_category: workhorse
   project_url: https://github.com/3leaps/namelens
