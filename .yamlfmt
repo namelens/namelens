@@ -1,0 +1,18 @@
+# yamlfmt configuration for namelens
+# Ensures consistent YAML formatting across local and CI environments
+
+formatter:
+  type: basic
+  indent: 2
+  line_ending: lf
+  retain_line_breaks_single: true
+  include_document_start: false
+
+exclude:
+  - node_modules/**
+  - vendor/**
+  - .git/**
+  - dist/**
+  - bin/**
+  - .cache/**
+  - .plans/**

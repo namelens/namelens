@@ -1,0 +1,71 @@
+version: 1
+lint:
+  yamllint:
+    enabled: true
+    strict: true
+    paths:
+      - ".github/workflows/**/*.yml"
+      - ".github/workflows/**/*.yaml"
+    ignore: []
+  shell:
+    shfmt:
+      enabled: true
+      fix: false # lint is read-only; use 'make fmt' to fix
+    shellcheck:
+      enabled: false
+      path: ""
+    paths:
+      - "**/*.sh"
+      - "scripts/**/*.sh"
+    ignore:
+      - "**/node_modules/**"
+      - "**/.git/**"
+      - "**/vendor/**"
+      - "**/*.orig"
+      - "**/testdata/**"
+      - ".plans/**"
+  github_actions:
+    actionlint:
+      enabled: true
+      paths:
+        - ".github/workflows/**/*.yml"
+        - ".github/workflows/**/*.yaml"
+      ignore: []
+  make:
+    checkmake:
+      enabled: true
+      config:
+        # Allow longer targets for bootstrap (installs multiple tools)
+        max_body_length: 50
+        min_phony_targets:
+          - all
+          - clean
+          - test
+    paths:
+      - "**/Makefile"
+    ignore: []
+format:
+  markdown:
+    enabled: true
+    paths:
+      - "**/*.md"
+    ignore:
+      - ".plans/**"
+      - "**/node_modules/**"
+      - "**/vendor/**"
+  json:
+    enabled: true
+    paths:
+      - "**/*.json"
+    ignore:
+      - "**/node_modules/**"
+      - "**/vendor/**"
+      - "go.sum"
+  yaml:
+    enabled: true
+    paths:
+      - "**/*.yaml"
+      - "**/*.yml"
+    ignore:
+      - "**/node_modules/**"
+      - "**/vendor/**"

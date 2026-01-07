@@ -1,0 +1,202 @@
+# yamllint disable rule:document-start
+# yamllint disable rule:truthy
+# yamllint disable rule:line-length
+#
+# Release Workflow
+# Builds CGO-enabled binaries on native runners and uploads to GitHub Release.
+#
+# Signing is done manually after CI completes:
+#   make release-download
+#   make release-checksums
+#   make release-sign
+#   make release-upload
+#
+# go-libsql requires CGO and only supports:
+#   - linux/amd64, linux/arm64 (glibc)
+#   - darwin/amd64, darwin/arm64
+#
+name: Release
+on:
+  push:
+    tags:
+      - "v*"
+permissions:
+  contents: write
+env:
+  BINARY_NAME: namelens
+jobs:
+  # Validate VERSION matches tag
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Validate VERSION matches tag
+        id: version
+        run: |
+          set -euo pipefail
+          FILE_VERSION=$(cat VERSION)
+          TAG_VERSION=${GITHUB_REF_NAME#v}
+          echo "VERSION file: $FILE_VERSION"
+          echo "Git tag: $TAG_VERSION"
+          if [ "$FILE_VERSION" != "$TAG_VERSION" ]; then
+            MSG="VERSION ($FILE_VERSION) != tag ($TAG_VERSION)"
+            echo "::error::$MSG"
+            exit 1
+          fi
+          echo "version=$FILE_VERSION" >> "$GITHUB_OUTPUT"
+  # Build Linux binaries (native runners for CGO)
+  build-linux:
+    needs: validate
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    env:
+      VERSION: ${{ needs.validate.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.x"
+      - name: Build binary
+        run: |
+          COMMIT=$(git rev-parse --short HEAD)
+          BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          # Note: go-libsql requires dynamic linking (ships precompiled .a with glibc deps)
+          LDFLAGS="-X main.version=${VERSION} -X main.commit=${COMMIT} -X main.buildDate=${BUILD_DATE} -s -w"
+
+          mkdir -p dist
+          CGO_ENABLED=1 GOOS=linux GOARCH=${{ matrix.arch }} \
+            go build -ldflags="${LDFLAGS}" -trimpath \
+            -o "dist/${BINARY_NAME}-linux-${{ matrix.arch }}" \
+            "./cmd/${BINARY_NAME}"
+
+          # Verify the binary
+          file "dist/${BINARY_NAME}-linux-${{ matrix.arch }}"
+          "dist/${BINARY_NAME}-linux-${{ matrix.arch }}" version || true
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/${{ env.BINARY_NAME }}-linux-${{ matrix.arch }}
+  # Build macOS binaries (native runners for CGO)
+  build-darwin:
+    needs: validate
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: macos-13
+          - arch: arm64
+            runner: macos-latest
+    runs-on: ${{ matrix.runner }}
+    env:
+      VERSION: ${{ needs.validate.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.x"
+      - name: Build binary
+        run: |
+          COMMIT=$(git rev-parse --short HEAD)
+          BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          LDFLAGS="-X main.version=${VERSION} -X main.commit=${COMMIT} -X main.buildDate=${BUILD_DATE} -s -w"
+
+          mkdir -p dist
+          CGO_ENABLED=1 GOOS=darwin GOARCH=${{ matrix.arch }} \
+            go build -ldflags="${LDFLAGS}" -trimpath \
+            -o "dist/${BINARY_NAME}-darwin-${{ matrix.arch }}" \
+            "./cmd/${BINARY_NAME}"
+
+          # Verify the binary
+          file "dist/${BINARY_NAME}-darwin-${{ matrix.arch }}"
+          "dist/${BINARY_NAME}-darwin-${{ matrix.arch }}" version || true
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/${{ env.BINARY_NAME }}-darwin-${{ matrix.arch }}
+  # Create macOS universal binary
+  darwin-universal:
+    needs: [validate, build-darwin]
+    runs-on: macos-latest
+    env:
+      VERSION: ${{ needs.validate.outputs.version }}
+    steps:
+      - name: Download darwin binaries from release
+        run: |
+          mkdir -p darwin-amd64 darwin-arm64
+          gh release download "v${VERSION}" \
+            --pattern "${BINARY_NAME}-darwin-amd64" \
+            --dir "darwin-amd64"
+          gh release download "v${VERSION}" \
+            --pattern "${BINARY_NAME}-darwin-arm64" \
+            --dir "darwin-arm64"
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Create universal binary
+        run: |
+          mkdir -p dist
+          lipo -create \
+            "darwin-amd64/${BINARY_NAME}-darwin-amd64" \
+            "darwin-arm64/${BINARY_NAME}-darwin-arm64" \
+            -output "dist/${BINARY_NAME}-darwin-universal"
+
+          # Verify universal binary
+          file "dist/${BINARY_NAME}-darwin-universal"
+          lipo -info "dist/${BINARY_NAME}-darwin-universal"
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/${{ env.BINARY_NAME }}-darwin-universal
+  # Finalize release with auto-generated notes
+  finalize:
+    needs: [validate, build-linux, build-darwin, darwin-universal]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update release notes
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          body: |
+            ## Verification
+
+            After downloading, verify binary integrity using signed checksums:
+
+            ```bash
+            # Download checksums and signature
+            curl -LO https://github.com/namelens/namelens/releases/download/${{ github.ref_name }}/SHA256SUMS
+            curl -LO https://github.com/namelens/namelens/releases/download/${{ github.ref_name }}/SHA256SUMS.minisig
+
+            # Verify signature (requires minisign)
+            minisign -Vm SHA256SUMS -p namelens-minisign.pub
+
+            # Verify checksum
+            sha256sum -c SHA256SUMS --ignore-missing
+            ```
+
+            ## Supported Platforms
+
+            | Binary | Platform |
+            |--------|----------|
+            | `namelens-linux-amd64` | Linux x86_64 (glibc) |
+            | `namelens-linux-arm64` | Linux ARM64 (glibc) |
+            | `namelens-darwin-amd64` | macOS Intel |
+            | `namelens-darwin-arm64` | macOS Apple Silicon |
+            | `namelens-darwin-universal` | macOS Universal (Intel + Apple Silicon) |

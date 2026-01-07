@@ -1,0 +1,57 @@
+# Build artifacts
+bin/
+dist/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test artifacts
+coverage.out
+coverage.html
+*.test
+
+# SBOM artifacts (generated)
+sbom/
+
+# Go workspace
+go.work
+go.work.sum
+
+# Environment files
+.env
+.env.local
+*.local
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Planning files (local only)
+.plans/
+
+# Agent local settings
+AGENTS.local.md
+**/.claude/*local*
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Logs
+*.log
+logs/
+.gocache/
+
+# Cache directories (local only)
+.cache/

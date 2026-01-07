@@ -1,0 +1,21 @@
+# Fulmen Application Identity
+# This file defines the application's identity metadata for integration with
+# the Fulmen ecosystem (gofulmen, Crucible, etc.)
+app:
+  # Vendor/organization name (used for config paths, namespaces)
+  vendor: namelens
+  # Binary name (used for executable, config files, env var prefix)
+  binary_name: namelens
+  # Environment variable prefix (MUST end with underscore)
+  env_prefix: NAMELENS_
+  # Config file name (without extension)
+  config_name: namelens
+  # Application description
+  description: Check name availability across domains, package registries, and social handles
+  # Version (can be overridden at build time)
+  version: 0.1.0
+metadata:
+  # Service type (category from Fulmen taxonomy)
+  repository_category: workhorse
+  project_url: https://github.com/namelens/namelens
+  license: Apache-2.0

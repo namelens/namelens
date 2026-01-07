@@ -1,0 +1,133 @@
+# yamllint disable rule:document-start
+# yamllint disable rule:truthy
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  # Container-based format checking (LOW friction - v0.3.14+)
+  # Uses goneat-tools-runner-glibc which has foundation tools pre-installed.
+  # glibc base ensures CGO-compatible environments.
+  format-check:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/fulmenhq/goneat-tools-runner-glibc:latest
+      # goneat-tools-runner-glibc is a full CI runner image.
+      # Use UID 1001 to match GitHub-hosted runner workspace ownership.
+      options: --user 1001
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verify foundation tools
+        run: |
+          set -euo pipefail
+          prettier --version
+          yamlfmt --version
+          jq --version
+          yq --version
+          rg --version
+        shell: bash
+      - name: Check formatting
+        run: |
+          set -euo pipefail
+          yamlfmt -lint -gitignore_excludes .
+          prettier --check "**/*.{md,json}" || \
+            echo "Prettier differences found (non-blocking)"
+        shell: bash
+  # Build and test using goneat-tools-runner-glibc container
+  # Runner provides foundation tools + goneat/sfetch; Go is set up separately.
+  build-test:
+    needs: [format-check]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/fulmenhq/goneat-tools-runner-glibc:latest
+      # goneat-tools-runner-glibc is a full CI runner image.
+      # Use UID 1001 to match GitHub-hosted runner workspace ownership.
+      options: --user 1001
+    env:
+      FULMEN_WORKSPACE_ROOT: ${{ github.workspace }}
+      CGO_ENABLED: "1"
+      GOMODCACHE: ${{ github.workspace }}/.cache/go-mod
+      GOCACHE: ${{ github.workspace }}/.cache/go-build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Prepare Go cache dirs
+        run: |
+          set -euo pipefail
+          mkdir -p "$GOMODCACHE" "$GOCACHE"
+        shell: bash
+      - name: Check Go presence (pre-setup)
+        run: |
+          set -euo pipefail
+          if command -v go >/dev/null 2>&1; then
+            echo "Go already present:"; go version
+          else
+            echo "Go not present (expected); installing via actions/setup-go"
+          fi
+        shell: bash
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.x"
+      - name: Verify runner + Go toolchain
+        run: |
+          set -euo pipefail
+          prettier --version
+          yamlfmt --version
+          sfetch --version
+          goneat --version
+          command -v go
+          go version
+          go env CGO_ENABLED
+          go env GOCACHE
+          go env GOMODCACHE
+          go env GOPATH
+          go mod download
+        shell: bash
+      - name: Format (using goneat - fail on diff)
+        run: |
+          set -euo pipefail
+          make fmt
+          git diff --exit-code
+        shell: bash
+      - name: Install golangci-lint (v2)
+        # goneat-tools-runner does not ship golangci-lint yet.
+        uses: golangci/golangci-lint-action@v7
+        with:
+          version: v2.4.0
+          args: --help
+      - name: Verify golangci-lint
+        run: |
+          set -euo pipefail
+          golangci-lint --version
+        shell: bash
+      - name: Generate export data for linter
+        run: |
+          set -euo pipefail
+          go list -deps -export -tags=cgo ./... > /dev/null
+        shell: bash
+      - name: Lint
+        run: |
+          set -euo pipefail
+          make lint
+        shell: bash
+      - name: Test
+        run: |
+          set -euo pipefail
+          make test
+        shell: bash
+      - name: Build binary
+        run: |
+          set -euo pipefail
+          make build
+        shell: bash

@@ -1,0 +1,315 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "namelens/v0/config",
+  "title": "NameLens Configuration Schema",
+  "description": "Configuration schema for NameLens following Fulmen Forge Workhorse Standard",
+  "type": "object",
+  "properties": {
+    "server": {
+      "type": "object",
+      "properties": {
+        "host": {
+          "type": "string"
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "read_timeout": {
+          "type": "string"
+        },
+        "write_timeout": {
+          "type": "string"
+        },
+        "idle_timeout": {
+          "type": "string"
+        },
+        "shutdown_timeout": {
+          "type": "string"
+        }
+      }
+    },
+    "store": {
+      "type": "object",
+      "properties": {
+        "driver": {
+          "type": "string",
+          "enum": [
+            "libsql"
+          ]
+        },
+        "path": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "auth_token": {
+          "type": "string"
+        }
+      }
+    },
+    "cache": {
+      "type": "object",
+      "properties": {
+        "available_ttl": {
+          "type": "string"
+        },
+        "taken_ttl": {
+          "type": "string"
+        },
+        "error_ttl": {
+          "type": "string"
+        }
+      }
+    },
+    "domain": {
+      "type": "object",
+      "properties": {
+        "whois_fallback": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "tlds": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "require_explicit": {
+              "type": "boolean"
+            },
+            "cache_ttl": {
+              "type": "string"
+            },
+            "timeout": {
+              "type": "string"
+            },
+            "servers": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "available_patterns": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "taken_patterns": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "dns_fallback": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "cache_ttl": {
+              "type": "string"
+            },
+            "timeout": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "ailink": {
+      "type": "object",
+      "properties": {
+        "default_provider": {
+          "type": "string"
+        },
+        "default_timeout": {
+          "type": "string"
+        },
+        "cache_ttl": {
+          "type": "string"
+        },
+        "prompts_dir": {
+          "type": "string"
+        },
+        "providers": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "ai_provider": {
+                "type": "string"
+              },
+              "base_url": {
+                "type": "string"
+              },
+              "selection_policy": {
+                "type": "string"
+              },
+              "default_credential": {
+                "type": "string"
+              },
+              "credentials": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "priority": {
+                      "type": "integer"
+                    },
+                    "api_key": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "models": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "capabilities": {
+                "type": "object",
+                "properties": {
+                  "tools": {
+                    "type": "boolean"
+                  },
+                  "images": {
+                    "type": "boolean"
+                  },
+                  "streaming": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              "roles": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "routing": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "fallbacks": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "expert": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "role": {
+          "type": "string"
+        },
+        "default_prompt": {
+          "type": "string"
+        }
+      }
+    },
+    "rate_limits": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 1
+      }
+    },
+    "rate_limit_margin": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "logging": {
+      "type": "object",
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": [
+            "trace",
+            "debug",
+            "info",
+            "warn",
+            "error"
+          ]
+        },
+        "profile": {
+          "type": "string",
+          "enum": [
+            "SIMPLE",
+            "STRUCTURED",
+            "ENTERPRISE"
+          ]
+        }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        }
+      }
+    },
+    "health": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        }
+      }
+    },
+    "debug": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "pprof_enabled": {
+          "type": "boolean"
+        }
+      }
+    },
+    "workers": {
+      "type": "integer",
+      "minimum": 1
+    }
+  },
+  "additionalProperties": false
+}

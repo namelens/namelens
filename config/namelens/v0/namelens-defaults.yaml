@@ -1,0 +1,97 @@
+# NameLens - Default Configuration (Layer 1)
+#
+# This file provides the baseline configuration for namelens following
+# the Fulmen Forge Workhorse Standard three-layer pattern:
+#
+# Layer 1: Crucible defaults (this file)
+# Layer 2: User overrides (~/.config/namelens/config.yaml)
+# Layer 3: Environment variables (NAMELENS_{KEY}) and runtime overrides
+# HTTP Server Configuration
+server:
+  host: localhost
+  port: 8080
+  read_timeout: 30s
+  write_timeout: 30s
+  idle_timeout: 120s
+  shutdown_timeout: 10s
+# Store Configuration
+store:
+  driver: libsql
+  # Path is set at runtime to the XDG data dir when unset.
+  path: ""
+  url: ""
+  auth_token: ""
+# Cache Configuration
+cache:
+  available_ttl: 5m
+  taken_ttl: 1h
+  error_ttl: 30s
+# Domain Configuration
+domain:
+  whois_fallback:
+    enabled: true
+    tlds: []
+    require_explicit: false
+    cache_ttl: 6h
+    timeout: 10s
+    servers: {}
+    available_patterns: []
+    taken_patterns: []
+  dns_fallback:
+    enabled: false
+    cache_ttl: 30m
+    timeout: 5s
+# AILink Provider Configuration
+ailink:
+  default_provider: namelens-xai
+  default_timeout: 60s
+  cache_ttl: 24h
+  prompts_dir: ""
+  providers:
+    namelens-xai:
+      enabled: true
+      ai_provider: xai
+      selection_policy: priority
+      base_url: https://api.x.ai/v1
+      models:
+        default: grok-4-1-fast-reasoning
+      capabilities:
+        tools: true
+        images: false
+        streaming: false
+      roles: []
+      credentials:
+        - enabled: true
+          label: default
+          priority: 0
+          api_key: ""
+  routing: {}
+  fallbacks: {}
+
+# NameLens expert feature configuration
+expert:
+  enabled: false
+  role: ""
+  default_prompt: name-availability
+# Rate Limit Overrides
+rate_limits: {}
+rate_limit_margin: 0.9
+# Logging Configuration
+logging:
+  # Log level: trace, debug, info, warn, error
+  level: info
+  # Logging profile: SIMPLE, STRUCTURED
+  profile: SIMPLE
+# Metrics Configuration
+metrics:
+  enabled: true
+  port: 9090
+# Health Check Configuration
+health:
+  enabled: true
+# Debug Configuration
+debug:
+  enabled: false
+  pprof_enabled: false
+# Worker Pool Size
+workers: 4

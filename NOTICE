@@ -1,0 +1,20 @@
+NameLens
+Copyright 2025 3 Leaps, LLC
+
+This product includes software developed at 3 Leaps, LLC (https://3leaps.net/).
+
+Licensed under the Apache License, Version 2.0.
+
+---
+
+Third-Party Notices:
+
+This software uses the following open source packages:
+
+- Go standard library (https://golang.org/) - BSD-3-Clause
+- Cobra (https://github.com/spf13/cobra) - Apache-2.0
+- Viper (https://github.com/spf13/viper) - MIT
+- go-libsql (https://github.com/tursodatabase/go-libsql) - MIT
+- gofulmen (https://github.com/fulmenhq/gofulmen) - Apache-2.0
+
+For complete dependency information, see go.mod.

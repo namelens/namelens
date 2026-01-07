@@ -1,0 +1,13 @@
+# Fulmen Application Identity (Embedded)
+# This is embedded into the binary for standalone operation
+app:
+  vendor: 3leaps
+  binary_name: namelens
+  env_prefix: NAMELENS_
+  config_name: namelens
+  description: Check name availability across domains, package registries, and social handles
+  version: 0.1.0
+metadata:
+  repository_category: workhorse
+  project_url: https://github.com/3leaps/namelens
+  license: MIT

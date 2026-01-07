@@ -1,0 +1,84 @@
+# ============================================================================
+# NameLens Dependency Protection Configuration
+# ============================================================================
+# License compliance and supply chain security for the NameLens CLI.
+#
+# Commands:
+#   goneat dependencies --licenses          # Check license compliance
+#   goneat dependencies --cooling           # Check package age/downloads
+#   goneat assess --categories dependencies # Full dependency assessment
+#
+# Documentation:
+#   goneat docs show guides/dependency-protection-overview
+#   goneat docs show guides/package-cooling-policy
+#
+# ============================================================================
+version: v1
+# ============================================================================
+# LICENSE COMPLIANCE POLICY
+# ============================================================================
+# NameLens is Apache-2.0 licensed - all dependencies must be Apache-compatible.
+# This ensures downstream consumers can use NameLens without license conflicts.
+#
+licenses:
+  # Forbidden licenses (build fails if detected)
+  # These would create license incompatibility for Apache-2.0 downstream projects
+  forbidden:
+    - GPL-2.0 # Strong copyleft - incompatible with Apache-2.0
+    - GPL-3.0 # Strong copyleft - incompatible with Apache-2.0
+    - LGPL-2.0 # Weak copyleft - problematic for static linking
+    - LGPL-2.1 # Weak copyleft - problematic for static linking
+    - LGPL-3.0 # Weak copyleft - problematic for static linking
+    - AGPL-3.0 # Network copyleft - triggers on network use
+    - CDDL-1.0 # Common Development and Distribution License
+  # Explicitly allowed licenses (Apache-2.0 compatible permissive licenses)
+  allowed:
+    - MIT
+    - Apache-2.0
+    - BSD-3-Clause
+    - BSD-2-Clause
+    - ISC
+    - 0BSD
+    - Unlicense
+    - CC0-1.0
+    - MPL-2.0 # Mozilla Public License - compatible with Apache-2.0
+# ============================================================================
+# PACKAGE COOLING POLICY (Supply Chain Security)
+# ============================================================================
+# Enforces waiting period before adopting newly published packages.
+# Protects against supply chain attacks.
+#
+cooling:
+  enabled: true
+  # Core thresholds
+  min_age_days: 7 # 7 days catches 80% of attacks
+  min_downloads: 100 # Reasonable adoption baseline
+  min_downloads_recent: 10 # Ongoing maintenance signal
+  # Enforcement
+  alert_only: false # Fail build on violations
+  grace_period_days: 3 # Time to address violations
+  # Trusted exceptions
+  exceptions:
+    - pattern: "github.com/fulmenhq/*"
+      reason: "Internal FulmenHQ packages are pre-vetted"
+      approved_by: "@3leapsdave"
+      approved_date: "2026-01-04"
+    - pattern: "github.com/namelens/*"
+      reason: "Internal NameLens packages are pre-vetted"
+      approved_by: "@3leapsdave"
+      approved_date: "2026-01-04"
+# ============================================================================
+# POLICY ENGINE
+# ============================================================================
+policy_engine:
+  type: embedded
+
+# ============================================================================
+# ASSESSMENT INTEGRATION
+# ============================================================================
+# This config is used by:
+#   - goneat assess --categories dependencies
+#   - Pre-push hooks (see .goneat/hooks.yaml)
+#   - make dependencies / make licenses
+#
+# ============================================================================
