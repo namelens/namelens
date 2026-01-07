@@ -12,8 +12,8 @@ Rate limit management and stability improvements.
 Highlights:
 
 - **Rate limit admin commands**: New `namelens rate-limit list` and
-  `namelens rate-limit reset` commands to inspect and clear persisted rate
-  limit state without manual database access
+  `namelens rate-limit reset` commands to inspect and clear persisted rate limit
+  state without manual database access
 - **SQLite concurrency fix**: Batch checks no longer fail with "database is
   locked" errors thanks to WAL mode and connection serialization
 - **CI update**: macOS runner updated from retired macos-13 to macos-15-intel

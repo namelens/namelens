@@ -9,13 +9,13 @@
 Namelens is a fast, intelligent CLI tool and server that helps developers,
 founders, and teams choose perfect project names—without the heartbreak of
 downstream conflicts. It checks availability across key domains (.com, .io,
-.dev, and more via RDAP with WHOIS fallback), package registries (npm, PyPI), and social handles
-(GitHub)—then goes deeper with optional Grok-powered expert analysis for
-trademarks, brand associations, sentiment, and hidden risks. From quick
-availability scans to full brand proposals and launch plans, Namelens combines
-precise technical checks with real-time internet intelligence to give you
-confidence that your name is truly ready for prime time. Built for the moments
-when “good enough” isn’t—because rebranding later hurts.
+.dev, and more via RDAP with WHOIS fallback), package registries (npm, PyPI),
+and social handles (GitHub)—then goes deeper with optional Grok-powered expert
+analysis for trademarks, brand associations, sentiment, and hidden risks. From
+quick availability scans to full brand proposals and launch plans, Namelens
+combines precise technical checks with real-time internet intelligence to give
+you confidence that your name is truly ready for prime time. Built for the
+moments when “good enough” isn’t—because rebranding later hurts.
 
 - **Domains** - via RDAP (Registration Data Access Protocol) with WHOIS fallback
 - **Package registries** - npm, PyPI
