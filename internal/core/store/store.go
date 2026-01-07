@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	_ "github.com/tursodatabase/go-libsql"
 
@@ -48,6 +49,11 @@ func Open(ctx context.Context, cfg config.StoreConfig) (*Store, error) {
 		if err := db.PingContext(ctx); err != nil {
 			_ = db.Close()
 			return nil, fmt.Errorf("ping libsql store: %w", err)
+		}
+
+		if err := configureLocalSQLite(ctx, db, dsn, cfg); err != nil {
+			_ = db.Close()
+			return nil, err
 		}
 
 		return &Store{DB: db, driver: driver}, nil
@@ -137,6 +143,45 @@ func extractFilePath(dsn string) (string, error) {
 	}
 
 	return strings.TrimPrefix(parsed.Opaque, "//"), nil
+}
+
+func configureLocalSQLite(ctx context.Context, db *sql.DB, dsn string, cfg config.StoreConfig) error {
+	if db == nil {
+		return errors.New("store connection is nil")
+	}
+	if strings.TrimSpace(cfg.URL) != "" {
+		return nil
+	}
+	if dsn == ":memory:" {
+		return nil
+	}
+	if !strings.HasPrefix(dsn, "file:") {
+		return nil
+	}
+
+	// SQLite is embedded; keep a single connection and use WAL to reduce lock contention.
+	// This makes concurrent CLI checks behave predictably.
+	db.SetMaxOpenConns(1)
+	db.SetMaxIdleConns(1)
+
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	var journalMode string
+	if err := db.QueryRowContext(ctx, "PRAGMA journal_mode=WAL").Scan(&journalMode); err != nil {
+		return fmt.Errorf("enable WAL mode: %w", err)
+	}
+
+	var busyTimeout int
+	if err := db.QueryRowContext(ctx, "PRAGMA busy_timeout=5000").Scan(&busyTimeout); err != nil {
+		return fmt.Errorf("set busy timeout: %w", err)
+	}
+
+	return nil
 }
 
 func ensureStoreDir(path string) error {
