@@ -7,6 +7,13 @@ Versioning.
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-01-11
+
+### Fixed
+
+- Release workflow: Add explicit GITHUB_TOKEN to all artifact upload steps for
+  reliable authentication in new GitHub organizations
+
 ## [0.1.1] - 2026-01-07
 
 ### Added

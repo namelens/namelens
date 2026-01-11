@@ -5,6 +5,16 @@ order.
 
 ## Unreleased
 
+## v0.1.2 (2026-01-11)
+
+Release workflow fix.
+
+Highlights:
+
+- **CI fix**: Add explicit `GITHUB_TOKEN` to all `softprops/action-gh-release`
+  steps in `release.yml` for reliable artifact uploads in new GitHub
+  organizations
+
 ## v0.1.1 (2026-01-07)
 
 Rate limit management and stability improvements.

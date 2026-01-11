@@ -135,6 +135,7 @@ Standard role identifiers for 3leaps ecosystem. Use in `Role:` commit trailer.
 | Security Review       | `secrev`   | Security analysis, vulnerability review     |
 | Release Manager       | `releng`   | Versioning, releases, changelogs            |
 | Dispatcher            | `dispatch` | Cross-session coordination, message routing |
+| Product Marketing     | `prodmktg` | Messaging, branding, personas, storytelling |
 
 See
 [agent-identity standard](https://crucible.3leaps.dev/repository/agent-identity)

@@ -90,6 +90,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: dist/${{ env.BINARY_NAME }}-linux-${{ matrix.arch }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   # Build macOS binaries (native runners for CGO)
   build-darwin:
     needs: validate
@@ -132,6 +134,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: dist/${{ env.BINARY_NAME }}-darwin-${{ matrix.arch }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   # Create macOS universal binary
   darwin-universal:
     needs: [validate, build-darwin]
@@ -165,6 +169,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: dist/${{ env.BINARY_NAME }}-darwin-universal
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   # Finalize release with auto-generated notes
   finalize:
     needs: [validate, build-linux, build-darwin, darwin-universal]
@@ -172,6 +178,8 @@ jobs:
     steps:
       - name: Update release notes
         uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           generate_release_notes: true
           body: |
