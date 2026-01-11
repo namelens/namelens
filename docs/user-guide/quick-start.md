@@ -1,6 +1,7 @@
 # Quick Availability Check
 
-The fastest way to check if a name is available across domains, registries, and social handles.
+The fastest way to check if a name is available across domains, registries, and
+social handles.
 
 ## Basic Check
 
@@ -35,6 +36,7 @@ Available profiles:
 ## Output Formats
 
 **Default (table):**
+
 ```
 ╭────────┬──────────┬──────────┬────────────────────────────╮
 │ TYPE   │ NAME     │ STATUS   │ NOTES                      │
@@ -46,11 +48,13 @@ Available profiles:
 ```
 
 **JSON:**
+
 ```bash
 namelens check myproject --output=json
 ```
 
 **Markdown (for AI chat pasting):**
+
 ```bash
 namelens check myproject --output=markdown
 ```
@@ -96,7 +100,8 @@ namelens check myproject --tlds=com,io --output=json | \
 
 ## Tips
 
-- **Check early, check often** — Availability changes fast; check before investing
+- **Check early, check often** — Availability changes fast; check before
+  investing
 - **Batch your candidates** — Use `batch` to compare 3-5 names side-by-side
 - **Profile for your stage** — `minimal` for quick checks, `startup` for deeper
 - **Cache is your friend** — Results are cached; re-running is fast
@@ -104,8 +109,16 @@ namelens check myproject --tlds=com,io --output=json | \
 ## What's Not Included
 
 The quick check does **not** include:
+
 - Trademark searches (use `--expert`)
 - Phonetic or cultural analysis (use `--phonetics --suitability`)
 - Social sentiment analysis (use `--expert`)
+
+**About expert features**: Namelens uses direct HTTP connections to AI providers
+(no SDKs or intermediaries), giving you full transparency into the request/
+response pipeline. Enable debug logging to inspect:
+```bash
+NAMELENS_LOG_LEVEL=debug namelens check myproject --expert
+```
 
 For projects you're serious about, see [Expert Analysis](expert-search.md).

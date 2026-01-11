@@ -14,7 +14,8 @@ Start with your product concept. Let Namelens generate initial ideas:
 namelens generate "AI-powered developer productivity tool"
 ```
 
-This returns 10-20 name candidates across different naming patterns (descriptive, metaphorical, abstract, compound).
+This returns 10-20 name candidates across different naming patterns
+(descriptive, metaphorical, abstract, compound).
 
 ### Expand Your List
 
@@ -63,6 +64,7 @@ namelens check acmecorp \
 ```
 
 **What you're looking for:**
+
 - **Low trademark risk** — "risk: low" in expert output
 - **Available .com** — Or clearly acquirable (parked)
 - **Strong scores** — Phonetics 85+, Suitability 90+ across target markets
@@ -78,6 +80,7 @@ namelens check acmecorp.com --expert --expert-prompt=domain-content
 ```
 
 This tells you if a taken domain is:
+
 - **Parked** — Usually acquirable for reasonable price
 - **Active product** — Conflict; move on
 - **Placeholder** — Low-value use; negotiate or move on
@@ -90,11 +93,11 @@ This tells you if a taken domain is:
 
 Create a comparison table:
 
-| Candidate | .com Status | Trademark Risk | Phonetics | Suitability | Notes |
-|-----------|-------------|----------------|------------|-------------|-------|
-| acmecorp | Parked (acquirable) | Low | 92/100 | 96/100 | Strong contender |
-| stellaplex | Available | Low | 88/100 | 94/100 | Easy to type |
-| fluxio | Active conflict | High | 85/100 | 82/100 | Risky |
+| Candidate  | .com Status         | Trademark Risk | Phonetics | Suitability | Notes            |
+| ---------- | ------------------- | -------------- | --------- | ----------- | ---------------- |
+| acmecorp   | Parked (acquirable) | Low            | 92/100    | 96/100      | Strong contender |
+| stellaplex | Available           | Low            | 88/100    | 94/100      | Easy to type     |
+| fluxio     | Active conflict     | High           | 85/100    | 82/100      | Risky            |
 
 ### Get Brand Proposal
 
@@ -105,6 +108,7 @@ namelens check acmecorp --expert --expert-prompt=brand-proposal --expert-depth=d
 ```
 
 This provides:
+
 - Brand positioning recommendations
 - Target audience analysis
 - Messaging angles
@@ -113,6 +117,7 @@ This provides:
 ### Make Your Choice
 
 Based on:
+
 1. **Availability** — Can you secure the domains and handles?
 2. **Risk level** — Are there trademark or competitive conflicts?
 3. **Fit** — Does the name resonate with your audience?
@@ -132,6 +137,7 @@ namelens check acmecorp --tlds=com,io,dev,app --profile=startup
 ```
 
 **Recommended order:**
+
 1. .com (priority)
 2. .io or .dev (secondary)
 3. .app (if app-focused)
@@ -144,6 +150,7 @@ namelens check acmecorp --handles=github
 ```
 
 More platforms coming soon. For now, manually claim:
+
 - GitHub org
 - X/Twitter
 - LinkedIn company page
@@ -152,11 +159,13 @@ More platforms coming soon. For now, manually claim:
 ### File Trademark (Optional but Recommended)
 
 Namelens does not constitute legal advice. Consult trademark counsel for:
+
 - USPTO registration
 - International trademark protection
 - Service mark coverage
 
-**Pro tip**: Namelens can help identify potential conflicts *before* you file, saving attorney time and filing fees.
+**Pro tip**: Namelens can help identify potential conflicts _before_ you file,
+saving attorney time and filing fees.
 
 ### Internal Alignment
 
@@ -184,6 +193,7 @@ namelens check acmecorp --profile=startup --expert
 ```
 
 Final verification before:
+
 - Printing business cards
 - Launching website
 - Incorporating business
@@ -192,6 +202,7 @@ Final verification before:
 ### Monitor Your Name (Coming Soon)
 
 Future versions of Namelens will support:
+
 - Domain expiration alerts
 - Competitor name monitoring
 - Trademark filing notifications
@@ -199,13 +210,13 @@ Future versions of Namelens will support:
 
 ## Timeline Summary
 
-| Phase | Duration | Key Actions |
-|-------|----------|-------------|
-| Ideation | 0-2 days | Generate, batch check, select candidates |
-| Research | 1-3 days | Expert analysis, competitor research |
-| Decision | 1 day | Compare finalists, brand proposal |
-| Execution | 1-7 days | Secure domains, claim handles, file trademark |
-| **Total** | **3-14 days** | From concept to secured name |
+| Phase     | Duration      | Key Actions                                   |
+| --------- | ------------- | --------------------------------------------- |
+| Ideation  | 0-2 days      | Generate, batch check, select candidates      |
+| Research  | 1-3 days      | Expert analysis, competitor research          |
+| Decision  | 1 day         | Compare finalists, brand proposal             |
+| Execution | 1-7 days      | Secure domains, claim handles, file trademark |
+| **Total** | **3-14 days** | From concept to secured name                  |
 
 ---
 
@@ -221,7 +232,8 @@ Future versions of Namelens will support:
 
 **Don't**: Assume .io or .dev is sufficient.
 
-**Do**: .com is expected by investors and customers. If taken, evaluate if it's parked (acquirable) or an active conflict (move on).
+**Do**: .com is expected by investors and customers. If taken, evaluate if it's
+parked (acquirable) or an active conflict (move on).
 
 ### Pitfall 3: Skipping Trademark Research
 
@@ -245,7 +257,9 @@ Future versions of Namelens will support:
 
 ## Real-World Example
 
-[Read the full Namelens origin story](../examples/namelens-origin-story.md) to see how we applied this process to name this tool—including the critical conflict we caught on our original codename.
+[Read the full Namelens origin story](../examples/namelens-origin-story.md) to
+see how we applied this process to name this tool—including the critical
+conflict we caught on our original codename.
 
 ---
 
@@ -259,6 +273,7 @@ namelens doctor  # Troubleshooting
 ```
 
 See also:
+
 - [Quick Availability Check](quick-start.md) — Basic checks
 - [Expert Analysis](expert-search.md) — Deep research
 - [Batch Processing](batch.md) — Compare candidates

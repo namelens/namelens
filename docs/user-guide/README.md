@@ -9,13 +9,13 @@
 
 ## Get Started Quickly
 
-| Your Situation                                 | Where to start                      |
-| --------------------------------------------- | ----------------------------------- |
-| "I have a name, is it available?"            | [Quick Availability Check](quick-start.md) |
-| "I need name ideas, not just checks"         | [Name Generation](generate.md)     |
-| "I'm serious about this name—deep research" | [Expert Analysis](expert-search.md) |
-| "I run a startup, need the full picture"     | [Startup Naming Guide](startup-guide.md) |
-| "I'm integrating into my workflow"           | [Configuration](configuration.md)   |
+| Your Situation                              | Where to start                             |
+| ------------------------------------------- | ------------------------------------------ |
+| "I have a name, is it available?"           | [Quick Availability Check](quick-start.md) |
+| "I need name ideas, not just checks"        | [Name Generation](generate.md)             |
+| "I'm serious about this name—deep research" | [Expert Analysis](expert-search.md)        |
+| "I run a startup, need the full picture"    | [Startup Naming Guide](startup-guide.md)   |
+| "I'm integrating into my workflow"          | [Configuration](configuration.md)          |
 
 ---
 
@@ -30,6 +30,7 @@ namelens check myproject
 ```
 
 **When to use:**
+
 - Early-stage ideation
 - Domain squat checks
 - CI/CD pipeline validation
@@ -48,6 +49,7 @@ namelens check acmecorp --expert --phonetics --suitability
 ```
 
 **What you get:**
+
 - Trademark conflict risk scoring
 - Social media sentiment analysis
 - Web search for existing products
@@ -56,6 +58,7 @@ namelens check acmecorp --expert --phonetics --suitability
 - Clear proceed/caution/stop recommendation
 
 **When to use:**
+
 - Before registering domains
 - Before printing marketing materials
 - Before incorporating your business
@@ -74,6 +77,7 @@ namelens generate "static analyzer for shell scripts"
 ```
 
 **When to use:**
+
 - Brainstorming phase
 - You have features but no name
 - Need fresh perspectives
@@ -92,6 +96,7 @@ namelens batch candidates.txt --output=table
 ```
 
 **When to use:**
+
 - Shortlisted 3-5 names
 - Need to compare trade-offs
 - Stakeholder presentations
@@ -125,22 +130,23 @@ MCP server, API, and CI/CD integration.
 
 ## Reference
 
-| Document                              | Description                         |
-| ------------------------------------- | ----------------------------------- |
-| [Configuration](configuration.md)     | Profiles, env vars, customization  |
-| [Domain Fallback](domain-fallback.md) | WHOIS and DNS fallback for TLDs     |
-| [Expert Prompts](expert-prompts.md)   | Available AI analysis prompts       |
+| Document                              | Description                       |
+| ------------------------------------- | --------------------------------- |
+| [Configuration](configuration.md)     | Profiles, env vars, customization |
+| [Domain Fallback](domain-fallback.md) | WHOIS and DNS fallback for TLDs   |
+| [Expert Prompts](expert-prompts.md)   | Available AI analysis prompts     |
 
 ---
 
 ## Real-World Examples
 
-| Example                                            | What You'll Learn                  |
-| -------------------------------------------------- | ---------------------------------- |
-| [How Namelens Named Itself](../examples/namelens-origin-story.md) | Full journey from codename to brand |
+| Example                                                             | What You'll Learn                   |
+| ------------------------------------------------------------------- | ----------------------------------- |
+| [How Namelens Named Itself](../examples/namelens-origin-story.md)   | Full journey from codename to brand |
 | [The Tesla Trademark Lesson](../examples/tesla-trademark-lesson.md) | Why domain availability ≠ usability |
 
-See [examples/README.md](../examples/README.md) for all examples and how to use them as learning tools.
+See [examples/README.md](../examples/README.md) for all examples and how to use
+them as learning tools.
 
 ---
 

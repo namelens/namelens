@@ -6,7 +6,8 @@ MCP server, API, and CI/CD integration for Namelens.
 
 ## MCP Server
 
-Namelens provides an MCP (Model Context Protocol) server for integration with AI assistants like Claude, OpenCode, and other MCP-compatible tools.
+Namelens provides an MCP (Model Context Protocol) server for integration with AI
+assistants like Claude, OpenCode, and other MCP-compatible tools.
 
 ### Start the Server
 
@@ -16,20 +17,22 @@ namelens serve
 namelens serve --port 9000
 ```
 
-The server starts on `http://localhost:8080` (or custom port) with MCP endpoints mounted under `/mcp`.
+The server starts on `http://localhost:8080` (or custom port) with MCP endpoints
+mounted under `/mcp`.
 
 ### MCP Tools
 
 The following tools are exposed:
 
-| Tool | Description |
-|------|-------------|
+| Tool                      | Description                                          |
+| ------------------------- | ---------------------------------------------------- |
 | `check_name_availability` | Check a single name across TLDs, registries, handles |
-| `batch_check` | Check multiple names from a list |
+| `batch_check`             | Check multiple names from a list                     |
 
 #### check_name_availability
 
 Parameters:
+
 - `name` (required) — Name to check
 - `profile` (optional) — Predefined profile: `startup`, `minimal`, `web3`
 - `tlds` (optional) — Specific TLDs: `["com", "io", "dev"]`
@@ -39,13 +42,31 @@ Parameters:
 #### batch_check
 
 Parameters:
+
 - `names` (required) — Array of names to check
 - `profile` (optional) — Predefined profile
 - `tlds` (optional) — Specific TLDs
 
+### AI Provider Transparency
+
+When using MCP tools with expert analysis enabled, Namelens maintains its direct HTTP
+interface to AI providers. This means:
+
+- **No SDK mediation** — Requests go directly from Namelens to AI providers
+- **Full auditability** — Enable debug logging to see complete request/response:
+  ```bash
+  NAMELENS_LOG_LEVEL=debug namelens serve
+  ```
+- **Controlled pipeline** — You define prompts, timeouts, and caching behavior
+- **No hidden telemetry** — No data sent without your explicit configuration
+
+See [Expert Search Guide](expert-search.md) for details on direct provider
+architecture.
+
 ### Configure with Claude Desktop
 
-Add to your Claude Desktop MCP config (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+Add to your Claude Desktop MCP config
+(`~/Library/Application Support/Claude/claude_desktop_config.json`):
 
 ```json
 {
@@ -77,11 +98,13 @@ Add to your OpenCode MCP configuration:
 ### Example: AI Assistant Workflow
 
 1. **Ask assistant to check names:**
+
    ```
    "Check if 'stellaplex' is available across domains and npm"
    ```
 
 2. **Assistant calls MCP tool:**
+
    ```json
    {
      "name": "check_name_availability",
@@ -98,7 +121,8 @@ Add to your OpenCode MCP configuration:
 
 ## CLI API
 
-For direct programmatic use, Namelens provides CLI commands with structured output.
+For direct programmatic use, Namelens provides CLI commands with structured
+output.
 
 ### JSON Output
 
@@ -266,7 +290,8 @@ jobs:
 
 ## HTTP API
 
-For custom integrations, Namelens exposes HTTP endpoints when running in server mode.
+For custom integrations, Namelens exposes HTTP endpoints when running in server
+mode.
 
 ### Health Check
 
@@ -275,6 +300,7 @@ curl http://localhost:8080/health
 ```
 
 Response:
+
 ```json
 {
   "status": "healthy",
@@ -294,6 +320,7 @@ curl -X POST http://localhost:8080/api/v1/check \
 ```
 
 Response:
+
 ```json
 {
   "name": "acmecorp",
@@ -411,17 +438,31 @@ curl -X POST http://localhost:8080/api/v1/check \
 
 ## Best Practices
 
-1. **Cache appropriately** — Namelens caches results by default; respect cache TTL for rate limit compliance
+1. **Cache appropriately** — Namelens caches results by default; respect cache
+   TTL for rate limit compliance
 
-2. **Error handling** — Always handle HTTP errors and timeouts gracefully in integrations
+2. **Error handling** — Always handle HTTP errors and timeouts gracefully in
+   integrations
 
-3. **Rate limiting** — Implement client-side rate limiting when calling Namelens APIs at scale
+3. **Rate limiting** — Implement client-side rate limiting when calling Namelens
+   APIs at scale
 
-4. **Security** — Never expose API keys or credentials in CI logs or repositories
+4. **Security** — Never expose API keys or credentials in CI logs or
+   repositories
 
-5. **Version pinning** — Pin to specific Namelens versions in production environments
+5. **Version pinning** — Pin to specific Namelens versions in production
+   environments
 
-6. **Monitoring** — Set up health checks and alerts for Namelens server deployments
+6. **Monitoring** — Set up health checks and alerts for Namelens server
+   deployments
+
+7. **AI provider transparency** — When using expert features, enable debug
+   logging to inspect full request/response to AI providers:
+   ```bash
+   NAMELENS_LOG_LEVEL=debug namelens serve
+   ```
+   Namelens uses direct HTTP connections (no SDKs), giving you full visibility
+   into the AI pipeline for compliance and debugging.
 
 ---
 
@@ -433,6 +474,7 @@ namelens doctor  # Diagnostics
 ```
 
 See also:
+
 - [Configuration](configuration.md) — Profiles and env vars
 - [Quick Availability Check](quick-start.md) — Basic usage
 - [Startup Naming Guide](startup-guide.md) — Full naming workflow

@@ -30,6 +30,7 @@ namelens batch candidates.txt --output=table
 ```
 
 Output example:
+
 ```
 ╭─────────────┬─────────┬─────────┬──────────────────────────────╮
 │ NAME        │ AVAIL   │ TOTAL   │ BREAKDOWN                    │
@@ -49,6 +50,7 @@ namelens batch candidates.txt --output=json > results.json
 ```
 
 JSON structure:
+
 ```json
 {
   "results": [
@@ -109,11 +111,11 @@ namelens batch candidates.txt --profile=startup
 
 Common profiles:
 
-| Profile   | Checks                               | Use Case |
-| --------- | ------------------------------------ | -------- |
-| `startup` | 3 TLDs + 2 registries + 1 handle    | New ventures |
-| `minimal` | .com only                            | Quick scans |
-| `web3`    | .xyz, .io, .gg + npm + github       | Web3/crypto |
+| Profile   | Checks                           | Use Case     |
+| --------- | -------------------------------- | ------------ |
+| `startup` | 3 TLDs + 2 registries + 1 handle | New ventures |
+| `minimal` | .com only                        | Quick scans  |
+| `web3`    | .xyz, .io, .gg + npm + github    | Web3/crypto  |
 
 ## Custom Checks
 
@@ -165,6 +167,7 @@ jq -r '.results[] | "\(.name): \(.score)/\(.total) available"' deep-analysis.jso
 ```
 
 Output:
+
 ```
 acmecorp: 6/8 available
 stellaplex: 7/8 available
@@ -209,6 +212,7 @@ namelens batch competitors.txt \
 ### Step 3: Analyze Patterns
 
 Extract insights:
+
 - Which competitors own multiple TLDs?
 - Which have strong social presence?
 - Which domains are parked vs active?
@@ -217,7 +221,8 @@ Extract insights:
 
 ### CI/CD: Prevent Breaking Changes
 
-If you're checking that internal project names don't conflict with public assets:
+If you're checking that internal project names don't conflict with public
+assets:
 
 ```bash
 #!/bin/bash
@@ -274,23 +279,30 @@ Open in spreadsheet for visual comparison and filtering.
 
 ## Tips
 
-1. **Use meaningful filenames** — `candidates-round1.txt`, `finalists-v2.txt` for version control
-2. **Store JSON for audit trails** — Keep batch outputs for reference and compliance
-3. **Profile first, customize later** — Start with profiles, then add custom flags if needed
-4. **Pipe to `jq` for filtering** — Extract specific data without writing scripts
-5. **Use `--available-only` for quick scans** — Filter noise when you just need viable options
-6. **Batch expert sparingly** — Expert analysis is slower; use on 3-5 finalists, not 20 candidates
+1. **Use meaningful filenames** — `candidates-round1.txt`, `finalists-v2.txt`
+   for version control
+2. **Store JSON for audit trails** — Keep batch outputs for reference and
+   compliance
+3. **Profile first, customize later** — Start with profiles, then add custom
+   flags if needed
+4. **Pipe to `jq` for filtering** — Extract specific data without writing
+   scripts
+5. **Use `--available-only` for quick scans** — Filter noise when you just need
+   viable options
+6. **Batch expert sparingly** — Expert analysis is slower; use on 3-5 finalists,
+   not 20 candidates
 
 ## Performance
 
-| Scenario | Estimated Time |
-|----------|---------------|
-| 10 candidates, minimal profile | 5-10 seconds |
-| 10 candidates, startup profile | 15-30 seconds |
-| 5 candidates, startup + expert | 60-120 seconds |
-| 20 candidates, startup + expert | 4-8 minutes |
+| Scenario                        | Estimated Time |
+| ------------------------------- | -------------- |
+| 10 candidates, minimal profile  | 5-10 seconds   |
+| 10 candidates, startup profile  | 15-30 seconds  |
+| 5 candidates, startup + expert  | 60-120 seconds |
+| 20 candidates, startup + expert | 4-8 minutes    |
 
-Expert analysis is slower due to AI search queries. Batch large lists without `--expert` first to filter.
+Expert analysis is slower due to AI search queries. Batch large lists without
+`--expert` first to filter.
 
 ## Need Help?
 
@@ -300,6 +312,7 @@ namelens doctor  # Troubleshooting
 ```
 
 See also:
+
 - [Quick Availability Check](quick-start.md) — Single-name checks
 - [Startup Naming Guide](startup-guide.md) — Full naming workflow
 - [Expert Analysis](expert-search.md) — Deep analysis options

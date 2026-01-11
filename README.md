@@ -8,16 +8,21 @@
 
 ## Overview
 
-Naming shouldn't be a gamble. **Namelens** prevents the disasters that sink projects—conflicts that only surface after you've printed business cards, built websites, and committed to a brand.
+Naming shouldn't be a gamble. **Namelens** prevents the disasters that sink
+projects—conflicts that only surface after you've printed business cards, built
+websites, and committed to a brand.
 
-We combine **precise technical checks** with **real-time internet intelligence**:
+We combine **precise technical checks** with **real-time internet
+intelligence**:
 
 **What we check:**
+
 - **Domains** — RDAP with WHOIS fallback (.com, .io, .dev, .app, and more)
 - **Package registries** — npm, PyPI
 - **Social handles** — GitHub (more coming soon)
 
 **What we discover:**
+
 - **Trademark conflicts** — AI-powered search across databases and the web
 - **Brand associations** — sentiment analysis and hidden risks
 - **Cultural fit** — phonetics, typeability, and cross-market suitability
@@ -25,15 +30,18 @@ We combine **precise technical checks** with **real-time internet intelligence**
 
 **Who this is for:**
 
-| Role                     | What Namelens gives you                                   |
-| ------------------------ | --------------------------------------------------------- |
-| **Founders**             | Confidence before printing business cards and filing LLCs |
-| **Developers**           | Quick, CLI-native checks that fit your workflow          |
-| **Product Teams**        | Competitive intelligence and brand gap analysis           |
-| **Marketing**            | Risk visibility and social handle coordination            |
-| **Side Project Makers**  | Stop wasting time on unavailable names                    |
+| Role                    | What Namelens gives you                                   |
+| ----------------------- | --------------------------------------------------------- |
+| **Founders**            | Confidence before printing business cards and filing LLCs |
+| **Developers**          | Quick, CLI-native checks that fit your workflow           |
+| **Product Teams**       | Competitive intelligence and brand gap analysis           |
+| **Marketing**           | Risk visibility and social handle coordination            |
+| **Side Project Makers** | Stop wasting time on unavailable names                    |
 
-> **Proven in production**: We used Namelens to name itself. The tool caught a critical trademark conflict our initial codename had—saving us from an expensive rebrand. [Read the origin story →](docs/examples/namelens-origin-story.md)
+> **Proven in production**: We used Namelens to name itself. The tool caught a
+> critical trademark conflict our initial codename had—saving us from an
+> expensive rebrand.
+> [Read the origin story →](docs/examples/namelens-origin-story.md)
 
 ## Quick Start
 
@@ -55,6 +63,7 @@ make build
 ```
 
 **Five-second version**:
+
 ```bash
 namelens check myproject
 ```
@@ -159,27 +168,34 @@ Copy `.env.example` to `.env` for local development.
 ## Why Namelens?
 
 **The hidden cost of bad names:**
-- Rebranding mid-launch: $50,000–$200,000+ in legal, design, and opportunity costs
+
+- Rebranding mid-launch: $50,000–$200,000+ in legal, design, and opportunity
+  costs
 - Lost SEO momentum: Domain age and backlinks reset
 - Customer confusion: Existing users can't find you
 - Trademark infringement: Cease-and-desist letters at best, lawsuits at worst
 
 **Namelens catches these before you invest:**
 
-| Risk Namelens Detects           | Consequence if Missed                           |
-| ------------------------------ | ---------------------------------------------- |
-| Active competitor on .com       | Market confusion, SEO disadvantage             |
-| Registered trademark            | Legal threats, forced rebranding               |
-| Negative social sentiment       | Brand damage from the start                    |
-| Cultural inappropriateness     | Market entry blockers, PR nightmares           |
-| Hard-to-spell/pronounce         | Viral marketing failure, word-of-mouth issues  |
+| Risk Namelens Detects      | Consequence if Missed                         |
+| -------------------------- | --------------------------------------------- |
+| Active competitor on .com  | Market confusion, SEO disadvantage            |
+| Registered trademark       | Legal threats, forced rebranding              |
+| Negative social sentiment  | Brand damage from the start                   |
+| Cultural inappropriateness | Market entry blockers, PR nightmares          |
+| Hard-to-spell/pronounce    | Viral marketing failure, word-of-mouth issues |
 
 **What makes Namelens different:**
 
-- **AI-powered intelligence**, not just API queries — We use Grok's web search to find what databases miss
-- **Dogfooded from day one** — We used Namelens to name itself; it caught a critical conflict our codename had
-- **CLI-native for developers** — Integrates into your workflow, not a web dashboard you need to visit
-- **Works with AI assistants** — MCP server enables Claude, OpenCode, and other tools to check names directly
+- **AI-powered intelligence**, not just API queries — We use Grok's web search
+  to find what databases miss
+- **Direct AI provider connections** — No intermediary SDKs or libraries filtering your content. Our `--expert` interface connects directly to AI providers via HTTP, giving you full transparency and control over the request/response pipeline
+- **Dogfooded from day one** — We used Namelens to name itself; it caught a
+  critical conflict our codename had
+- **CLI-native for developers** — Integrates into your workflow, not a web
+  dashboard you need to visit
+- **Works with AI assistants** — MCP server enables Claude, OpenCode, and other
+  tools to check names directly
 
 [Read how we named ourselves →](docs/examples/namelens-origin-story.md)
 

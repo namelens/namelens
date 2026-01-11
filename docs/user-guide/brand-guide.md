@@ -1,6 +1,7 @@
 # Brand Guide
 
-Using Namelens for competitive research, brand gap analysis, and strategic naming.
+Using Namelens for competitive research, brand gap analysis, and strategic
+naming.
 
 ---
 
@@ -19,24 +20,26 @@ namelens check competitor-c --tlds=com,io --expert
 
 **What to analyze:**
 
-| Aspect | What to Look For | How Namelens Helps |
-|--------|-----------------|-------------------|
-| TLD preference | .com vs .io vs .dev | Domain availability by TLD |
-| Naming patterns | Descriptive vs metaphorical | Expert prompt: brand-proposal |
-| Trademark filings | Protected brands | Trademark conflict detection |
-| Social presence | Active communities | Handle availability |
-| Web sentiment | Customer opinions | Expert sentiment analysis |
+| Aspect            | What to Look For            | How Namelens Helps            |
+| ----------------- | --------------------------- | ----------------------------- |
+| TLD preference    | .com vs .io vs .dev         | Domain availability by TLD    |
+| Naming patterns   | Descriptive vs metaphorical | Expert prompt: brand-proposal |
+| Trademark filings | Protected brands            | Trademark conflict detection  |
+| Social presence   | Active communities          | Handle availability           |
+| Web sentiment     | Customer opinions           | Expert sentiment analysis     |
 
 ### Find Brand Gaps
 
 Identify naming opportunities your competitors have missed:
 
 1. **Analyze competitor names**
+
    ```bash
    namelens batch competitors.txt --expert
    ```
 
 2. **Generate alternatives in similar space**
+
    ```bash
    namelens generate "AI productivity tool" --expert
    ```
@@ -68,6 +71,7 @@ namelens check myproduct-for-x
 ```
 
 **What you're auditing:**
+
 - Domain ownership consistency
 - Handle availability
 - Trademark risk alignment
@@ -92,6 +96,7 @@ namelens batch portfolio.txt --output=json > portfolio-audit.json
 ```
 
 Use the JSON output to:
+
 - Identify gaps (missing domains or handles)
 - Spot inconsistencies (some .com, some .io)
 - Prioritize registration tasks
@@ -138,6 +143,7 @@ namelens check yourproduct \
 ```
 
 **What you get:**
+
 - Target audience analysis
 - Differentiation opportunities
 - Messaging recommendations
@@ -161,6 +167,7 @@ namelens check new-brand-name \
 ```
 
 **Critical checks for rebranding:**
+
 - Trademark clearance (higher risk tolerance for new brand)
 - Domain availability (.com non-negotiable for most companies)
 - Social handle portability (can you migrate?)
@@ -184,6 +191,7 @@ namelens check combined-brand-name --profile=startup --expert
 ```
 
 **M&A considerations:**
+
 - Which brand has better domain/ handle portfolio?
 - Which has lower trademark risk?
 - Can domains be consolidated?
@@ -204,6 +212,7 @@ namelens check yourproduct \
 ```
 
 **What to evaluate:**
+
 - Pronunciation difficulty
 - Cultural appropriateness
 - Negative associations (slang, offensive meanings)
@@ -219,6 +228,7 @@ namelens check yourproduct --tlds=co.uk,de,fr,jp,kr,cn,br
 ```
 
 **Strategy considerations:**
+
 - Priority: Secure .com + major market ccTLDs
 - Redirect strategy: ccTLD → .com or local landing pages
 - Local naming: Consider localized variants if global name has issues
@@ -241,29 +251,38 @@ Future releases will include:
 
 ### [The Tesla Trademark Lesson](../examples/tesla-trademark-lesson.md)
 
-Shows why domain availability ≠ brand safety, and how expert analysis catches conflicts simple checks miss.
+Shows why domain availability ≠ brand safety, and how expert analysis catches
+conflicts simple checks miss.
 
 ### [Namelens Origin Story](../examples/namelens-origin-story.md)
 
-Full branding journey from codename to final brand, including competitor analysis and brand proposal.
+Full branding journey from codename to final brand, including competitor
+analysis and brand proposal.
 
 ---
 
 ## Tips for Marketing Professionals
 
-1. **Start early** — Don't wait until creative brief phase. Use Namelens during strategy development.
+1. **Start early** — Don't wait until creative brief phase. Use Namelens during
+   strategy development.
 
-2. **Batch your research** — Check multiple candidates simultaneously for efficiency.
+2. **Batch your research** — Check multiple candidates simultaneously for
+   efficiency.
 
-3. **Deep dive finalists** — Reserve `--expert` for 3-5 finalists, not every candidate.
+3. **Deep dive finalists** — Reserve `--expert` for 3-5 finalists, not every
+   candidate.
 
-4. **Document your process** — Save outputs for stakeholder presentations and audit trails.
+4. **Document your process** — Save outputs for stakeholder presentations and
+   audit trails.
 
-5. **Iterate quickly** — Namelens is fast; run multiple rounds of checks as naming evolves.
+5. **Iterate quickly** — Namelens is fast; run multiple rounds of checks as
+   naming evolves.
 
-6. **Involve legal early** — Use Namelens to narrow candidates, then have trademark counsel do final clearance.
+6. **Involve legal early** — Use Namelens to narrow candidates, then have
+   trademark counsel do final clearance.
 
-7. **Think globally** — Even if launching locally, consider international expansion potential.
+7. **Think globally** — Even if launching locally, consider international
+   expansion potential.
 
 ---
 
@@ -276,6 +295,7 @@ namelens doctor  # Troubleshooting
 ```
 
 See also:
+
 - [Startup Naming Guide](startup-guide.md) — End-to-end venture naming
 - [Expert Analysis](expert-search.md) — Deep research capabilities
 - [Batch Processing](batch.md) — Compare multiple names

@@ -18,13 +18,15 @@ Each example is a complete case study you can follow:
 
 **Example as a teaching tool:**
 
-The [Tesla Trademark Lesson](tesla-trademark-lesson.md) shows why "domain available" ≠ "name safe." Run it yourself:
+The [Tesla Trademark Lesson](tesla-trademark-lesson.md) shows why "domain
+available" ≠ "name safe." Run it yourself:
 
 ```bash
 namelens check tesla --tlds=com --expert --expert-prompt=domain-content
 ```
 
-Compare the results with the documented output. See what the AI caught that a simple availability check missed.
+Compare the results with the documented output. See what the AI caught that a
+simple availability check missed.
 
 ## Available Examples
 
