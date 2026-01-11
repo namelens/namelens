@@ -13,7 +13,7 @@
 #
 # go-libsql requires CGO and only supports:
 #   - linux/amd64, linux/arm64 (glibc)
-#   - darwin/amd64, darwin/arm64
+#   - darwin/arm64 (Apple Silicon only - no Intel Mac support)
 #
 name: Release
 on:
@@ -92,18 +92,11 @@ jobs:
           files: dist/${{ env.BINARY_NAME }}-linux-${{ matrix.arch }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  # Build macOS binaries (native runners for CGO)
+  # Build macOS binary (native runner for CGO)
+  # Note: go-libsql only supports darwin/arm64 (Apple Silicon)
   build-darwin:
     needs: validate
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - arch: amd64
-            runner: macos-15-intel
-          - arch: arm64
-            runner: macos-latest
-    runs-on: ${{ matrix.runner }}
+    runs-on: macos-latest
     env:
       VERSION: ${{ needs.validate.outputs.version }}
     steps:
@@ -122,58 +115,23 @@ jobs:
           LDFLAGS="-X main.version=${VERSION} -X main.commit=${COMMIT} -X main.buildDate=${BUILD_DATE} -s -w"
 
           mkdir -p dist
-          CGO_ENABLED=1 GOOS=darwin GOARCH=${{ matrix.arch }} \
+          CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 \
             go build -ldflags="${LDFLAGS}" -trimpath \
-            -o "dist/${BINARY_NAME}-darwin-${{ matrix.arch }}" \
+            -o "dist/${BINARY_NAME}-darwin-arm64" \
             "./cmd/${BINARY_NAME}"
 
           # Verify the binary
-          file "dist/${BINARY_NAME}-darwin-${{ matrix.arch }}"
-          "dist/${BINARY_NAME}-darwin-${{ matrix.arch }}" version || true
+          file "dist/${BINARY_NAME}-darwin-arm64"
+          "dist/${BINARY_NAME}-darwin-arm64" version || true
       - name: Upload to Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/${{ env.BINARY_NAME }}-darwin-${{ matrix.arch }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  # Create macOS universal binary
-  darwin-universal:
-    needs: [validate, build-darwin]
-    runs-on: macos-latest
-    env:
-      VERSION: ${{ needs.validate.outputs.version }}
-    steps:
-      - name: Download darwin binaries from release
-        run: |
-          mkdir -p darwin-amd64 darwin-arm64
-          gh release download "v${VERSION}" \
-            --pattern "${BINARY_NAME}-darwin-amd64" \
-            --dir "darwin-amd64"
-          gh release download "v${VERSION}" \
-            --pattern "${BINARY_NAME}-darwin-arm64" \
-            --dir "darwin-arm64"
-        env:
-          GH_TOKEN: ${{ github.token }}
-      - name: Create universal binary
-        run: |
-          mkdir -p dist
-          lipo -create \
-            "darwin-amd64/${BINARY_NAME}-darwin-amd64" \
-            "darwin-arm64/${BINARY_NAME}-darwin-arm64" \
-            -output "dist/${BINARY_NAME}-darwin-universal"
-
-          # Verify universal binary
-          file "dist/${BINARY_NAME}-darwin-universal"
-          lipo -info "dist/${BINARY_NAME}-darwin-universal"
-      - name: Upload to Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/${{ env.BINARY_NAME }}-darwin-universal
+          files: dist/${{ env.BINARY_NAME }}-darwin-arm64
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   # Finalize release with auto-generated notes
   finalize:
-    needs: [validate, build-linux, build-darwin, darwin-universal]
+    needs: [validate, build-linux, build-darwin]
     runs-on: ubuntu-latest
     steps:
       - name: Update release notes
@@ -205,6 +163,6 @@ jobs:
             |--------|----------|
             | `namelens-linux-amd64` | Linux x86_64 (glibc) |
             | `namelens-linux-arm64` | Linux ARM64 (glibc) |
-            | `namelens-darwin-amd64` | macOS Intel |
             | `namelens-darwin-arm64` | macOS Apple Silicon |
-            | `namelens-darwin-universal` | macOS Universal (Intel + Apple Silicon) |
+
+            Note: macOS Intel is not supported due to go-libsql limitations.

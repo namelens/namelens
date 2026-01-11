@@ -1,25 +1,39 @@
 # NameLens
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/3leaps/namelens)](https://goreportcard.com/report/github.com/3leaps/namelens)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/3leaps/namelens)](https://github.com/3leaps/namelens/releases)
 
-**See clearly. Name boldly.**
+**Naming, illuminated.**
 
 ## Overview
 
-Namelens is a fast, intelligent CLI tool and server that helps developers,
-founders, and teams choose perfect project names—without the heartbreak of
-downstream conflicts. It checks availability across key domains (.com, .io,
-.dev, and more via RDAP with WHOIS fallback), package registries (npm, PyPI),
-and social handles (GitHub)—then goes deeper with optional Grok-powered expert
-analysis for trademarks, brand associations, sentiment, and hidden risks. From
-quick availability scans to full brand proposals and launch plans, Namelens
-combines precise technical checks with real-time internet intelligence to give
-you confidence that your name is truly ready for prime time. Built for the
-moments when “good enough” isn’t—because rebranding later hurts.
+Naming shouldn't be a gamble. **Namelens** prevents the disasters that sink projects—conflicts that only surface after you've printed business cards, built websites, and committed to a brand.
 
-- **Domains** - via RDAP (Registration Data Access Protocol) with WHOIS fallback
-- **Package registries** - npm, PyPI
-- **Social handles** - GitHub
+We combine **precise technical checks** with **real-time internet intelligence**:
+
+**What we check:**
+- **Domains** — RDAP with WHOIS fallback (.com, .io, .dev, .app, and more)
+- **Package registries** — npm, PyPI
+- **Social handles** — GitHub (more coming soon)
+
+**What we discover:**
+- **Trademark conflicts** — AI-powered search across databases and the web
+- **Brand associations** — sentiment analysis and hidden risks
+- **Cultural fit** — phonetics, typeability, and cross-market suitability
+- **Launch readiness** — comprehensive reports with clear guidance
+
+**Who this is for:**
+
+| Role                     | What Namelens gives you                                   |
+| ------------------------ | --------------------------------------------------------- |
+| **Founders**             | Confidence before printing business cards and filing LLCs |
+| **Developers**           | Quick, CLI-native checks that fit your workflow          |
+| **Product Teams**        | Competitive intelligence and brand gap analysis           |
+| **Marketing**            | Risk visibility and social handle coordination            |
+| **Side Project Makers**  | Stop wasting time on unavailable names                    |
+
+> **Proven in production**: We used Namelens to name itself. The tool caught a critical trademark conflict our initial codename had—saving us from an expensive rebrand. [Read the origin story →](docs/examples/namelens-origin-story.md)
 
 ## Quick Start
 
@@ -33,8 +47,36 @@ make build
 # Check a name
 ./bin/namelens check acmecorp --profile=startup
 
+# Deep analysis with AI-powered brand research
+./bin/namelens check acmecorp --expert --phonetics --suitability
+
 # Start server (for MCP mode)
 ./bin/namelens serve
+```
+
+**Five-second version**:
+```bash
+namelens check myproject
+```
+
+## See Namelens in Action
+
+```bash
+$ namelens check namelens --profile=startup --expert
+╭────────┬──────────────┬────────────────┬───────────────────────────────────────────────────────────────────────╮
+│ TYPE   │ NAME         │ STATUS         │ NOTES                                                                 │
+├────────┼──────────────┼────────────────┼───────────────────────────────────────────────────────────────────────┤
+│ domain │ namelens.app │ taken          │ exp: 2026-12-30; registrar: Dynadot LLC.                              │
+│ domain │ namelens.com │ taken          │ exp: 2026-11-17; registrar: GoDaddy.com, LLC                          │
+│ domain │ namelens.dev │ available      │                                                                       │
+│ domain │ namelens.io  │ available      │                                                                       │
+│ npm    │ namelens     │ available      │                                                                       │
+│ pypi   │ namelens     │ available      │                                                                       │
+│ github │ @namelens    │ taken          │ url: https://github.com/namelens                                      │
+│ expert │ ailink       │ risk: low      │ No direct mentions as existing brand; highly available with low risks │
+├────────┼──────────────┼────────────────┼───────────────────────────────────────────────────────────────────────┤
+│        │              │ 4/8 AVAILABLE │                                                                       │
+╰────────┴──────────────┴────────────────┴───────────────────────────────────────────────────────────────────────╯
 ```
 
 ## CLI Commands
@@ -113,6 +155,33 @@ NAMELENS_DB_PATH=$XDG_DATA_HOME/namelens/namelens.db
 ```
 
 Copy `.env.example` to `.env` for local development.
+
+## Why Namelens?
+
+**The hidden cost of bad names:**
+- Rebranding mid-launch: $50,000–$200,000+ in legal, design, and opportunity costs
+- Lost SEO momentum: Domain age and backlinks reset
+- Customer confusion: Existing users can't find you
+- Trademark infringement: Cease-and-desist letters at best, lawsuits at worst
+
+**Namelens catches these before you invest:**
+
+| Risk Namelens Detects           | Consequence if Missed                           |
+| ------------------------------ | ---------------------------------------------- |
+| Active competitor on .com       | Market confusion, SEO disadvantage             |
+| Registered trademark            | Legal threats, forced rebranding               |
+| Negative social sentiment       | Brand damage from the start                    |
+| Cultural inappropriateness     | Market entry blockers, PR nightmares           |
+| Hard-to-spell/pronounce         | Viral marketing failure, word-of-mouth issues  |
+
+**What makes Namelens different:**
+
+- **AI-powered intelligence**, not just API queries — We use Grok's web search to find what databases miss
+- **Dogfooded from day one** — We used Namelens to name itself; it caught a critical conflict our codename had
+- **CLI-native for developers** — Integrates into your workflow, not a web dashboard you need to visit
+- **Works with AI assistants** — MCP server enables Claude, OpenCode, and other tools to check names directly
+
+[Read how we named ourselves →](docs/examples/namelens-origin-story.md)
 
 ## Development
 

@@ -1,0 +1,111 @@
+# Quick Availability Check
+
+The fastest way to check if a name is available across domains, registries, and social handles.
+
+## Basic Check
+
+```bash
+namelens check myproject
+```
+
+This checks default TLDs (.com, .io, .dev) and npm/PyPI registries.
+
+## Check Specific TLDs
+
+```bash
+namelens check myproject --tlds=com,io,sh,net
+```
+
+## Check with Profile
+
+Profiles bundle common checks together:
+
+```bash
+namelens check acmecorp --profile=startup
+```
+
+Available profiles:
+
+| Profile   | Domains         | Registries | Handles |
+| --------- | --------------- | ---------- | ------- |
+| `startup` | .com, .io, .dev | npm, pypi  | github  |
+| `minimal` | .com            | -          | -       |
+| `web3`    | .xyz, .io, .gg  | npm        | github  |
+
+## Output Formats
+
+**Default (table):**
+```
+╭────────┬──────────┬──────────┬────────────────────────────╮
+│ TYPE   │ NAME     │ STATUS   │ NOTES                      │
+├────────┼──────────┼──────────┼────────────────────────────┤
+│ domain │ myproject.com │ taken │ exp: 2026-06-15           │
+│ domain │ myproject.io  │ avail │                           │
+│ npm    │ myproject     │ avail │                           │
+╰────────┴──────────┴──────────┴────────────────────────────╯
+```
+
+**JSON:**
+```bash
+namelens check myproject --output=json
+```
+
+**Markdown (for AI chat pasting):**
+```bash
+namelens check myproject --output=markdown
+```
+
+## Social Handle Check
+
+```bash
+namelens check myproject --handles=github
+```
+
+More social platforms coming in future releases.
+
+## Check Package Registries Only
+
+```bash
+namelens check myproject --registries=npm,pypi
+```
+
+## Multiple Names (Batch)
+
+```bash
+# Create a file with one name per line
+echo -e "acmecorp\nstellaplex\nfluxio" > candidates.txt
+
+# Batch check
+namelens batch candidates.txt
+
+# With specific output
+namelens batch candidates.txt --output=table
+namelens batch candidates.txt --output=json > results.json
+```
+
+## CI/CD Integration
+
+Add name availability checks to your pipeline:
+
+```bash
+# In CI: Fail if key domains are taken
+namelens check myproject --tlds=com,io --output=json | \
+  jq -e '.results[] | select(.check_type == "domain" and .tld == "com" and .available == false)' && \
+  echo "ERROR: .com domain not available" && exit 1
+```
+
+## Tips
+
+- **Check early, check often** — Availability changes fast; check before investing
+- **Batch your candidates** — Use `batch` to compare 3-5 names side-by-side
+- **Profile for your stage** — `minimal` for quick checks, `startup` for deeper
+- **Cache is your friend** — Results are cached; re-running is fast
+
+## What's Not Included
+
+The quick check does **not** include:
+- Trademark searches (use `--expert`)
+- Phonetic or cultural analysis (use `--phonetics --suitability`)
+- Social sentiment analysis (use `--expert`)
+
+For projects you're serious about, see [Expert Analysis](expert-search.md).

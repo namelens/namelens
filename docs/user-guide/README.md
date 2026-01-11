@@ -1,50 +1,150 @@
 # NameLens User Guide
 
-This guide covers installation, configuration, and usage of NameLens.
-
 > **Disclaimer**: This tool is for informational purposes only and does not
 > constitute legal or professional advice. See
 > [USAGE-NOTICE.md](../USAGE-NOTICE.md) before making business decisions based
 > on results.
 
-## Contents
+---
 
-| Document                              | Description                                              |
-| ------------------------------------- | -------------------------------------------------------- |
-| [Configuration](configuration.md)     | Layered configuration, environment variables, validation |
-| [Domain Fallback](domain-fallback.md) | Whois and DNS fallback for TLDs without RDAP             |
-| [Expert Search](expert-search.md)     | AI-powered brand availability analysis                   |
-| [Name Generation](generate.md)        | Generate naming candidates from a product concept        |
+## Get Started Quickly
 
-## Quick Start
+| Your Situation                                 | Where to start                      |
+| --------------------------------------------- | ----------------------------------- |
+| "I have a name, is it available?"            | [Quick Availability Check](quick-start.md) |
+| "I need name ideas, not just checks"         | [Name Generation](generate.md)     |
+| "I'm serious about this name—deep research" | [Expert Analysis](expert-search.md) |
+| "I run a startup, need the full picture"     | [Startup Naming Guide](startup-guide.md) |
+| "I'm integrating into my workflow"           | [Configuration](configuration.md)   |
+
+---
+
+## Core Workflows
+
+### Workflow 1: Quick Availability Check
+
+The 5-second check for developers and rapid prototyping.
 
 ```bash
-# Generate name candidates from a concept
-namelens generate "static analyzer for shell scripts"
-
-# Check a name across default TLDs
 namelens check myproject
-
-# Check with specific TLDs
-namelens check myproject --tlds=com,io,sh
-
-# Check with expert AI analysis
-namelens check myproject --expert
-
-# Check with phonetics and suitability analysis
-namelens check myproject --phonetics --suitability
-
-# View current configuration
-namelens envinfo
-
-# Run diagnostics
-namelens doctor
-
-# Initialize a default config
-namelens doctor init
 ```
 
-## Getting Help
+**When to use:**
+- Early-stage ideation
+- Domain squat checks
+- CI/CD pipeline validation
+- Batch checking multiple candidates
+
+See: [Quick Availability Check](quick-start.md)
+
+---
+
+### Workflow 2: Deep Brand Analysis
+
+Full research for projects you're serious about.
+
+```bash
+namelens check acmecorp --expert --phonetics --suitability
+```
+
+**What you get:**
+- Trademark conflict risk scoring
+- Social media sentiment analysis
+- Web search for existing products
+- Pronunciation and typeability scores
+- Cultural suitability across markets
+- Clear proceed/caution/stop recommendation
+
+**When to use:**
+- Before registering domains
+- Before printing marketing materials
+- Before incorporating your business
+- Before launching public campaigns
+
+See: [Expert Analysis](expert-search.md)
+
+---
+
+### Workflow 3: Name Generation
+
+Generate candidates from your product concept.
+
+```bash
+namelens generate "static analyzer for shell scripts"
+```
+
+**When to use:**
+- Brainstorming phase
+- You have features but no name
+- Need fresh perspectives
+- Want to explore naming patterns
+
+See: [Name Generation](generate.md)
+
+---
+
+### Workflow 4: Batch Screening
+
+Compare multiple candidates side-by-side.
+
+```bash
+namelens batch candidates.txt --output=table
+```
+
+**When to use:**
+- Shortlisted 3-5 names
+- Need to compare trade-offs
+- Stakeholder presentations
+- Decision matrices
+
+See: [Batch Processing](batch.md)
+
+---
+
+## Specialized Guides
+
+### Startup Naming Guide
+
+End-to-end guidance for new ventures.
+
+[Read the Startup Naming Guide →](startup-guide.md)
+
+### Marketing & Brand Alignment
+
+Using Namelens for competitive research and brand gap analysis.
+
+[Read the Brand Guide →](brand-guide.md)
+
+### Integration & Automation
+
+MCP server, API, and CI/CD integration.
+
+[Read the Integration Guide →](integration.md)
+
+---
+
+## Reference
+
+| Document                              | Description                         |
+| ------------------------------------- | ----------------------------------- |
+| [Configuration](configuration.md)     | Profiles, env vars, customization  |
+| [Domain Fallback](domain-fallback.md) | WHOIS and DNS fallback for TLDs     |
+| [Expert Prompts](expert-prompts.md)   | Available AI analysis prompts       |
+
+---
+
+## Real-World Examples
+
+| Example                                            | What You'll Learn                  |
+| -------------------------------------------------- | ---------------------------------- |
+| [How Namelens Named Itself](../examples/namelens-origin-story.md) | Full journey from codename to brand |
+| [The Tesla Trademark Lesson](../examples/tesla-trademark-lesson.md) | Why domain availability ≠ usability |
+
+See [examples/README.md](../examples/README.md) for all examples and how to use them as learning tools.
+
+---
+
+## Need Help?
 
 ```bash
 namelens --help
@@ -58,3 +158,4 @@ namelens doctor
 - [AGENTS.md](../../AGENTS.md) - AI agent guidelines
 - [Architecture](../architecture/) - System design decisions
 - [Operations](../operations/) - Build and deployment
+- [AILink](../ailink/) - AI provider integration (internal)

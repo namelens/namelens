@@ -7,6 +7,25 @@ tool_version: 0.1.0
 
 Real-world examples demonstrating namelens capabilities.
 
+## How to Use These Examples
+
+Each example is a complete case study you can follow:
+
+1. **Read the narrative** — Understand the problem and context
+2. **See the commands** — Copy the exact commands used
+3. **Analyze the output** — Interpret what Namelens found
+4. **Apply the lessons** — Use these insights for your own naming
+
+**Example as a teaching tool:**
+
+The [Tesla Trademark Lesson](tesla-trademark-lesson.md) shows why "domain available" ≠ "name safe." Run it yourself:
+
+```bash
+namelens check tesla --tlds=com --expert --expert-prompt=domain-content
+```
+
+Compare the results with the documented output. See what the AI caught that a simple availability check missed.
+
 ## Available Examples
 
 | Example                                             | Description                                     | Prompts Used                                                                        |
