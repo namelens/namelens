@@ -14,6 +14,7 @@ import (
 
 type stubBootstrapStore struct {
 	servers map[string][]string
+	cached  map[string]*core.CheckResult
 }
 
 func (s *stubBootstrapStore) SetRDAPServers(ctx context.Context, tld string, servers []string, updatedAt time.Time) error {
@@ -44,7 +45,11 @@ func (s *stubBootstrapStore) CountBootstrapTLDs(ctx context.Context) (int, error
 }
 
 func (s *stubBootstrapStore) GetCachedResult(ctx context.Context, name string, checkType core.CheckType, tld string) (*core.CheckResult, error) {
-	return nil, nil
+	if s.cached == nil {
+		return nil, nil
+	}
+	key := name + "|" + string(checkType) + "|" + tld
+	return s.cached[key], nil
 }
 
 func (s *stubBootstrapStore) SetCachedResult(ctx context.Context, name string, result *core.CheckResult, ttl time.Duration) error {
@@ -119,6 +124,90 @@ func TestDomainCheckerUnsupported(t *testing.T) {
 	result, err := checker.Check(context.Background(), "example.com")
 	require.NoError(t, err)
 	require.Equal(t, core.AvailabilityUnsupported, result.Available)
+}
+
+func TestDomainCheckerRDAPOverrideAvailable(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer server.Close()
+
+	store := &stubBootstrapStore{}
+	checker := &DomainChecker{
+		Store:         store,
+		UseCache:      true,
+		RDAPOverrides: map[string][]string{"dev": {server.URL}},
+	}
+
+	result, err := checker.Check(context.Background(), "example.dev")
+	require.NoError(t, err)
+	require.Equal(t, core.AvailabilityAvailable, result.Available)
+	require.Equal(t, http.StatusNotFound, result.StatusCode)
+	require.Equal(t, rdapSource, result.Provenance.Source)
+	require.Equal(t, server.URL+"/domain/example.dev", result.Provenance.Server)
+}
+
+func TestDomainCheckerRDAPOverrideTaken(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/rdap+json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{
+  "objectClassName": "domain",
+  "ldhName": "example.app",
+  "status": ["active"],
+  "events": [{"eventAction": "expiration", "eventDate": "2025-12-26T00:00:00Z"}]
+}`))
+	}))
+	defer server.Close()
+
+	store := &stubBootstrapStore{}
+	checker := &DomainChecker{
+		Store:         store,
+		UseCache:      true,
+		RDAPOverrides: map[string][]string{"app": {server.URL}},
+	}
+
+	result, err := checker.Check(context.Background(), "example.app")
+	require.NoError(t, err)
+	require.Equal(t, core.AvailabilityTaken, result.Available)
+	require.Equal(t, http.StatusOK, result.StatusCode)
+	require.Equal(t, rdapSource, result.Provenance.Source)
+	require.Equal(t, server.URL+"/domain/example.app", result.Provenance.Server)
+}
+
+func TestDomainCheckerRDAPOverrideCacheProvenance(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	cached := &core.CheckResult{
+		Name:      "example",
+		CheckType: core.CheckTypeDomain,
+		TLD:       "dev",
+		Available: core.AvailabilityTaken,
+		ExtraData: map[string]any{"resolution_source": rdapSource},
+	}
+
+	store := &stubBootstrapStore{
+		cached: map[string]*core.CheckResult{
+			"example|domain|dev": cached,
+		},
+	}
+	checker := &DomainChecker{
+		Store:         store,
+		UseCache:      true,
+		ToolVersion:   "test",
+		RDAPOverrides: map[string][]string{"dev": {server.URL}},
+	}
+
+	result, err := checker.Check(context.Background(), "example.dev")
+	require.NoError(t, err)
+	require.True(t, result.Provenance.FromCache)
+	require.Equal(t, rdapSource, result.Provenance.Source)
+	require.Equal(t, server.URL+"/domain/example.dev", result.Provenance.Server)
+	require.NotEmpty(t, result.Provenance.CheckID)
+	require.NotEmpty(t, result.Provenance.ToolVersion)
 }
 
 type stubWhoisClient struct {

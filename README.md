@@ -127,7 +127,7 @@ Profiles define what to check for a given name:
 
 | Profile   | Domains         | Registries | Handles |
 | --------- | --------------- | ---------- | ------- |
-| `startup` | .com, .io, .dev | npm, pypi  | github  |
+| `startup` | .com, .io, .dev, .app | npm, pypi  | github  |
 | `minimal` | .com            | -          | -       |
 | `web3`    | .xyz, .io, .gg  | npm        | github  |
 

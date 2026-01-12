@@ -9,7 +9,9 @@ social handles.
 namelens check myproject
 ```
 
-This checks default TLDs (.com, .io, .dev) and npm/PyPI registries.
+By default, this checks `.com` only.
+
+Use `--profile=startup` for a broader scan across `.com`, `.io`, `.dev`, `.app` plus npm/PyPI and GitHub.
 
 ## Check Specific TLDs
 
@@ -29,7 +31,7 @@ Available profiles:
 
 | Profile   | Domains         | Registries | Handles |
 | --------- | --------------- | ---------- | ------- |
-| `startup` | .com, .io, .dev | npm, pypi  | github  |
+| `startup` | .com, .io, .dev, .app | npm, pypi  | github  |
 | `minimal` | .com            | -          | -       |
 | `web3`    | .xyz, .io, .gg  | npm        | github  |
 

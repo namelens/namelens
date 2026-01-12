@@ -19,6 +19,11 @@ import (
 
 const rdapSource = "rdap"
 
+var defaultRDAPOverrides = map[string][]string{
+	"app": {"https://rdap.nic.google"},
+	"dev": {"https://rdap.nic.google"},
+}
+
 // DomainChecker performs RDAP availability checks for domains.
 type DomainChecker struct {
 	Store       DomainStore
@@ -32,6 +37,10 @@ type DomainChecker struct {
 	Whois       WhoisClient
 	WhoisCfg    WhoisFallbackConfig
 	DNSCfg      DNSFallbackConfig
+
+	// RDAPOverrides allows routing specific TLDs to known-good RDAP servers.
+	// Keys are normalized TLDs without a leading dot.
+	RDAPOverrides map[string][]string
 }
 
 // DomainStore combines bootstrap, cache, and rate limit persistence.
@@ -76,6 +85,10 @@ func (d *DomainChecker) Check(ctx context.Context, name string) (*core.CheckResu
 		return nil, err
 	}
 
+	if override := d.rdapOverrideServers(tld); len(override) > 0 {
+		servers = override
+	}
+
 	rdapAvailable := len(servers) > 0
 	whoisAllowed := d.whoisAllowed(tld)
 	dnsAllowed := d.DNSCfg.Enabled
@@ -86,6 +99,23 @@ func (d *DomainChecker) Check(ctx context.Context, name string) (*core.CheckResu
 			if d.cacheAllowed(source, rdapAvailable, whoisAllowed, dnsAllowed) {
 				cached.Name = name
 				cached.Provenance.FromCache = true
+				if cached.Provenance.Source == "" {
+					cached.Provenance.Source = source
+				}
+				if cached.Provenance.Server == "" && len(servers) > 0 {
+					if serverURL, err := url.Parse(servers[0]); err == nil {
+						cached.Provenance.Server = serverURL.ResolveReference(&url.URL{Path: "/domain/" + name}).String()
+					}
+				}
+				if cached.Provenance.RequestedAt.IsZero() {
+					cached.Provenance.RequestedAt = requestedAt
+				}
+				if cached.Provenance.CheckID == "" {
+					cached.Provenance.CheckID = uuid.New().String()
+				}
+				if cached.Provenance.ToolVersion == "" {
+					cached.Provenance.ToolVersion = d.ToolVersion
+				}
 				return cached, nil
 			}
 		}
@@ -110,6 +140,7 @@ func (d *DomainChecker) Check(ctx context.Context, name string) (*core.CheckResu
 		return nil, fmt.Errorf("invalid rdap server url: %w", err)
 	}
 	endpoint := serverURL.Hostname()
+	rdapRequestURL := serverURL.ResolveReference(&url.URL{Path: "/domain/" + name}).String()
 
 	client := d.Client
 	if client == nil {
@@ -122,7 +153,7 @@ func (d *DomainChecker) Check(ctx context.Context, name string) (*core.CheckResu
 			return nil, err
 		}
 		if !allowed {
-			result := d.result(name, tld, core.AvailabilityRateLimited, 429, fmt.Sprintf("rate limited, retry in %s", wait.Round(time.Second)), nil, requestedAt, d.now(), rdapSource, serverURL.String())
+			result := d.result(name, tld, core.AvailabilityRateLimited, 429, fmt.Sprintf("rate limited, retry in %s", wait.Round(time.Second)), nil, requestedAt, d.now(), rdapSource, rdapRequestURL)
 			return result, nil
 		}
 	}
@@ -140,7 +171,7 @@ func (d *DomainChecker) Check(ctx context.Context, name string) (*core.CheckResu
 	}
 
 	resp, reqErr := client.Do(req)
-	statusCode, server := responseStatus(resp)
+	statusCode, server := responseStatus(resp, rdapRequestURL)
 
 	if reqErr != nil {
 		if isNotFound(reqErr) || statusCode == 404 {
@@ -216,6 +247,20 @@ func (d *DomainChecker) now() time.Time {
 	return time.Now().UTC()
 }
 
+func (d *DomainChecker) rdapOverrideServers(tld string) []string {
+	normalized := strings.ToLower(strings.TrimSpace(strings.TrimPrefix(tld, ".")))
+	if normalized == "" {
+		return nil
+	}
+
+	overrides := defaultRDAPOverrides
+	if d != nil && d.RDAPOverrides != nil {
+		overrides = d.RDAPOverrides
+	}
+
+	return overrides[normalized]
+}
+
 func splitDomain(domain string) (string, string, error) {
 	value := strings.TrimSpace(domain)
 	if value == "" {
@@ -233,15 +278,18 @@ func splitDomain(domain string) (string, string, error) {
 	return base, tld, nil
 }
 
-func responseStatus(resp *rdap.Response) (int, string) {
+func responseStatus(resp *rdap.Response, fallbackURL string) (int, string) {
 	if resp == nil || len(resp.HTTP) == 0 || resp.HTTP[0] == nil || resp.HTTP[0].Response == nil {
-		return 0, ""
+		return 0, strings.TrimSpace(fallbackURL)
 	}
 
 	hrr := resp.HTTP[0].Response
 	url := ""
 	if resp.HTTP[0].URL != "" {
 		url = resp.HTTP[0].URL
+	}
+	if strings.TrimSpace(url) == "" {
+		url = strings.TrimSpace(fallbackURL)
 	}
 
 	return hrr.StatusCode, url
