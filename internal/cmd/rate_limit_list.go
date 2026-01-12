@@ -3,7 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -16,6 +16,8 @@ import (
 
 var (
 	rateLimitListOutput string
+	rateLimitListOut    string
+	rateLimitListOutDir string
 	rateLimitListAll    bool
 	rateLimitListPrefix string
 )
@@ -51,19 +53,41 @@ var rateLimitListCmd = &cobra.Command{
 			return err
 		}
 
+		outPath := strings.TrimSpace(rateLimitListOut)
+		outDir := strings.TrimSpace(rateLimitListOutDir)
+		if outPath != "" && outDir != "" {
+			return fmt.Errorf("--out and --out-dir are mutually exclusive")
+		}
+
+		ext := outputExtension(format)
+		if outDir != "" {
+			var err error
+			outDir, err = ensureOutDir(outDir)
+			if err != nil {
+				return err
+			}
+			outPath = filepath.Join(outDir, fmt.Sprintf("rate-limit.list.%s", ext))
+		}
+
+		sink, err := openSink(outPath)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = sink.close() }()
+
 		if format == output.FormatJSON {
 			payload, err := json.MarshalIndent(entries, "", "  ")
 			if err != nil {
 				return err
 			}
-			_, err = fmt.Fprintln(os.Stdout, string(payload))
+			_, err = fmt.Fprintln(sink.writer, string(payload))
 			return err
 		}
 
 		lines := []string{"Rate Limits", ""}
 		if len(entries) == 0 {
 			lines = append(lines, "(no stored rate limit state)")
-			_, _ = fmt.Fprint(os.Stdout, ascii.DrawBox(strings.Join(lines, "\n"), 0))
+			_, _ = fmt.Fprint(sink.writer, ascii.DrawBox(strings.Join(lines, "\n"), 0))
 			return nil
 		}
 
@@ -75,13 +99,15 @@ var rateLimitListCmd = &cobra.Command{
 			lines = append(lines, fmt.Sprintf("%s: count=%d backoff_until=%s", entry.Endpoint, entry.State.RequestCount, backoff))
 		}
 
-		_, _ = fmt.Fprint(os.Stdout, ascii.DrawBox(strings.Join(lines, "\n"), 0))
+		_, _ = fmt.Fprint(sink.writer, ascii.DrawBox(strings.Join(lines, "\n"), 0))
 		return nil
 	},
 }
 
 func init() {
-	rateLimitListCmd.Flags().StringVar(&rateLimitListOutput, "output", string(output.FormatTable), "Output format: table|json")
+	rateLimitListCmd.Flags().StringVar(&rateLimitListOutput, "output-format", string(output.FormatTable), "Output format: table|json")
+	rateLimitListCmd.Flags().StringVar(&rateLimitListOut, "out", "", "Write output to a file (default stdout)")
+	rateLimitListCmd.Flags().StringVar(&rateLimitListOutDir, "out-dir", "", "Write output to a directory")
 	rateLimitListCmd.Flags().BoolVar(&rateLimitListAll, "all", false, "List all endpoints")
 	rateLimitListCmd.Flags().StringVar(&rateLimitListPrefix, "prefix", "", "List endpoints with matching prefix")
 }

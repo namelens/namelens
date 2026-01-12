@@ -194,7 +194,7 @@ namelens check myproject --expert
 namelens check myproject --tlds=com,io --expert
 
 # JSON output with full analysis
-namelens check myproject --expert --output=json
+namelens check myproject --expert --output-format=json
 ```
 
 ## Output Format

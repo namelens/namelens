@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
+	"io"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -20,6 +21,8 @@ var (
 	rateLimitResetYes      bool
 	rateLimitResetDryRun   bool
 	rateLimitResetOutput   string
+	rateLimitResetOut      string
+	rateLimitResetOutDir   string
 )
 
 var rateLimitResetCmd = &cobra.Command{
@@ -58,8 +61,28 @@ var rateLimitResetCmd = &cobra.Command{
 			return err
 		}
 
+		outPath := strings.TrimSpace(rateLimitResetOut)
+		outDir := strings.TrimSpace(rateLimitResetOutDir)
+		if outPath != "" && outDir != "" {
+			return fmt.Errorf("--out and --out-dir are mutually exclusive")
+		}
+		ext := outputExtension(format)
+		if outDir != "" {
+			var err error
+			outDir, err = ensureOutDir(outDir)
+			if err != nil {
+				return err
+			}
+			outPath = filepath.Join(outDir, fmt.Sprintf("rate-limit.reset.%s", ext))
+		}
+		sink, err := openSink(outPath)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = sink.close() }()
+
 		if rateLimitResetDryRun {
-			return writeRateLimitResetResult(format, matched, 0, true)
+			return writeRateLimitResetResult(format, sink.writer, matched, 0, true)
 		}
 
 		deleted, err := db.ResetRateLimits(cmd.Context(), query)
@@ -67,11 +90,11 @@ var rateLimitResetCmd = &cobra.Command{
 			return err
 		}
 
-		return writeRateLimitResetResult(format, matched, deleted, false)
+		return writeRateLimitResetResult(format, sink.writer, matched, deleted, false)
 	},
 }
 
-func writeRateLimitResetResult(format output.Format, matched int, deleted int64, dryRun bool) error {
+func writeRateLimitResetResult(format output.Format, w io.Writer, matched int, deleted int64, dryRun bool) error {
 	result := map[string]any{
 		"matched": matched,
 		"deleted": deleted,
@@ -83,15 +106,15 @@ func writeRateLimitResetResult(format output.Format, matched int, deleted int64,
 		if err != nil {
 			return err
 		}
-		_, err = fmt.Fprintln(os.Stdout, string(payload))
+		_, err = fmt.Fprintln(w, string(payload))
 		return err
 	}
 
 	if dryRun {
-		_, err := fmt.Fprintf(os.Stdout, "Would delete %d rate limit entr(ies)\n", matched)
+		_, err := fmt.Fprintf(w, "Would delete %d rate limit entr(ies)\n", matched)
 		return err
 	}
-	_, err := fmt.Fprintf(os.Stdout, "Deleted %d/%d rate limit entr(ies)\n", deleted, matched)
+	_, err := fmt.Fprintf(w, "Deleted %d/%d rate limit entr(ies)\n", deleted, matched)
 	return err
 }
 
@@ -101,5 +124,7 @@ func init() {
 	rateLimitResetCmd.Flags().StringVar(&rateLimitResetPrefix, "prefix", "", "Reset endpoints with matching prefix")
 	rateLimitResetCmd.Flags().BoolVar(&rateLimitResetYes, "yes", false, "Confirm destructive reset")
 	rateLimitResetCmd.Flags().BoolVar(&rateLimitResetDryRun, "dry-run", false, "Show what would be deleted")
-	rateLimitResetCmd.Flags().StringVar(&rateLimitResetOutput, "output", string(output.FormatTable), "Output format: table|json")
+	rateLimitResetCmd.Flags().StringVar(&rateLimitResetOutput, "output-format", string(output.FormatTable), "Output format: table|json")
+	rateLimitResetCmd.Flags().StringVar(&rateLimitResetOut, "out", "", "Write output to a file (default stdout)")
+	rateLimitResetCmd.Flags().StringVar(&rateLimitResetOutDir, "out-dir", "", "Write output to a directory")
 }

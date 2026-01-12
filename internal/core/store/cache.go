@@ -76,6 +76,14 @@ func (s *Store) GetCachedResult(ctx context.Context, name string, checkType core
 		},
 	}
 
+	if result.ExtraData != nil {
+		if value, ok := result.ExtraData["resolution_server"]; ok {
+			if server, ok := value.(string); ok {
+				result.Provenance.Server = strings.TrimSpace(server)
+			}
+		}
+	}
+
 	return result, nil
 }
 

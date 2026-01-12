@@ -175,6 +175,31 @@ func TestDomainCheckerRDAPOverrideTaken(t *testing.T) {
 	require.Equal(t, server.URL+"/domain/example.app", result.Provenance.Server)
 }
 
+func TestDomainCheckerRDAPOverrideFallbackServer(t *testing.T) {
+	primary := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer primary.Close()
+
+	fallback := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer fallback.Close()
+
+	store := &stubBootstrapStore{}
+	checker := &DomainChecker{
+		Store:         store,
+		UseCache:      true,
+		RDAPOverrides: map[string][]string{"dev": {primary.URL, fallback.URL}},
+	}
+
+	result, err := checker.Check(context.Background(), "example.dev")
+	require.NoError(t, err)
+	require.Equal(t, core.AvailabilityAvailable, result.Available)
+	require.Equal(t, http.StatusNotFound, result.StatusCode)
+	require.Equal(t, fallback.URL+"/domain/example.dev", result.Provenance.Server)
+}
+
 func TestDomainCheckerRDAPOverrideCacheProvenance(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -186,7 +211,10 @@ func TestDomainCheckerRDAPOverrideCacheProvenance(t *testing.T) {
 		CheckType: core.CheckTypeDomain,
 		TLD:       "dev",
 		Available: core.AvailabilityTaken,
-		ExtraData: map[string]any{"resolution_source": rdapSource},
+		ExtraData: map[string]any{
+			"resolution_source": rdapSource,
+			"resolution_server": server.URL + "/domain/example.dev",
+		},
 	}
 
 	store := &stubBootstrapStore{

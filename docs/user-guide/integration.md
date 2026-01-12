@@ -126,11 +126,11 @@ output.
 
 ### JSON Output
 
-All commands support `--output=json`:
+All commands support `--output-format=json`:
 
 ```bash
-namelens check myproject --output=json
-namelens batch candidates.txt --output=json
+namelens check myproject --output-format=json
+namelens batch candidates.txt --output-format=json
 ```
 
 ### Pipe Processing
@@ -139,11 +139,11 @@ Combine with other tools:
 
 ```bash
 # Extract available TLDs
-namelens check myproject --output=json | \
+namelens check myproject --output-format=json | \
   jq '.results[] | select(.check_type == "domain" and .available == true) | .tld'
 
 # Count total availability
-namelens check myproject --output=json | \
+namelens check myproject --output-format=json | \
   jq '.results | map(select(.available == true)) | length'
 ```
 
@@ -154,7 +154,7 @@ namelens check myproject --output=json | \
 # check-and-register.sh
 
 NAME=$1
-RESULT=$(namelens check "$NAME" --profile=startup --output=json)
+RESULT=$(namelens check "$NAME" --profile=startup --output-format=json)
 
 # Extract availability score
 SCORE=$(echo "$RESULT" | jq '[.results[] | select(.available == true)] | length')
@@ -202,7 +202,7 @@ jobs:
           NAME=$(jq -r '.name' package.json)
 
           # Run availability check
-          ./namelens-linux-amd64 check "$NAME" --profile=startup --output=json > result.json
+          ./namelens-linux-amd64 check "$NAME" --profile=startup --output-format=json --out result.json
 
           # Fail if .com or npm is taken
           CONFLICT=$(jq '[.results[] | select(
@@ -232,7 +232,7 @@ if git diff --cached --name-only | grep -q 'package.json'; then
   NAME=$(jq -r '.name' package.json)
 
   echo "Checking availability for: $NAME"
-  RESULT=$(namelens check "$NAME" --profile=minimal --output=json)
+  RESULT=$(namelens check "$NAME" --profile=minimal --output-format=json)
 
   # Check .com availability
   COM_AVAIL=$(jq '.results[] | select(.check_type == "domain" and .tld == "com") | .available' <<< "$RESULT")
@@ -274,7 +274,7 @@ jobs:
           namelens batch brand-portfolio.txt \
             --profile=startup \
             --expert \
-            --output=json > portfolio.json
+            --output-format=json --out portfolio.json
 
           # Report issues
           ISSUES=$(jq '[.results[] | select(.score < 5)]' portfolio.json)

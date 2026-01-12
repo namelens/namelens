@@ -1,11 +1,11 @@
 package cmd
 
 import (
-	"bufio"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -30,7 +30,9 @@ func init() {
 	rootCmd.AddCommand(batchCmd)
 
 	batchCmd.Flags().String("profile", "minimal", "Profile to use")
-	batchCmd.Flags().String("output", "table", "Output format: table, json, markdown")
+	batchCmd.Flags().String("output-format", "table", "Output format: table, json, markdown")
+	batchCmd.Flags().String("out", "", "Write output to a file (default stdout)")
+	batchCmd.Flags().String("out-dir", "", "Write per-name outputs to a directory")
 	batchCmd.Flags().Bool("available-only", false, "Only show names fully available across all checks")
 	batchCmd.Flags().Int("concurrency", 3, "Concurrent checks")
 }
@@ -44,7 +46,7 @@ func runBatch(cmd *cobra.Command, args []string) error {
 		return errors.New("profile is required")
 	}
 
-	formatValue, err := cmd.Flags().GetString("output")
+	formatValue, err := cmd.Flags().GetString("output-format")
 	if err != nil {
 		return err
 	}
@@ -66,13 +68,11 @@ func runBatch(cmd *cobra.Command, args []string) error {
 		return errors.New("concurrency must be at least 1")
 	}
 
-	names, err := readBatchNames(args[0])
+	names, err := readNamesFile(args[0])
 	if err != nil {
 		return err
 	}
-	if len(names) == 0 {
-		return errors.New("no names found in batch file")
-	}
+	// readNamesFile already validates non-empty
 
 	ctx := cmd.Context()
 	startedAt := time.Now()
@@ -105,12 +105,86 @@ func runBatch(cmd *cobra.Command, args []string) error {
 
 	results = filterBatchResults(results, availableOnly)
 
+	outPath, outDir, err := resolveOutputTargets(cmd)
+	if err != nil {
+		return err
+	}
+
+	ext := outputExtension(format)
 	rendered, err := output.FormatBatchList(format, results)
 	if err != nil {
 		return err
 	}
-	if strings.TrimSpace(rendered) != "" {
-		fmt.Println(rendered)
+
+	if outDir != "" {
+		outDir, err := ensureOutDir(outDir)
+		if err != nil {
+			return err
+		}
+
+		indexPath := filepath.Join(outDir, fmt.Sprintf("batch.index.%s", ext))
+		indexSink, err := openSink(indexPath)
+		if err != nil {
+			return err
+		}
+		if _, err := fmt.Fprint(indexSink.writer, rendered); err != nil {
+			_ = indexSink.close()
+			return err
+		}
+		if err := indexSink.close(); err != nil {
+			return err
+		}
+
+		formatter := output.NewFormatter(format)
+		for _, result := range results {
+			if result == nil {
+				continue
+			}
+			name := sanitizeFilename(result.Name)
+			path := filepath.Join(outDir, fmt.Sprintf("%s.batch.%s", name, ext))
+			sink, err := openSink(path)
+			if err != nil {
+				return err
+			}
+
+			var content string
+			if format == output.FormatJSON {
+				payload, err := json.MarshalIndent(result, "", "  ")
+				if err != nil {
+					_ = sink.close()
+					return err
+				}
+				content = string(payload)
+			} else {
+				content, err = formatter.FormatBatch(result)
+				if err != nil {
+					_ = sink.close()
+					return err
+				}
+			}
+
+			if _, err := fmt.Fprint(sink.writer, content); err != nil {
+				_ = sink.close()
+				return err
+			}
+			if err := sink.close(); err != nil {
+				return err
+			}
+		}
+	} else {
+		sink, err := openSink(outPath)
+		if err != nil {
+			return err
+		}
+		if strings.TrimSpace(rendered) != "" {
+			if _, err := fmt.Fprint(sink.writer, rendered); err != nil {
+				_ = sink.close()
+				return err
+			}
+		}
+		if err := sink.close(); err != nil {
+			return err
+		}
 	}
 
 	logThroughput(totalChecks(results), startedAt)
@@ -187,32 +261,7 @@ sendLoop:
 }
 
 func readBatchNames(path string) ([]string, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close() // nolint:errcheck // best-effort cleanup on read-only file
-
-	names := make([]string, 0)
-	scanner := bufio.NewScanner(file)
-	line := 0
-	for scanner.Scan() {
-		line++
-		raw := strings.TrimSpace(scanner.Text())
-		if raw == "" || strings.HasPrefix(raw, "#") {
-			continue
-		}
-		name := strings.ToLower(raw)
-		if err := validateName(name); err != nil {
-			return nil, fmt.Errorf("invalid name on line %d: %w", line, err)
-		}
-		names = append(names, name)
-	}
-	if err := scanner.Err(); err != nil {
-		return nil, err
-	}
-
-	return names, nil
+	return readNamesFile(path)
 }
 
 func filterBatchResults(results []*core.BatchResult, availableOnly bool) []*core.BatchResult {

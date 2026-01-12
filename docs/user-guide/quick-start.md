@@ -52,13 +52,13 @@ Available profiles:
 **JSON:**
 
 ```bash
-namelens check myproject --output=json
+namelens check myproject --output-format=json
 ```
 
 **Markdown (for AI chat pasting):**
 
 ```bash
-namelens check myproject --output=markdown
+namelens check myproject --output-format=markdown
 ```
 
 ## Social Handle Check
@@ -85,8 +85,8 @@ echo -e "acmecorp\nstellaplex\nfluxio" > candidates.txt
 namelens batch candidates.txt
 
 # With specific output
-namelens batch candidates.txt --output=table
-namelens batch candidates.txt --output=json > results.json
+namelens batch candidates.txt --output-format=table
+namelens batch candidates.txt --output-format=json --out results.json
 ```
 
 ## CI/CD Integration
@@ -95,7 +95,7 @@ Add name availability checks to your pipeline:
 
 ```bash
 # In CI: Fail if key domains are taken
-namelens check myproject --tlds=com,io --output=json | \
+namelens check myproject --tlds=com,io --output-format=json | \
   jq -e '.results[] | select(.check_type == "domain" and .tld == "com" and .available == false)' && \
   echo "ERROR: .com domain not available" && exit 1
 ```

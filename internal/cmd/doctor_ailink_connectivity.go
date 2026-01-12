@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -30,6 +31,8 @@ var (
 	doctorAILinkConnectivityQuiet       bool
 	doctorAILinkConnectivityShowSecrets bool
 	doctorAILinkConnectivityOutputRaw   string
+	doctorAILinkConnectivityOut         string
+	doctorAILinkConnectivityOutDir      string
 )
 
 type connectivityReport struct {
@@ -183,6 +186,26 @@ var doctorAILinkConnectivityCmd = &cobra.Command{
 			return fmt.Errorf("connectivity check failed (%s)", report.Summary.Classification)
 		}
 
+		outPath := strings.TrimSpace(doctorAILinkConnectivityOut)
+		outDir := strings.TrimSpace(doctorAILinkConnectivityOutDir)
+		if outPath != "" && outDir != "" {
+			return fmt.Errorf("--out and --out-dir are mutually exclusive")
+		}
+		ext := outputExtension(format)
+		if outDir != "" {
+			var err error
+			outDir, err = ensureOutDir(outDir)
+			if err != nil {
+				return err
+			}
+			outPath = filepath.Join(outDir, fmt.Sprintf("doctor.ailink.connectivity.%s", ext))
+		}
+		sink, err := openSink(outPath)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = sink.close() }()
+
 		if format == output.FormatJSON {
 			payload, err := json.MarshalIndent(report, "", "  ")
 			if err != nil {
@@ -191,13 +214,13 @@ var doctorAILinkConnectivityCmd = &cobra.Command{
 			if err := validateConnectivityReport(payload); err != nil {
 				return err
 			}
-			if _, err := fmt.Fprintln(os.Stdout, string(payload)); err != nil {
+			if _, err := fmt.Fprintln(sink.writer, string(payload)); err != nil {
 				return err
 			}
 			return nil
 		}
 
-		renderConnectivityReportTable(report)
+		renderConnectivityReportTable(sink.writer, report)
 		return nil
 	},
 }
@@ -505,8 +528,8 @@ func validateConnectivityReport(payload []byte) error {
 	return nil
 }
 
-func renderConnectivityReportTable(report *connectivityReport) {
-	if report == nil {
+func renderConnectivityReportTable(w io.Writer, report *connectivityReport) {
+	if w == nil || report == nil {
 		return
 	}
 
@@ -555,7 +578,7 @@ func renderConnectivityReportTable(report *connectivityReport) {
 		}
 	}
 
-	_, _ = fmt.Fprint(os.Stdout, ascii.DrawBox(strings.Join(lines, "\n"), 0))
+	_, _ = fmt.Fprint(w, ascii.DrawBox(strings.Join(lines, "\n"), 0))
 }
 
 func collectProxyEnv(host string) connectivityEnv {
@@ -810,5 +833,7 @@ func init() {
 	doctorAILinkConnectivityCmd.Flags().DurationVar(&doctorAILinkConnectivityTimeout, "timeout", 10*time.Second, "Timeout per step (e.g. 10s)")
 	doctorAILinkConnectivityCmd.Flags().BoolVar(&doctorAILinkConnectivityQuiet, "quiet", false, "Exit code only")
 	doctorAILinkConnectivityCmd.Flags().BoolVar(&doctorAILinkConnectivityShowSecrets, "show-secrets", false, "Include masked key hints in output")
-	doctorAILinkConnectivityCmd.Flags().StringVar(&doctorAILinkConnectivityOutputRaw, "output", string(output.FormatTable), "Output format: table|json")
+	doctorAILinkConnectivityCmd.Flags().StringVar(&doctorAILinkConnectivityOutputRaw, "output-format", string(output.FormatTable), "Output format: table|json")
+	doctorAILinkConnectivityCmd.Flags().StringVar(&doctorAILinkConnectivityOut, "out", "", "Write output to a file (default stdout)")
+	doctorAILinkConnectivityCmd.Flags().StringVar(&doctorAILinkConnectivityOutDir, "out-dir", "", "Write output to a directory")
 }

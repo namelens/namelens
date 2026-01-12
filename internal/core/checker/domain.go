@@ -20,8 +20,8 @@ import (
 const rdapSource = "rdap"
 
 var defaultRDAPOverrides = map[string][]string{
-	"app": {"https://rdap.nic.google"},
-	"dev": {"https://rdap.nic.google"},
+	"app": {"https://pubapi.registry.google/rdap", "https://www.rdap.net/rdap"},
+	"dev": {"https://pubapi.registry.google/rdap", "https://www.rdap.net/rdap"},
 }
 
 // DomainChecker performs RDAP availability checks for domains.
@@ -102,9 +102,19 @@ func (d *DomainChecker) Check(ctx context.Context, name string) (*core.CheckResu
 				if cached.Provenance.Source == "" {
 					cached.Provenance.Source = source
 				}
-				if cached.Provenance.Server == "" && len(servers) > 0 {
-					if serverURL, err := url.Parse(servers[0]); err == nil {
-						cached.Provenance.Server = serverURL.ResolveReference(&url.URL{Path: "/domain/" + name}).String()
+				if cached.Provenance.Server == "" {
+					if cached.ExtraData != nil {
+						if value, ok := cached.ExtraData["resolution_server"]; ok {
+							if server, ok := value.(string); ok && strings.TrimSpace(server) != "" {
+								cached.Provenance.Server = server
+							}
+						}
+					}
+					if cached.Provenance.Server == "" && len(servers) > 0 {
+						if serverURL, err := url.Parse(servers[0]); err == nil {
+							cached.Provenance.Server = rdapDomainURL(serverURL, name)
+						}
+
 					}
 				}
 				if cached.Provenance.RequestedAt.IsZero() {
@@ -135,82 +145,90 @@ func (d *DomainChecker) Check(ctx context.Context, name string) (*core.CheckResu
 		return d.result(name, tld, core.AvailabilityUnsupported, 0, "no rdap server for tld", nil, requestedAt, d.now(), rdapSource, ""), nil
 	}
 
-	serverURL, err := url.Parse(servers[0])
-	if err != nil {
-		return nil, fmt.Errorf("invalid rdap server url: %w", err)
-	}
-	endpoint := serverURL.Hostname()
-	rdapRequestURL := serverURL.ResolveReference(&url.URL{Path: "/domain/" + name}).String()
-
 	client := d.Client
 	if client == nil {
 		client = &rdap.Client{}
 	}
 
-	if d.Limiter != nil && endpoint != "" {
-		allowed, wait, err := d.Limiter.Allow(ctx, endpoint)
+	var lastResult *core.CheckResult
+	for i, serverBase := range servers {
+		serverURL, err := url.Parse(serverBase)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("invalid rdap server url: %w", err)
 		}
-		if !allowed {
-			result := d.result(name, tld, core.AvailabilityRateLimited, 429, fmt.Sprintf("rate limited, retry in %s", wait.Round(time.Second)), nil, requestedAt, d.now(), rdapSource, rdapRequestURL)
-			return result, nil
-		}
-	}
+		endpoint := serverURL.Hostname()
+		rdapRequestURL := rdapDomainURL(serverURL, name)
 
-	req := rdap.NewDomainRequest(name).WithServer(serverURL)
-	if d.Timeout > 0 {
-		req.Timeout = d.Timeout
-	}
-	req = req.WithContext(ctx)
-
-	if d.Limiter != nil && endpoint != "" {
-		if err := d.Limiter.Record(ctx, endpoint); err != nil {
-			return nil, err
-		}
-	}
-
-	resp, reqErr := client.Do(req)
-	statusCode, server := responseStatus(resp, rdapRequestURL)
-
-	if reqErr != nil {
-		if isNotFound(reqErr) || statusCode == 404 {
-			result := d.result(name, tld, core.AvailabilityAvailable, statusCode, "rdap not found", nil, requestedAt, d.now(), rdapSource, server)
-			d.cacheResult(ctx, baseName, result)
-			return result, nil
-		}
-
-		if statusCode == 429 {
-			wait, extra := retryAfter(resp)
-			if d.Limiter != nil && endpoint != "" && wait > 0 {
-				_ = d.Limiter.Record429(ctx, endpoint, wait)
+		if d.Limiter != nil && endpoint != "" {
+			allowed, wait, err := d.Limiter.Allow(ctx, endpoint)
+			if err != nil {
+				return nil, err
 			}
-			result := d.result(name, tld, core.AvailabilityRateLimited, statusCode, "rdap rate limited", extra, requestedAt, d.now(), rdapSource, server)
+			if !allowed {
+				lastResult = d.result(name, tld, core.AvailabilityRateLimited, 429, fmt.Sprintf("rate limited, retry in %s", wait.Round(time.Second)), nil, requestedAt, d.now(), rdapSource, rdapRequestURL)
+				continue
+			}
+		}
+
+		req := rdap.NewDomainRequest(name).WithServer(serverURL)
+		if d.Timeout > 0 {
+			req.Timeout = d.Timeout
+		}
+		req = req.WithContext(ctx)
+
+		if d.Limiter != nil && endpoint != "" {
+			if err := d.Limiter.Record(ctx, endpoint); err != nil {
+				return nil, err
+			}
+		}
+
+		resp, reqErr := client.Do(req)
+		statusCode, server := responseStatus(resp, rdapRequestURL)
+
+		if reqErr != nil {
+			if isNotFound(reqErr) || statusCode == 404 {
+				result := d.result(name, tld, core.AvailabilityAvailable, statusCode, "rdap not found", nil, requestedAt, d.now(), rdapSource, server)
+				d.cacheResult(ctx, baseName, result)
+				return result, nil
+			}
+
+			if statusCode == 429 {
+				wait, extra := retryAfter(resp)
+				if d.Limiter != nil && endpoint != "" && wait > 0 {
+					_ = d.Limiter.Record429(ctx, endpoint, wait)
+				}
+				lastResult = d.result(name, tld, core.AvailabilityRateLimited, statusCode, "rdap rate limited", extra, requestedAt, d.now(), rdapSource, server)
+				continue
+			}
+
+			if statusCode >= 500 && statusCode <= 599 {
+				lastResult = d.result(name, tld, core.AvailabilityError, statusCode, "rdap server error", nil, requestedAt, d.now(), rdapSource, server)
+				continue
+			}
+
+			lastResult = d.result(name, tld, core.AvailabilityError, statusCode, reqErr.Error(), nil, requestedAt, d.now(), rdapSource, server)
+			continue
+		}
+
+		if domain, ok := resp.Object.(*rdap.Domain); ok {
+			extra := domainExtra(domain)
+			result := d.result(name, tld, core.AvailabilityTaken, statusCode, "domain found", extra, requestedAt, d.now(), rdapSource, server)
 			d.cacheResult(ctx, baseName, result)
 			return result, nil
 		}
 
-		if statusCode >= 500 && statusCode <= 599 {
-			result := d.result(name, tld, core.AvailabilityError, statusCode, "rdap server error", nil, requestedAt, d.now(), rdapSource, server)
-			d.cacheResult(ctx, baseName, result)
-			return result, nil
+		lastResult = d.result(name, tld, core.AvailabilityUnknown, statusCode, "unexpected rdap response", nil, requestedAt, d.now(), rdapSource, server)
+
+		if i == len(servers)-1 {
+			break
 		}
-
-		result := d.result(name, tld, core.AvailabilityError, statusCode, reqErr.Error(), nil, requestedAt, d.now(), rdapSource, server)
-		d.cacheResult(ctx, baseName, result)
-		return result, nil
 	}
 
-	if domain, ok := resp.Object.(*rdap.Domain); ok {
-		extra := domainExtra(domain)
-		result := d.result(name, tld, core.AvailabilityTaken, statusCode, "domain found", extra, requestedAt, d.now(), rdapSource, server)
-		d.cacheResult(ctx, baseName, result)
-		return result, nil
+	if lastResult == nil {
+		lastResult = d.result(name, tld, core.AvailabilityError, 0, fmt.Sprintf("no rdap servers responded successfully (tried %d server(s))", len(servers)), nil, requestedAt, d.now(), rdapSource, "")
 	}
-
-	result := d.result(name, tld, core.AvailabilityUnknown, statusCode, "unexpected rdap response", nil, requestedAt, d.now(), rdapSource, server)
-	d.cacheResult(ctx, baseName, result)
-	return result, nil
+	d.cacheResult(ctx, baseName, lastResult)
+	return lastResult, nil
 }
 
 func (d *DomainChecker) result(name, tld string, availability core.Availability, statusCode int, message string, extra map[string]any, requestedAt, resolvedAt time.Time, source, server string) *core.CheckResult {
@@ -219,6 +237,9 @@ func (d *DomainChecker) result(name, tld string, availability core.Availability,
 	}
 	if source != "" {
 		extra["resolution_source"] = source
+	}
+	if strings.TrimSpace(server) != "" {
+		extra["resolution_server"] = server
 	}
 	return &core.CheckResult{
 		Name:       name,
@@ -245,6 +266,24 @@ func (d *DomainChecker) now() time.Time {
 		return d.Clock()
 	}
 	return time.Now().UTC()
+}
+
+func rdapDomainURL(server *url.URL, domain string) string {
+	if server == nil {
+		return ""
+	}
+
+	temp := &*server
+	temp.RawQuery = ""
+	temp.Fragment = ""
+	base := temp.String()
+	if base == "" {
+		return ""
+	}
+	if !strings.HasSuffix(base, "/") {
+		base += "/"
+	}
+	return base + "domain/" + strings.TrimSpace(domain)
 }
 
 func (d *DomainChecker) rdapOverrideServers(tld string) []string {

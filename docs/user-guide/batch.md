@@ -26,7 +26,7 @@ namelens batch candidates.txt
 Side-by-side comparison in ASCII table:
 
 ```bash
-namelens batch candidates.txt --output=table
+namelens batch candidates.txt --output-format=table
 ```
 
 Output example:
@@ -46,31 +46,29 @@ Output example:
 Machine-readable output for scripts and reporting:
 
 ```bash
-namelens batch candidates.txt --output=json > results.json
+namelens batch candidates.txt --output-format=json --out results.json
 ```
 
 JSON structure:
 
 ```json
-{
-  "results": [
-    {
-      "name": "acmecorp",
-      "score": 4,
-      "total": 8,
-      "results": [
-        {
-          "name": "acmecorp",
-          "check_type": "domain",
-          "tld": "com",
-          "available": false,
-          "extra_data": {"expires": "2026-11-17"},
-          "provenance": {...}
-        }
-      ]
-    }
-  ]
-}
+[
+  {
+    "name": "acmecorp",
+    "score": 4,
+    "total": 8,
+    "results": [
+      {
+        "name": "acmecorp",
+        "check_type": "domain",
+        "tld": "com",
+        "available": false,
+        "extra_data": {"expires": "2026-11-17"},
+        "provenance": {"...": "..."}
+      }
+    ]
+  }
+]
 ```
 
 ### Markdown
@@ -78,7 +76,7 @@ JSON structure:
 Formatted for presentations and AI chat:
 
 ```bash
-namelens batch candidates.txt --output=markdown > comparison.md
+namelens batch candidates.txt --output-format=markdown --out comparison.md
 ```
 
 ## Filtering
@@ -155,7 +153,7 @@ namelens batch finalists.txt \
   --expert \
   --phonetics \
   --suitability \
-  --output=json > deep-analysis.json
+  --output-format=json --out deep-analysis.json
 ```
 
 ### Step 4: Create Comparison Table
@@ -182,7 +180,7 @@ Use markdown output for presentations:
 namelens batch finalists.txt \
   --profile=startup \
   --expert \
-  --output=markdown > candidate-comparison.md
+  --output-format=markdown --out candidate-comparison.md
 ```
 
 Include in slide decks or share via team chat.
@@ -206,7 +204,7 @@ namelens batch competitors.txt \
   --profile=startup \
   --expert \
   --expert-prompt=domain-content \
-  --output=json > competitor-analysis.json
+  --output-format=json --out competitor-analysis.json
 ```
 
 ### Step 3: Analyze Patterns
@@ -228,7 +226,7 @@ assets:
 #!/bin/bash
 # check-names.sh
 
-namelens batch project-names.txt --output=json | \
+namelens batch project-names.txt --output-format=json | \
   jq -e '.results[] | select(.score < 5) | .name' && \
   echo "ERROR: Some projects have availability issues" && \
   exit 1
@@ -251,12 +249,12 @@ mkdir -p "$OUTPUT_DIR"
 namelens batch brand-portfolio.txt \
   --profile=startup \
   --expert \
-  --output=json > "$OUTPUT_DIR/portfolio.json"
+  --output-format=json --out "$OUTPUT_DIR/portfolio.json"
 
 namelens batch brand-portfolio.txt \
   --profile=startup \
   --expert \
-  --output=markdown > "$OUTPUT_DIR/portfolio.md"
+  --output-format=markdown --out "$OUTPUT_DIR/portfolio.md"
 
 # Send notification if issues found
 ISSUES=$(jq '[.results[] | select(.score < 5)] | length' "$OUTPUT_DIR/portfolio.json")
@@ -271,7 +269,7 @@ fi
 Convert JSON to CSV for Excel/Google Sheets:
 
 ```bash
-namelens batch candidates.txt --output=json | \
+namelens batch candidates.txt --output-format=json | \
   jq -r '.results[] | [.name, .score, .total] | @csv' > candidates.csv
 ```
 

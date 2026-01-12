@@ -92,7 +92,7 @@ See: [Name Generation](generate.md)
 Compare multiple candidates side-by-side.
 
 ```bash
-namelens batch candidates.txt --output=table
+namelens batch candidates.txt --output-format=table
 ```
 
 **When to use:**

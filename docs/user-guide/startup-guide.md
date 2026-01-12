@@ -37,7 +37,7 @@ EOF
 Quick availability scan to eliminate obvious conflicts:
 
 ```bash
-namelens batch candidates.txt --output=table --available-only
+namelens batch candidates.txt --output-format=table --available-only
 ```
 
 Focus on candidates with reasonable availability scores.

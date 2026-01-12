@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
@@ -26,10 +27,10 @@ import (
 )
 
 var checkCmd = &cobra.Command{
-	Use:   "check <name>",
+	Use:   "check <name> [<name>...]",
 	Short: "Check name availability",
 	Long:  "Check if a name is available across domains, registries, and handles",
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.ArbitraryArgs,
 	RunE:  runCheck,
 }
 
@@ -40,7 +41,10 @@ func init() {
 	checkCmd.Flags().StringSlice("registries", nil, "Registries to check (npm, pypi)")
 	checkCmd.Flags().StringSlice("handles", nil, "Handles to check (github)")
 	checkCmd.Flags().String("profile", "", "Use predefined profile")
-	checkCmd.Flags().String("output", "table", "Output format: table, json, markdown")
+	checkCmd.Flags().String("names-file", "", "Read names from file (one per line) or '-' for stdin")
+	checkCmd.Flags().String("output-format", "table", "Output format: table, json, markdown")
+	checkCmd.Flags().String("out", "", "Write output to a file (default stdout)")
+	checkCmd.Flags().String("out-dir", "", "Write per-name outputs to a directory")
 	checkCmd.Flags().Bool("no-cache", false, "Skip cache lookup")
 	checkCmd.Flags().Bool("expert", false, "Include expert search backend")
 	checkCmd.Flags().String("expert-depth", "quick", "Expert search depth: quick, deep")
@@ -54,8 +58,12 @@ func init() {
 }
 
 func runCheck(cmd *cobra.Command, args []string) error {
-	name := strings.ToLower(strings.TrimSpace(args[0]))
-	if err := validateName(name); err != nil {
+	namesFile, err := cmd.Flags().GetString("names-file")
+	if err != nil {
+		return err
+	}
+	names, err := resolveNames(args, namesFile)
+	if err != nil {
 		return err
 	}
 
@@ -143,25 +151,27 @@ func runCheck(cmd *cobra.Command, args []string) error {
 
 	orchestrator := buildOrchestrator(cfg, store, !noCache)
 
-	results, err := orchestrator.Check(ctx, name, profile)
-	if err != nil {
-		return err
-	}
+	locales := normalizeInputList(localesRaw)
+	keyboards := normalizeInputList(keyboardsRaw)
 
-	var (
-		expertResult    *ailink.SearchResponse
-		expertError     *ailink.SearchError
-		phoneticsResult json.RawMessage
-		phoneticsError  *ailink.SearchError
-		suitabilityRaw  json.RawMessage
-		suitabilityErr  *ailink.SearchError
-	)
-	if expertEnabled || cfg.Expert.Enabled {
-		expertResult, expertError = runExpert(ctx, cfg, store, name, expertDepth, expertModel, expertPrompt, !noCache)
-	}
-	if phoneticsEnabled || suitabilityEnabled {
-		locales := normalizeInputList(localesRaw)
-		keyboards := normalizeInputList(keyboardsRaw)
+	batches := make([]*core.BatchResult, 0, len(names))
+	for _, name := range names {
+		results, err := orchestrator.Check(ctx, name, profile)
+		if err != nil {
+			return err
+		}
+
+		var (
+			expertResult    *ailink.SearchResponse
+			expertError     *ailink.SearchError
+			phoneticsResult json.RawMessage
+			phoneticsError  *ailink.SearchError
+			suitabilityRaw  json.RawMessage
+			suitabilityErr  *ailink.SearchError
+		)
+		if expertEnabled || cfg.Expert.Enabled {
+			expertResult, expertError = runExpert(ctx, cfg, store, name, expertDepth, expertModel, expertPrompt, !noCache)
+		}
 		if phoneticsEnabled {
 			vars := map[string]string{"name": name}
 			if len(locales) > 0 {
@@ -182,31 +192,122 @@ func runCheck(cmd *cobra.Command, args []string) error {
 			}
 			suitabilityRaw, suitabilityErr = runAnalysis(ctx, cfg, store, "name-suitability", name, expertDepth, expertModel, vars, !noCache)
 		}
+
+		batch := summarizeResults(name, results, expertResult, expertError, phoneticsResult, phoneticsError, suitabilityRaw, suitabilityErr)
+		batches = append(batches, batch)
 	}
 
-	formatValue, err := cmd.Flags().GetString("output")
+	format, err := resolveOutputFormat(cmd)
 	if err != nil {
 		return err
 	}
-	format, err := output.ParseFormat(formatValue)
+	outPath, outDir, err := resolveOutputTargets(cmd)
 	if err != nil {
 		return err
 	}
 
-	batch := summarizeResults(name, results, expertResult, expertError, phoneticsResult, phoneticsError, suitabilityRaw, suitabilityErr)
-	formatter := output.NewFormatter(format)
-	rendered, err := formatter.FormatBatch(batch)
+	var rendered string
+	if len(batches) == 1 {
+		rendered, err = output.NewFormatter(format).FormatBatch(batches[0])
+	} else {
+		rendered, err = output.FormatBatchList(format, batches)
+	}
 	if err != nil {
 		return err
 	}
-	if rendered != "" {
-		fmt.Println(rendered)
+
+	ext := outputExtension(format)
+	if outDir != "" {
+		outDir, err := ensureOutDir(outDir)
+		if err != nil {
+			return err
+		}
+
+		indexRendered := rendered
+		if len(batches) == 1 {
+			indexRendered, err = output.FormatBatchList(format, batches)
+			if err != nil {
+				return err
+			}
+		}
+
+		indexPath := filepath.Join(outDir, fmt.Sprintf("check.index.%s", ext))
+		indexSink, err := openSink(indexPath)
+		if err != nil {
+			return err
+		}
+		if _, err := fmt.Fprint(indexSink.writer, indexRendered); err != nil {
+			_ = indexSink.close()
+			return err
+		}
+		if err := indexSink.close(); err != nil {
+			return err
+		}
+
+		formatter := output.NewFormatter(format)
+		for _, batch := range batches {
+			if batch == nil {
+				continue
+			}
+			fileName := sanitizeFilename(batch.Name)
+			path := filepath.Join(outDir, fmt.Sprintf("%s.check.%s", fileName, ext))
+			sink, err := openSink(path)
+			if err != nil {
+				return err
+			}
+
+			var content string
+			if format == output.FormatJSON {
+				payload, err := json.MarshalIndent(batch, "", "  ")
+				if err != nil {
+					_ = sink.close()
+					return err
+				}
+				content = string(payload)
+			} else {
+				content, err = formatter.FormatBatch(batch)
+				if err != nil {
+					_ = sink.close()
+					return err
+				}
+			}
+
+			if strings.TrimSpace(content) != "" {
+				if _, err := fmt.Fprint(sink.writer, content); err != nil {
+					_ = sink.close()
+					return err
+				}
+			}
+			if err := sink.close(); err != nil {
+				return err
+			}
+		}
+	} else {
+		sink, err := openSink(outPath)
+		if err != nil {
+			return err
+		}
+		if strings.TrimSpace(rendered) != "" {
+			if _, err := fmt.Fprint(sink.writer, rendered); err != nil {
+				_ = sink.close()
+				return err
+			}
+		}
+		if err := sink.close(); err != nil {
+			return err
+		}
+		if format != output.FormatJSON && (outPath == "" || outPath == "-") {
+			totalCount := 0
+			for _, batch := range batches {
+				if batch == nil {
+					continue
+				}
+				totalCount += batch.Total
+			}
+			logThroughput(totalCount, startedAt)
+		}
 	}
 
-	if format != output.FormatJSON {
-		totalCount := batch.Total
-		logThroughput(totalCount, startedAt)
-	}
 	return nil
 }
 

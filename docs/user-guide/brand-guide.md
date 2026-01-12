@@ -92,7 +92,7 @@ core-product-integration
 EOF
 
 # Batch audit
-namelens batch portfolio.txt --output=json > portfolio-audit.json
+namelens batch portfolio.txt --output-format=json --out portfolio-audit.json
 ```
 
 Use the JSON output to:

@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -234,10 +234,10 @@ type reviewAnalysis struct {
 }
 
 var reviewCmd = &cobra.Command{
-	Use:   "review <name>",
+	Use:   "review [<name>...]",
 	Short: "Run a stitched name review workflow",
 	Long:  "Review runs availability checks plus a mode-selected set of AILink analysis prompts.",
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.ArbitraryArgs,
 	RunE:  runReview,
 }
 
@@ -247,15 +247,22 @@ func init() {
 	reviewCmd.Flags().String("profile", "startup", "Availability profile to use")
 	reviewCmd.Flags().String("mode", "core", "Review mode: core, brand, full")
 	reviewCmd.Flags().String("depth", "quick", "Analysis depth: quick, deep")
-	reviewCmd.Flags().String("output", "table", "Output format: table, json, markdown")
+	reviewCmd.Flags().String("names-file", "", "Read names from file (one per line) or '-' for stdin")
+	reviewCmd.Flags().String("output-format", "table", "Output format: table, json, markdown")
+	reviewCmd.Flags().String("out", "", "Write output to a file (default stdout)")
+	reviewCmd.Flags().String("out-dir", "", "Write per-name outputs to a directory")
 	reviewCmd.Flags().String("include-raw", string(includeRawOnFail), "Include raw analysis output: never, on-failure, always")
 	reviewCmd.Flags().Bool("strict", false, "Return non-zero if any analysis fails")
 	reviewCmd.Flags().Bool("no-cache", false, "Skip cache lookup")
 }
 
 func runReview(cmd *cobra.Command, args []string) error {
-	name := strings.ToLower(strings.TrimSpace(args[0]))
-	if err := validateName(name); err != nil {
+	namesFile, err := cmd.Flags().GetString("names-file")
+	if err != nil {
+		return err
+	}
+	names, err := resolveNames(args, namesFile)
+	if err != nil {
 		return err
 	}
 
@@ -268,10 +275,6 @@ func runReview(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	depth, err := cmd.Flags().GetString("depth")
-	if err != nil {
-		return err
-	}
-	formatValue, err := cmd.Flags().GetString("output")
 	if err != nil {
 		return err
 	}
@@ -288,7 +291,11 @@ func runReview(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	format, err := output.ParseFormat(formatValue)
+	format, err := resolveOutputFormat(cmd)
+	if err != nil {
+		return err
+	}
+	outPath, outDir, err := resolveOutputTargets(cmd)
 	if err != nil {
 		return err
 	}
@@ -321,10 +328,6 @@ func runReview(cmd *cobra.Command, args []string) error {
 	}
 
 	orchestrator := buildOrchestrator(cfg, store, !noCache)
-	results, err := orchestrator.Check(ctx, name, profile)
-	if err != nil {
-		return err
-	}
 
 	registry, err := buildPromptRegistry(cfg)
 	if err != nil {
@@ -336,127 +339,225 @@ func runReview(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	analyses := make(map[string]reviewAnalysis, len(promptSlugs))
+	type reviewItem struct {
+		result   *reviewResult
+		batch    *core.BatchResult
+		failed   int
+		analyses map[string]reviewAnalysis
+	}
 
-	var (
-		expertResult    *ailink.SearchResponse
-		expertError     *ailink.SearchError
-		phoneticsResult json.RawMessage
-		phoneticsError  *ailink.SearchError
-		suitabilityRaw  json.RawMessage
-		suitabilityErr  *ailink.SearchError
-	)
+	items := make([]reviewItem, 0, len(names))
+	failedTotal := 0
 
-	for _, slug := range promptSlugs {
-		switch slug {
-		case "name-availability":
-			var raw json.RawMessage
-			expertResult, expertError, raw = runReviewSearch(ctx, cfg, store, name, depth, "", slug, !noCache)
+	for _, name := range names {
+		results, err := orchestrator.Check(ctx, name, profile)
+		if err != nil {
+			return err
+		}
 
-			a := reviewAnalysis{OK: expertError == nil}
-			if expertError != nil {
-				a.Error = expertError
+		analyses := make(map[string]reviewAnalysis, len(promptSlugs))
+
+		var (
+			expertResult    *ailink.SearchResponse
+			expertError     *ailink.SearchError
+			phoneticsResult json.RawMessage
+			phoneticsError  *ailink.SearchError
+			suitabilityRaw  json.RawMessage
+			suitabilityErr  *ailink.SearchError
+		)
+
+		for _, slug := range promptSlugs {
+			switch slug {
+			case "name-availability":
+				var raw json.RawMessage
+				expertResult, expertError, raw = runReviewSearch(ctx, cfg, store, name, depth, "", slug, !noCache)
+
+				a := reviewAnalysis{OK: expertError == nil}
+				if expertError != nil {
+					a.Error = expertError
+				}
+				if expertResult != nil {
+					payload, _ := json.Marshal(expertResult)
+					a.Data = json.RawMessage(payload)
+				}
+				if len(raw) > 0 {
+					if rawMode == includeRawAlways || (rawMode == includeRawOnFail && expertError != nil) {
+						a.Raw = raw
+					}
+				}
+				analyses[slug] = a
+			case "name-phonetics":
+				vars := map[string]string{"name": name}
+				phoneticsResult, phoneticsError, raw := runReviewGenerate(ctx, cfg, store, slug, name, depth, "", vars, !noCache)
+				analyses[slug] = analysisFromGenerate(phoneticsResult, phoneticsError, raw, rawMode)
+			case "name-suitability":
+				vars := map[string]string{"name": name}
+				suitabilityRaw, suitabilityErr, raw := runReviewGenerate(ctx, cfg, store, slug, name, depth, "", vars, !noCache)
+				analyses[slug] = analysisFromGenerate(suitabilityRaw, suitabilityErr, raw, rawMode)
+			default:
+				vars := map[string]string{"name": name}
+				data, errInfo, raw := runReviewGenerate(ctx, cfg, store, slug, name, depth, "", vars, !noCache)
+				analyses[slug] = analysisFromGenerate(data, errInfo, raw, rawMode)
 			}
-			if expertResult != nil {
-				payload, _ := json.Marshal(expertResult)
-				a.Data = json.RawMessage(payload)
+		}
+
+		batch := summarizeResults(name, results, expertResult, expertError, phoneticsResult, phoneticsError, suitabilityRaw, suitabilityErr)
+
+		availability := reviewAvailability{
+			Results:     batch.Results,
+			Score:       batch.Score,
+			Total:       batch.Total,
+			Unknown:     batch.Unknown,
+			CompletedAt: batch.CompletedAt,
+		}
+
+		review := &reviewResult{
+			Name:         name,
+			Profile:      profileName,
+			Mode:         strings.ToLower(strings.TrimSpace(mode)),
+			Depth:        strings.ToLower(strings.TrimSpace(depth)),
+			StartedAt:    startedAt.UTC(),
+			CompletedAt:  time.Now().UTC(),
+			Availability: availability,
+			Analyses:     analyses,
+		}
+
+		failed := analysisFailures(analyses)
+		failedTotal += failed
+		items = append(items, reviewItem{result: review, batch: batch, failed: failed, analyses: analyses})
+	}
+
+	ext := outputExtension(format)
+
+	renderOne := func(w io.Writer, item reviewItem) error {
+		if w == nil || item.result == nil {
+			return nil
+		}
+
+		switch format {
+		case output.FormatJSON:
+			payload, err := json.MarshalIndent(item.result, "", "  ")
+			if err != nil {
+				return err
 			}
-			if len(raw) > 0 {
-				if rawMode == includeRawAlways || (rawMode == includeRawOnFail && expertError != nil) {
-					a.Raw = raw
+			_, err = fmt.Fprint(w, string(payload))
+			return err
+		case output.FormatMarkdown:
+			rendered, err := output.NewFormatter(output.FormatMarkdown).FormatBatch(item.batch)
+			if err != nil {
+				return err
+			}
+			if len(names) > 1 {
+				_, _ = fmt.Fprintf(w, "\n## %s\n\n", item.result.Name)
+			}
+			if rendered != "" {
+				if _, err := fmt.Fprintln(w, rendered); err != nil {
+					return err
 				}
 			}
-			analyses[slug] = a
-		case "name-phonetics":
-			vars := map[string]string{"name": name}
-			phoneticsResult, phoneticsError, raw := runReviewGenerate(ctx, cfg, store, slug, name, depth, "", vars, !noCache)
-			analyses[slug] = analysisFromGenerate(phoneticsResult, phoneticsError, raw, rawMode)
-		case "name-suitability":
-			vars := map[string]string{"name": name}
-			suitabilityRaw, suitabilityErr, raw := runReviewGenerate(ctx, cfg, store, slug, name, depth, "", vars, !noCache)
-			analyses[slug] = analysisFromGenerate(suitabilityRaw, suitabilityErr, raw, rawMode)
+			renderReviewExtrasMarkdown(w, item.analyses, []string{"name-availability", "name-phonetics", "name-suitability"})
+			return nil
 		default:
-			vars := map[string]string{"name": name}
-			data, errInfo, raw := runReviewGenerate(ctx, cfg, store, slug, name, depth, "", vars, !noCache)
-			analyses[slug] = analysisFromGenerate(data, errInfo, raw, rawMode)
+			if len(names) > 1 {
+				_, _ = fmt.Fprint(w, ascii.DrawBox(item.result.Name, 0))
+				_, _ = fmt.Fprintln(w)
+			}
+			rendered, err := output.NewFormatter(output.FormatTable).FormatBatch(item.batch)
+			if err != nil {
+				return err
+			}
+			if strings.TrimSpace(rendered) != "" {
+				if _, err := fmt.Fprintln(w, rendered); err != nil {
+					return err
+				}
+			}
+			renderReviewExtrasTable(w, item.analyses, []string{"name-availability", "name-phonetics", "name-suitability"})
+			return nil
 		}
 	}
 
-	batch := summarizeResults(name, results, expertResult, expertError, phoneticsResult, phoneticsError, suitabilityRaw, suitabilityErr)
-
-	availability := reviewAvailability{
-		Results:     batch.Results,
-		Score:       batch.Score,
-		Total:       batch.Total,
-		Unknown:     batch.Unknown,
-		CompletedAt: batch.CompletedAt,
-	}
-
-	review := &reviewResult{
-		Name:         name,
-		Profile:      profileName,
-		Mode:         strings.ToLower(strings.TrimSpace(mode)),
-		Depth:        strings.ToLower(strings.TrimSpace(depth)),
-		StartedAt:    startedAt.UTC(),
-		CompletedAt:  time.Now().UTC(),
-		Availability: availability,
-		Analyses:     analyses,
-	}
-
-	failed := analysisFailures(analyses)
-	if strict && failed > 0 {
-		// Still render output first.
-		defer func() {
-			_ = failed
-		}()
-	}
-
-	switch format {
-	case output.FormatJSON:
-		payload, err := json.MarshalIndent(review, "", "  ")
-		if err != nil {
+	renderAll := func(w io.Writer) error {
+		if format == output.FormatJSON {
+			if len(items) == 1 {
+				return renderOne(w, items[0])
+			}
+			results := make([]*reviewResult, 0, len(items))
+			for _, item := range items {
+				results = append(results, item.result)
+			}
+			payload, err := json.MarshalIndent(results, "", "  ")
+			if err != nil {
+				return err
+			}
+			_, err = fmt.Fprint(w, string(payload))
 			return err
 		}
-		_, err = fmt.Fprintln(os.Stdout, string(payload))
-		if err != nil {
-			return err
-		}
-		if strict && failed > 0 {
-			return fmt.Errorf("review failed (%d analyses)", failed)
-		}
-		return nil
-	case output.FormatMarkdown:
-		rendered, err := output.NewFormatter(output.FormatMarkdown).FormatBatch(batch)
-		if err != nil {
-			return err
-		}
-		if rendered != "" {
-			if _, err := fmt.Fprintln(os.Stdout, rendered); err != nil {
+
+		first := true
+		for _, item := range items {
+			if !first {
+				_, _ = fmt.Fprintln(w)
+			}
+			first = false
+			if err := renderOne(w, item); err != nil {
 				return err
 			}
 		}
-		renderReviewExtrasMarkdown(os.Stdout, analyses, []string{"name-availability", "name-phonetics", "name-suitability"})
-		if strict && failed > 0 {
-			return fmt.Errorf("review failed (%d analyses)", failed)
-		}
 		return nil
-	default:
-		// Table
-		rendered, err := output.NewFormatter(output.FormatTable).FormatBatch(batch)
+	}
+
+	if outDir != "" {
+		outDir, err := ensureOutDir(outDir)
 		if err != nil {
 			return err
 		}
-		if strings.TrimSpace(rendered) != "" {
-			if _, err := fmt.Fprintln(os.Stdout, rendered); err != nil {
+
+		indexPath := filepath.Join(outDir, fmt.Sprintf("review.index.%s", ext))
+		indexSink, err := openSink(indexPath)
+		if err != nil {
+			return err
+		}
+		if err := renderAll(indexSink.writer); err != nil {
+			_ = indexSink.close()
+			return err
+		}
+		if err := indexSink.close(); err != nil {
+			return err
+		}
+
+		for _, item := range items {
+			fileName := sanitizeFilename(item.result.Name)
+			path := filepath.Join(outDir, fmt.Sprintf("%s.review.%s", fileName, ext))
+			sink, err := openSink(path)
+			if err != nil {
+				return err
+			}
+			if err := renderOne(sink.writer, item); err != nil {
+				_ = sink.close()
+				return err
+			}
+			if err := sink.close(); err != nil {
 				return err
 			}
 		}
-		renderReviewExtrasTable(os.Stdout, analyses, []string{"name-availability", "name-phonetics", "name-suitability"})
-		if strict && failed > 0 {
-			return fmt.Errorf("review failed (%d analyses)", failed)
+	} else {
+		sink, err := openSink(outPath)
+		if err != nil {
+			return err
 		}
-		return nil
+		if err := renderAll(sink.writer); err != nil {
+			_ = sink.close()
+			return err
+		}
+		if err := sink.close(); err != nil {
+			return err
+		}
 	}
+
+	if strict && failedTotal > 0 {
+		return fmt.Errorf("review failed (%d analyses)", failedTotal)
+	}
+	return nil
 }
 
 func parseIncludeRaw(value string) (includeRawMode, error) {

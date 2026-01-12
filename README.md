@@ -99,7 +99,7 @@ namelens check <name> --expert
 
 # Batch check from file
 namelens batch names.txt
-namelens batch names.txt --output=json
+namelens batch names.txt --output-format=json
 
 # Profile management
 namelens profile list
@@ -118,7 +118,7 @@ namelens health
 namelens doctor
 namelens doctor ailink name-availability
 namelens doctor ailink connectivity name-availability
-namelens doctor ailink connectivity name-availability --output=json
+namelens doctor ailink connectivity name-availability --output-format=json
 ```
 
 ## Profiles
