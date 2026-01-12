@@ -171,14 +171,44 @@ func configureLocalSQLite(ctx context.Context, db *sql.DB, dsn string, cfg confi
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	var journalMode string
-	if err := db.QueryRowContext(ctx, "PRAGMA journal_mode=WAL").Scan(&journalMode); err != nil {
-		return fmt.Errorf("enable WAL mode: %w", err)
-	}
-
 	var busyTimeout int
 	if err := db.QueryRowContext(ctx, "PRAGMA busy_timeout=5000").Scan(&busyTimeout); err != nil {
 		return fmt.Errorf("set busy timeout: %w", err)
+	}
+
+	var journalMode string
+	if err := db.QueryRowContext(ctx, "PRAGMA journal_mode").Scan(&journalMode); err != nil {
+		return fmt.Errorf("read journal mode: %w", err)
+	}
+	if strings.Contains(strings.ToLower(journalMode), "wal") {
+		return nil
+	}
+
+	for attempt := 0; ; attempt++ {
+		err := db.QueryRowContext(ctx, "PRAGMA journal_mode=WAL").Scan(&journalMode)
+		if err == nil {
+			break
+		}
+
+		message := strings.ToLower(err.Error())
+		locked := strings.Contains(message, "database is locked")
+		if !locked {
+			return fmt.Errorf("enable WAL mode: %w", err)
+		}
+		if ctx.Err() != nil {
+			// Best-effort: if another process has the DB, don't fail the CLI.
+			return nil
+		}
+
+		// Back off briefly and retry within the 5s window.
+		sleep := 50 * time.Millisecond
+		switch {
+		case attempt >= 5:
+			sleep = 500 * time.Millisecond
+		case attempt >= 2:
+			sleep = 200 * time.Millisecond
+		}
+		time.Sleep(sleep)
 	}
 
 	return nil
