@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,11 +13,14 @@ import (
 
 	"github.com/fulmenhq/gofulmen/ascii"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 
 	"github.com/namelens/namelens/internal/ailink"
 	"github.com/namelens/namelens/internal/ailink/prompt"
 	"github.com/namelens/namelens/internal/config"
 	"github.com/namelens/namelens/internal/core"
+	corestore "github.com/namelens/namelens/internal/core/store"
+	"github.com/namelens/namelens/internal/observability"
 	"github.com/namelens/namelens/internal/output"
 )
 
@@ -27,6 +31,181 @@ const (
 	includeRawOnFail includeRawMode = "on-failure"
 	includeRawAlways includeRawMode = "always"
 )
+
+func rawFromAILinkError(err error) json.RawMessage {
+	var rawErr *ailink.RawResponseError
+	if errors.As(err, &rawErr) && rawErr != nil && len(rawErr.Raw) > 0 {
+		return rawErr.Raw
+	}
+	return nil
+}
+
+func runReviewSearch(ctx context.Context, cfg *config.Config, store *corestore.Store, name, depth, modelOverride, promptSlug string, useCache bool) (*ailink.SearchResponse, *ailink.SearchError, json.RawMessage) {
+	if cfg == nil {
+		return nil, &ailink.SearchError{Code: "AILINK_DISABLED", Message: "config not loaded"}, nil
+	}
+
+	promptSlug = strings.TrimSpace(promptSlug)
+	if promptSlug == "" {
+		promptSlug = "name-availability"
+	}
+
+	depth = strings.ToLower(strings.TrimSpace(depth))
+	if depth == "" {
+		depth = "quick"
+	}
+
+	registry, err := buildPromptRegistry(cfg)
+	if err != nil {
+		return nil, &ailink.SearchError{Code: "AILINK_API_ERROR", Message: "failed to load prompts", Details: err.Error()}, nil
+	}
+	promptDef, err := registry.Get(promptSlug)
+	if err != nil {
+		return nil, &ailink.SearchError{Code: "AILINK_PROMPT_NOT_FOUND", Message: err.Error()}, nil
+	}
+
+	providers := ailink.NewRegistry(cfg.AILink)
+	role := strings.TrimSpace(cfg.Expert.Role)
+	if role == "" {
+		role = promptSlug
+	}
+
+	resolved, err := providers.Resolve(role, promptDef, modelOverride)
+	if err != nil {
+		return nil, &ailink.SearchError{Code: "AILINK_API_ERROR", Message: "failed to resolve provider", Details: err.Error()}, nil
+	}
+	if strings.TrimSpace(resolved.Credential.APIKey) == "" {
+		return nil, &ailink.SearchError{Code: "AILINK_NO_API_KEY", Message: "provider api key not configured", Details: resolved.ProviderID}, nil
+	}
+
+	cacheTTL := cfg.AILink.CacheTTL
+	if useCache && store != nil && cacheTTL > 0 {
+		entry, err := store.GetExpertCache(ctx, name, promptSlug, resolved.Model, resolved.BaseURL, depth)
+		if err != nil {
+			observability.CLILogger.Warn("Expert cache lookup failed", zap.Error(err))
+		} else if entry != nil {
+			response, err := decodeCachedExpert(entry.ResponseJSON)
+			if err == nil {
+				return response, nil, response.Raw
+			}
+			observability.CLILogger.Warn("Expert cache decode failed", zap.Error(err))
+		}
+	}
+
+	catalog, err := buildSchemaCatalog()
+	if err != nil {
+		return nil, &ailink.SearchError{Code: "AILINK_API_ERROR", Message: "failed to load schemas", Details: err.Error()}, nil
+	}
+
+	svc := &ailink.Service{Providers: providers, Registry: registry, Catalog: catalog}
+	response, err := svc.Search(ctx, ailink.SearchRequest{Role: role, Name: name, PromptSlug: promptSlug, Depth: depth, Model: modelOverride, UseTools: true})
+	if err != nil {
+		return nil, mapExpertError(err), rawFromAILinkError(err)
+	}
+
+	raw := json.RawMessage(response.Raw)
+	if strings.TrimSpace(string(raw)) == "" {
+		payload, err := json.Marshal(response)
+		if err == nil {
+			raw = payload
+		}
+	}
+
+	if useCache && store != nil && cacheTTL > 0 {
+		encoded := strings.TrimSpace(string(raw))
+		if encoded != "" {
+			if err := store.SetExpertCache(ctx, name, promptSlug, resolved.Model, resolved.BaseURL, depth, encoded, cacheTTL); err != nil {
+				observability.CLILogger.Warn("Expert cache write failed", zap.Error(err))
+			}
+		}
+	}
+
+	response.Raw = append(response.Raw[:0], raw...)
+	return response, nil, raw
+}
+
+func runReviewGenerate(ctx context.Context, cfg *config.Config, store *corestore.Store, promptSlug, name, depth, modelOverride string, variables map[string]string, useCache bool) (json.RawMessage, *ailink.SearchError, json.RawMessage) {
+	if cfg == nil {
+		return nil, &ailink.SearchError{Code: "AILINK_DISABLED", Message: "config not loaded"}, nil
+	}
+
+	promptSlug = strings.TrimSpace(promptSlug)
+	if promptSlug == "" {
+		return nil, &ailink.SearchError{Code: "AILINK_PROMPT_NOT_FOUND", Message: "prompt slug is required"}, nil
+	}
+
+	depth = strings.ToLower(strings.TrimSpace(depth))
+	if depth == "" {
+		depth = "quick"
+	}
+
+	cleaned := make(map[string]string, len(variables)+1)
+	for key, value := range variables {
+		trimmed := strings.TrimSpace(value)
+		if trimmed == "" {
+			continue
+		}
+		cleaned[key] = trimmed
+	}
+	if strings.TrimSpace(name) != "" {
+		cleaned["name"] = strings.TrimSpace(name)
+	}
+
+	registry, err := buildPromptRegistry(cfg)
+	if err != nil {
+		return nil, &ailink.SearchError{Code: "AILINK_API_ERROR", Message: "failed to load prompts", Details: err.Error()}, nil
+	}
+	promptDef, err := registry.Get(promptSlug)
+	if err != nil {
+		return nil, &ailink.SearchError{Code: "AILINK_PROMPT_NOT_FOUND", Message: err.Error()}, nil
+	}
+
+	providers := ailink.NewRegistry(cfg.AILink)
+	role := promptSlug
+
+	resolved, err := providers.Resolve(role, promptDef, modelOverride)
+	if err != nil {
+		return nil, &ailink.SearchError{Code: "AILINK_API_ERROR", Message: "failed to resolve provider", Details: err.Error()}, nil
+	}
+	if strings.TrimSpace(resolved.Credential.APIKey) == "" {
+		return nil, &ailink.SearchError{Code: "AILINK_NO_API_KEY", Message: "provider api key not configured", Details: resolved.ProviderID}, nil
+	}
+
+	cacheTTL := cfg.AILink.CacheTTL
+	cacheSlug := analysisCacheKey(promptSlug, cleaned)
+	if useCache && store != nil && cacheTTL > 0 {
+		entry, err := store.GetExpertCache(ctx, name, cacheSlug, resolved.Model, resolved.BaseURL, depth)
+		if err != nil {
+			observability.CLILogger.Warn("Expert cache lookup failed", zap.Error(err))
+		} else if entry != nil {
+			raw := json.RawMessage(entry.ResponseJSON)
+			return raw, nil, raw
+		}
+	}
+
+	catalog, err := buildSchemaCatalog()
+	if err != nil {
+		return nil, &ailink.SearchError{Code: "AILINK_API_ERROR", Message: "failed to load schemas", Details: err.Error()}, nil
+	}
+
+	svc := &ailink.Service{Providers: providers, Registry: registry, Catalog: catalog}
+	response, err := svc.Generate(ctx, ailink.GenerateRequest{Role: role, PromptSlug: promptSlug, Variables: cleaned, Depth: depth, Model: modelOverride, UseTools: true})
+	if err != nil {
+		return nil, mapExpertError(err), rawFromAILinkError(err)
+	}
+
+	raw := response.Raw
+	if useCache && store != nil && cacheTTL > 0 {
+		encoded := strings.TrimSpace(string(raw))
+		if encoded != "" {
+			if err := store.SetExpertCache(ctx, name, cacheSlug, resolved.Model, resolved.BaseURL, depth, encoded, cacheTTL); err != nil {
+				observability.CLILogger.Warn("Expert cache write failed", zap.Error(err))
+			}
+		}
+	}
+
+	return raw, nil, raw
+}
 
 type reviewResult struct {
 	Name         string                    `json:"name"`
@@ -171,7 +350,9 @@ func runReview(cmd *cobra.Command, args []string) error {
 	for _, slug := range promptSlugs {
 		switch slug {
 		case "name-availability":
-			expertResult, expertError = runExpert(ctx, cfg, store, name, depth, "", slug, !noCache)
+			var raw json.RawMessage
+			expertResult, expertError, raw = runReviewSearch(ctx, cfg, store, name, depth, "", slug, !noCache)
+
 			a := reviewAnalysis{OK: expertError == nil}
 			if expertError != nil {
 				a.Error = expertError
@@ -179,23 +360,25 @@ func runReview(cmd *cobra.Command, args []string) error {
 			if expertResult != nil {
 				payload, _ := json.Marshal(expertResult)
 				a.Data = json.RawMessage(payload)
-				if rawMode == includeRawAlways {
-					a.Raw = expertResult.Raw
+			}
+			if len(raw) > 0 {
+				if rawMode == includeRawAlways || (rawMode == includeRawOnFail && expertError != nil) {
+					a.Raw = raw
 				}
 			}
 			analyses[slug] = a
 		case "name-phonetics":
 			vars := map[string]string{"name": name}
-			phoneticsResult, phoneticsError = runAnalysis(ctx, cfg, store, slug, name, depth, "", vars, !noCache)
-			analyses[slug] = analysisFromGenerate(phoneticsResult, phoneticsError, rawMode)
+			phoneticsResult, phoneticsError, raw := runReviewGenerate(ctx, cfg, store, slug, name, depth, "", vars, !noCache)
+			analyses[slug] = analysisFromGenerate(phoneticsResult, phoneticsError, raw, rawMode)
 		case "name-suitability":
 			vars := map[string]string{"name": name}
-			suitabilityRaw, suitabilityErr = runAnalysis(ctx, cfg, store, slug, name, depth, "", vars, !noCache)
-			analyses[slug] = analysisFromGenerate(suitabilityRaw, suitabilityErr, rawMode)
+			suitabilityRaw, suitabilityErr, raw := runReviewGenerate(ctx, cfg, store, slug, name, depth, "", vars, !noCache)
+			analyses[slug] = analysisFromGenerate(suitabilityRaw, suitabilityErr, raw, rawMode)
 		default:
 			vars := map[string]string{"name": name}
-			data, errInfo := runAnalysis(ctx, cfg, store, slug, name, depth, "", vars, !noCache)
-			analyses[slug] = analysisFromGenerate(data, errInfo, rawMode)
+			data, errInfo, raw := runReviewGenerate(ctx, cfg, store, slug, name, depth, "", vars, !noCache)
+			analyses[slug] = analysisFromGenerate(data, errInfo, raw, rawMode)
 		}
 	}
 
@@ -294,7 +477,6 @@ func reviewPromptSet(mode string, registry interface {
 	List() []*prompt.Prompt
 	Get(string) (*prompt.Prompt, error)
 }) ([]string, error) {
-	_ = registry
 	mode = strings.ToLower(strings.TrimSpace(mode))
 	if mode == "" {
 		mode = "core"
@@ -307,7 +489,11 @@ func reviewPromptSet(mode string, registry interface {
 	case "core":
 		return core, nil
 	case "brand":
-		return append(core, "brand-proposal", "brand-plan"), nil
+		set := append(core, "brand-proposal")
+		if _, err := registry.Get("brand-plan"); err == nil {
+			set = append(set, "brand-plan")
+		}
+		return set, nil
 	case "full":
 		// Best-effort: include prompts that only require `name`.
 		prompts := registry.List()
@@ -348,15 +534,20 @@ func promptSupportsNameOnly(p *prompt.Prompt) bool {
 	return true
 }
 
-func analysisFromGenerate(data json.RawMessage, errInfo *ailink.SearchError, rawMode includeRawMode) reviewAnalysis {
+func analysisFromGenerate(data json.RawMessage, errInfo *ailink.SearchError, raw json.RawMessage, rawMode includeRawMode) reviewAnalysis {
 	a := reviewAnalysis{OK: errInfo == nil}
 	if errInfo != nil {
 		a.Error = errInfo
+		if len(raw) > 0 {
+			if rawMode == includeRawAlways || rawMode == includeRawOnFail {
+				a.Raw = raw
+			}
+		}
 		return a
 	}
 	a.Data = data
-	if rawMode == includeRawAlways {
-		a.Raw = data
+	if len(raw) > 0 && rawMode == includeRawAlways {
+		a.Raw = raw
 	}
 	return a
 }

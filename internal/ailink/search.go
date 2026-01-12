@@ -112,10 +112,14 @@ func (s *Service) Search(ctx context.Context, req SearchRequest) (*SearchRespons
 	}
 
 	if err := s.validateResponse(promptDef, []byte(raw)); err != nil {
-		return nil, err
+		return nil, &RawResponseError{Err: err, Raw: json.RawMessage(raw)}
 	}
 
-	return decodeSearchResponse([]byte(raw))
+	parsed, err := decodeSearchResponse([]byte(raw))
+	if err != nil {
+		return nil, &RawResponseError{Err: err, Raw: json.RawMessage(raw)}
+	}
+	return parsed, nil
 }
 
 // Generate runs a generation prompt with arbitrary variables.
@@ -209,7 +213,7 @@ func (s *Service) Generate(ctx context.Context, req GenerateRequest) (*GenerateR
 	}
 
 	if err := s.validateResponse(promptDef, []byte(raw)); err != nil {
-		return nil, err
+		return nil, &RawResponseError{Err: err, Raw: json.RawMessage(raw)}
 	}
 
 	return &GenerateResponse{Raw: json.RawMessage(raw)}, nil
