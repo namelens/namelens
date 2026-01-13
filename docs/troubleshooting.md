@@ -17,10 +17,12 @@ Sections are grouped by subsystem (domains, output/files, expert backend, config
 # Confirm Google's RDAP endpoint is reachable
 curl -sSI "https://pubapi.registry.google/rdap/domain/example.dev" | head
 
-# If a check fails, inspect which server was attempted
+# If a check fails, inspect which server was used (authoritative vs fallback)
 namelens check example --tlds=dev --output-format=json --no-cache | \
   jq '.results[] | select(.check_type=="domain") | {name:.name, server:.provenance.server, msg:.message}'
 ```
+
+**Note:** error text like "tried 1 server(s)" may come from the underlying RDAP client per-attempt; prefer `provenance.server` to see what was actually attempted/used.
 
 **Root Causes:**
 
@@ -35,6 +37,12 @@ namelens check example --tlds=dev --output-format=json --no-cache | \
    ```bash
    # Test if you can reach Google's RDAP API directly
    curl -s "https://pubapi.registry.google/rdap/domain/example.app"
+   ```
+
+2. **Understand fallback behavior (not a bug):**
+   `www.rdap.net` is a redirect proxy used as a fallback.
+   ```bash
+   curl -sSI "https://www.rdap.net/rdap/domain/example.dev" | head
    ```
 
 2. **Check firewall rules:** Verify outbound HTTPS (port 443) to Google Registry is allowed
@@ -96,6 +104,12 @@ nslookup www.rdap.net
 ### Cache Issues
 
 #### Cache Returning Stale Data
+
+**Not a bug:** cache metadata is nested under `provenance` in JSON output.
+```bash
+namelens check myname --output-format=json | \
+  jq '.results[] | {name, from_cache: .provenance.from_cache, server: .provenance.server}'
+```
 
 **Symptom:** Results show `from_cache: true` but contain old information (expired domains, wrong status).
 

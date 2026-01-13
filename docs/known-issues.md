@@ -22,8 +22,10 @@ Updated RDAP override configuration in `internal/core/checker/domain.go` to use 
 
 This ensures:
 1. Queries succeed in most network environments
-2. Provenance tracking shows the correct server URL
+2. Provenance tracking shows the actual server URL used
 3. Cache backfill preserves the actual responding server
+
+**Not a bug:** `www.rdap.net` is a redirect proxy. In some environments you may see `provenance.server` use `https://www.rdap.net/rdap/...` if the canonical endpoint is blocked or unavailable.
 
 **Verification:**
 
@@ -45,7 +47,9 @@ namelens check namelens --tlds=app,dev --output-format=json --no-cache
 
 **Solution:**
 
-Updated `GetCachedResult()` in `internal/core/store/cache.go` to populate `provenance.Server` from cached `extra_data["resolution_server"]`:
+Updated `GetCachedResult()` in `internal/core/store/cache.go` to populate `provenance.Server` from cached `extra_data["resolution_server"]`.
+
+**Not a bug:** cache state is reported as `provenance.from_cache` in JSON output; a top-level `from_cache` field will read as null.
 
 - On cache read, check for `resolution_server` in `extra_data`
 - If present, use it to populate `result.Provenance.Server`
