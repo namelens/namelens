@@ -2,22 +2,7 @@
 
 This guide covers common issues, symptoms, and solutions for NameLens usage.
 
-## Table of Contents
-
-- [Domain Availability Issues](#domain-availability-issues)
-  - [RDAP Errors](#rdap-errors)
-  - [DNS Resolution Failures](#dns-resolution-failures)
-  - [Cache Issues](#cache-issues)
-- [Output and File Issues](#output-and-file-issues)
-  - [Output Sinks Not Working](#output-sinks-not-working)
-  - [JSON Parsing Errors](#json-parsing-errors)
-- [Expert Backend Issues](#expert-backend-issues)
-  - [AILink 503 Errors](#ailink-503-errors)
-  - [Missing API Keys](#missing-api-keys)
-- [Configuration Issues](#configuration-issues)
-  - [Profiles Not Loading](#profiles-not-loading)
-  - [Environment Variables](#environment-variables)
-- [Build and Installation](#build-and-installation)
+Sections are grouped by subsystem (domains, output/files, expert backend, configuration, build/install).
 
 ---
 
@@ -25,20 +10,24 @@ This guide covers common issues, symptoms, and solutions for NameLens usage.
 
 ### RDAP Errors
 
-**Symptom:** All `.app` and `.dev` domain checks return `available: 3` (error) with message "No RDAP servers responded successfully (tried 1 server(s))".
+**Symptom:** `.app` / `.dev` domain checks return `available: 3` (error) with message "No RDAP servers responded successfully".
 
 **Diagnosis:**
 ```bash
-# Check RDAP server DNS resolution
-nslookup rdap.nic.google
-# Result: NXDOMAIN (server not found)
+# Confirm Google's RDAP endpoint is reachable
+curl -sSI "https://pubapi.registry.google/rdap/domain/example.dev" | head
+
+# If a check fails, inspect which server was attempted
+namelens check example --tlds=dev --output-format=json --no-cache | \
+  jq '.results[] | select(.check_type=="domain") | {name:.name, server:.provenance.server, msg:.message}'
 ```
 
 **Root Causes:**
 
-1. **Network blocking** — Corporate firewalls or proxies may block outbound HTTPS to `rdap.nic.google`
-2. **DNS filtering** — Some networks filter or block certain RDAP endpoints
+1. **Network blocking** — Firewalls/proxies may block outbound HTTPS to `pubapi.registry.google`
+2. **DNS filtering** — Some networks block Google Registry endpoints
 3. **Server outage** — Google's RDAP service is temporarily unavailable
+
 
 **Solutions:**
 
@@ -66,9 +55,8 @@ nslookup rdap.nic.google
 
 **Diagnosis:**
 ```bash
-# Test DNS resolution
-nslookup rdap.nic.google
-nslookup rdap.google
+# Test DNS resolution (Google Registry + fallback proxy)
+nslookup pubapi.registry.google
 nslookup www.rdap.net
 ```
 
@@ -100,7 +88,7 @@ nslookup www.rdap.net
 3. **Use alternative DNS:** Try using Google DNS (8.8.8.8) or Cloudflare DNS (1.1.1.1)
    ```bash
    # Test with specific DNS server
-   namelens check myname --verbose 2>&1 | grep "rdap"
+   namelens check myname --verbose 2>&1 | head -n 50
    ```
 
 ---
@@ -175,8 +163,11 @@ sqlite3 ~/.config/namelens/namelens.db "PRAGMA integrity_check"
 
 **Diagnosis:**
 ```bash
-# Test with verbose logging
-namelens check myname --out /tmp/result.json --verbose 2>&1 | grep -E "sink|writer|Output"
+# First verify you're running a binary that supports sinks
+namelens check --help | grep -E -- "--out|--out-dir|--output-format"
+
+# Then test basic write permissions
+namelens check myname --out /tmp/result.json --output-format=json
 ```
 
 **Root Causes:**
@@ -271,10 +262,8 @@ namelens check myname --output-format=json | jq 'length'
 **Solutions:**
 
 1. **Wait and retry:** The service is temporarily overloaded; try again in 5-10 minutes
-2. **Disable expert mode:** For domain-only checks, you can skip expert analysis:
+2. **Disable expert mode:** For domain-only checks, disable expert via config/env:
    ```bash
-   namelens check myname --no-expert
-   # Or set environment variable
    NAMELENS_EXPERT_ENABLED=false namelens check myname
    ```
 3. **Check service status:** Monitor https://status.x.ai/ for service availability
@@ -300,10 +289,12 @@ namelens check myname --output-format=json | jq 'length'
 
 **Solutions:**
 
-1. **Check configuration:**
+1. **Check configuration:** confirm which config file is being used, then inspect it:
    ```bash
-   # Check if expert is enabled
-   namelens config show 2>&1 | grep -A 5 "expert"
+   # Prints the config file path when --verbose is enabled
+   namelens check myname --verbose 2>&1 | head -n 5
+
+   # Then inspect the file shown (typically ~/.config/namelens/config.yaml)
    ```
 
 2. **Add API key:**
@@ -311,9 +302,7 @@ namelens check myname --output-format=json | jq 'length'
    # Set via environment variable (for xAI/Grok)
    NAMELENS_AILINK_PROVIDERS_NAMELENS_XAI_CREDENTIALS_0_API_KEY=your-key-here
    
-   # Or configure in config file
-   namelens config edit
-   # Follow prompts to add provider credentials
+   # Or configure in your config file (typically ~/.config/namelens/config.yaml)
    ```
 
 3. **Verify key is set:**
@@ -349,10 +338,10 @@ namelens profile show startup
 
 1. **Check config location:**
    ```bash
-   # Find config file
-   namelens config show | grep "config file"
-   
-   # Check expected location
+   # Prints the config file path when --verbose is enabled
+   namelens check myname --verbose 2>&1 | head -n 5
+
+   # Typical location
    ls -la ~/.config/namelens/config.yaml
    ```
 
@@ -368,7 +357,7 @@ namelens profile show startup
    namelens profile edit startup
    
    # Or use built-in defaults without profile
-   namelens check myname --tlds com,io,dev
+   namelens check myname --tlds=com,io,dev
    ```
 
 ---
@@ -388,13 +377,13 @@ echo $NAMELENS_EXPERT_ENABLED
 
 **Common Variables:**
 
-| Variable | Purpose | Default |
-| -------- | -------- | -------- |
-| `NAMELENS_CONFIG_PATH` | Custom config file location | `$XDG_CONFIG_HOME/namelens/config.yaml` |
-| `NAMELENS_DB_PATH` | Custom database location | `$XDG_CONFIG_HOME/namelens/namelens.db` |
-| `NAMELENS_EXPERT_ENABLED` | Enable/disable expert mode | `true` |
-| `NAMELENS_AILINK_PROMPTS_DIR` | Custom prompts directory | Embedded prompts |
-| `NAMELENS_LOG_LEVEL` | Logging verbosity | `info` |
+| Variable | Purpose |
+| -------- | ------- |
+| `NAMELENS_CONFIG_PATH` | Custom config file location |
+| `NAMELENS_DB_PATH` | Custom database location |
+| `NAMELENS_EXPERT_ENABLED` | Enable/disable expert mode |
+| `NAMELENS_AILINK_PROMPTS_DIR` | Custom prompts directory |
+| `NAMELENS_LOG_LEVEL` | Logging verbosity |
 
 **Solutions:**
 
@@ -565,11 +554,7 @@ For detailed debugging information, use the `-v` or `--verbose` flag:
 namelens check myname --verbose
 ```
 
-This will output:
-- HTTP request/response details
-- Cache hit/miss information
-- RDAP server selection and fallback attempts
-- Error stack traces (if any)
+This will output additional debug logs (including which config file was loaded). It should be treated as best-effort diagnostic output, not a stable log schema.
 
 ---
 
@@ -609,6 +594,16 @@ This will display:
 - Profile definitions
 
 ---
+
+## Not a Bug (Common Cases)
+
+Some failures are environmental rather than code defects:
+
+- **RDAP endpoint blocked**: corporate proxy/firewall blocks `pubapi.registry.google`.
+- **Provider at capacity**: AILink provider returns 429/503 (e.g. Grok/xAI).
+- **Stale binary**: new flags exist in docs but your installed binary is old.
+
+If you’ve ruled out the above and still see failures, file a bug report.
 
 ## Still Having Issues?
 
