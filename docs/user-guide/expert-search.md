@@ -17,11 +17,14 @@ The `--expert` flag triggers an AI-powered analysis that searches:
 
 ## Direct Provider Interface
 
-Namelens's `--expert` feature uses **direct HTTP connections to AI providers**—no intermediary SDKs, libraries, or third-party services filtering or modifying your requests and responses.
+Namelens's `--expert` feature uses **direct HTTP connections to AI
+providers**—no intermediary SDKs, libraries, or third-party services filtering
+or modifying your requests and responses.
 
 ### What This Means
 
 Traditional AI integrations often use vendor SDKs that:
+
 - Wrap requests in opaque library code
 - Add hidden telemetry or behavior
 - Filter or transform content before/after transmission
@@ -37,36 +40,39 @@ Every byte of your request and the AI's response is visible and auditable.
 
 ### Benefits
 
-| Benefit | Why It Matters |
-| -------- | -------------- |
-| **Full transparency** | See exactly what was sent to and received from the AI provider |
-| **Auditability** | Logs capture complete request/response for compliance and debugging |
-| **No hidden telemetry** | No SDK sending usage data you didn't authorize |
-| **Portability** | Easy to switch providers or extract AILink to other projects |
-| **Control** | Fine-grained timeouts, retries, and error handling are yours to manage |
-| **Security** | No unvetted code in the request/response pipeline |
+| Benefit                 | Why It Matters                                                         |
+| ----------------------- | ---------------------------------------------------------------------- |
+| **Full transparency**   | See exactly what was sent to and received from the AI provider         |
+| **Auditability**        | Logs capture complete request/response for compliance and debugging    |
+| **No hidden telemetry** | No SDK sending usage data you didn't authorize                         |
+| **Portability**         | Easy to switch providers or extract AILink to other projects           |
+| **Control**             | Fine-grained timeouts, retries, and error handling are yours to manage |
+| **Security**            | No unvetted code in the request/response pipeline                      |
 
 ### Architecture
 
 Namelens uses **AILink**, an internal AI connector system that:
 
-1. **Accepts prompt configurations** from embedded defaults or user-provided directories
-2. **Constructs HTTP requests** directly to provider APIs (e.g., `https://api.x.ai/v1`)
+1. **Accepts prompt configurations** from embedded defaults or user-provided
+   directories
+2. **Constructs HTTP requests** directly to provider APIs (e.g.,
+   `https://api.x.ai/v1`)
 3. **Passes through responses** without modification or filtering
 4. **Validates schemas** (JSON Schema 2020-12) for request and response formats
 5. **Caches results** according to TTL settings (default: 24h)
 
-The AILink provider system is designed for future extraction as a standalone library (planned as `fulmenhq/ailink`).
+The AILink provider system is designed for future extraction as a standalone
+library (planned as `fulmenhq/ailink`).
 
 ### Provider Drivers
 
 Each AI provider has a direct HTTP driver implementing the same interface:
 
-| Driver | Provider | API | Status |
-| ------- | -------- | --- | ------ |
-| `xai` | x.ai (Grok) | OpenAI-compatible | ✅ Implemented |
-| `openai` | OpenAI | OpenAI API | Planned |
-| `anthropic` | Anthropic | Messages API | Planned |
+| Driver      | Provider    | API               | Status         |
+| ----------- | ----------- | ----------------- | -------------- |
+| `xai`       | x.ai (Grok) | OpenAI-compatible | ✅ Implemented |
+| `openai`    | OpenAI      | OpenAI API        | Planned        |
+| `anthropic` | Anthropic   | Messages API      | Planned        |
 
 Drivers are pure `net/http` implementations—no SDKs, no vendor packages.
 
@@ -145,6 +151,7 @@ NAMELENS_LOG_LEVEL=debug namelens check acmecorp --expert
 ```
 
 You'll see:
+
 - Exact prompt sent to the AI provider
 - Full request body
 - Complete response from the provider

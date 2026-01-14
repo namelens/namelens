@@ -49,8 +49,8 @@ Parameters:
 
 ### AI Provider Transparency
 
-When using MCP tools with expert analysis enabled, Namelens maintains its direct HTTP
-interface to AI providers. This means:
+When using MCP tools with expert analysis enabled, Namelens maintains its direct
+HTTP interface to AI providers. This means:
 
 - **No SDK mediation** — Requests go directly from Namelens to AI providers
 - **Full auditability** — Enable debug logging to see complete request/response:

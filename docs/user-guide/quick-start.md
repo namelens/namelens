@@ -11,7 +11,8 @@ namelens check myproject
 
 By default, this checks `.com` only.
 
-Use `--profile=startup` for a broader scan across `.com`, `.io`, `.dev`, `.app` plus npm/PyPI and GitHub.
+Use `--profile=startup` for a broader scan across `.com`, `.io`, `.dev`, `.app`
+plus npm/PyPI and GitHub.
 
 ## Check Specific TLDs
 
@@ -29,11 +30,11 @@ namelens check acmecorp --profile=startup
 
 Available profiles:
 
-| Profile   | Domains         | Registries | Handles |
-| --------- | --------------- | ---------- | ------- |
+| Profile   | Domains               | Registries | Handles |
+| --------- | --------------------- | ---------- | ------- |
 | `startup` | .com, .io, .dev, .app | npm, pypi  | github  |
-| `minimal` | .com            | -          | -       |
-| `web3`    | .xyz, .io, .gg  | npm        | github  |
+| `minimal` | .com                  | -          | -       |
+| `web3`    | .xyz, .io, .gg        | npm        | github  |
 
 ## Output Formats
 
@@ -119,6 +120,7 @@ The quick check does **not** include:
 **About expert features**: Namelens uses direct HTTP connections to AI providers
 (no SDKs or intermediaries), giving you full transparency into the request/
 response pipeline. Enable debug logging to inspect:
+
 ```bash
 NAMELENS_LOG_LEVEL=debug namelens check myproject --expert
 ```

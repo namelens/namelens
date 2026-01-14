@@ -125,11 +125,11 @@ namelens doctor ailink connectivity name-availability --output-format=json
 
 Profiles define what to check for a given name:
 
-| Profile   | Domains         | Registries | Handles |
-| --------- | --------------- | ---------- | ------- |
+| Profile   | Domains               | Registries | Handles |
+| --------- | --------------------- | ---------- | ------- |
 | `startup` | .com, .io, .dev, .app | npm, pypi  | github  |
-| `minimal` | .com            | -          | -       |
-| `web3`    | .xyz, .io, .gg  | npm        | github  |
+| `minimal` | .com                  | -          | -       |
+| `web3`    | .xyz, .io, .gg        | npm        | github  |
 
 ## Configuration
 
@@ -189,7 +189,10 @@ Copy `.env.example` to `.env` for local development.
 
 - **AI-powered intelligence**, not just API queries — We use Grok's web search
   to find what databases miss
-- **Direct AI provider connections** — No intermediary SDKs or libraries filtering your content. Our `--expert` interface connects directly to AI providers via HTTP, giving you full transparency and control over the request/response pipeline
+- **Direct AI provider connections** — No intermediary SDKs or libraries
+  filtering your content. Our `--expert` interface connects directly to AI
+  providers via HTTP, giving you full transparency and control over the
+  request/response pipeline
 - **Dogfooded from day one** — We used Namelens to name itself; it caught a
   critical conflict our codename had
 - **CLI-native for developers** — Integrates into your workflow, not a web

@@ -2,7 +2,8 @@
 
 This guide covers common issues, symptoms, and solutions for NameLens usage.
 
-Sections are grouped by subsystem (domains, output/files, expert backend, configuration, build/install).
+Sections are grouped by subsystem (domains, output/files, expert backend,
+configuration, build/install).
 
 ---
 
@@ -10,9 +11,11 @@ Sections are grouped by subsystem (domains, output/files, expert backend, config
 
 ### RDAP Errors
 
-**Symptom:** `.app` / `.dev` domain checks return `available: 3` (error) with message "No RDAP servers responded successfully".
+**Symptom:** `.app` / `.dev` domain checks return `available: 3` (error) with
+message "No RDAP servers responded successfully".
 
 **Diagnosis:**
+
 ```bash
 # Confirm Google's RDAP endpoint is reachable
 curl -sSI "https://pubapi.registry.google/rdap/domain/example.dev" | head
@@ -22,38 +25,45 @@ namelens check example --tlds=dev --output-format=json --no-cache | \
   jq '.results[] | select(.check_type=="domain") | {name:.name, server:.provenance.server, msg:.message}'
 ```
 
-**Note:** error text like "tried 1 server(s)" may come from the underlying RDAP client per-attempt; prefer `provenance.server` to see what was actually attempted/used.
+**Note:** error text like "tried 1 server(s)" may come from the underlying RDAP
+client per-attempt; prefer `provenance.server` to see what was actually
+attempted/used.
 
 **Root Causes:**
 
-1. **Network blocking** — Firewalls/proxies may block outbound HTTPS to `pubapi.registry.google`
+1. **Network blocking** — Firewalls/proxies may block outbound HTTPS to
+   `pubapi.registry.google`
 2. **DNS filtering** — Some networks block Google Registry endpoints
 3. **Server outage** — Google's RDAP service is temporarily unavailable
-
 
 **Solutions:**
 
 1. **Test direct access:**
+
    ```bash
    # Test if you can reach Google's RDAP API directly
    curl -s "https://pubapi.registry.google/rdap/domain/example.app"
    ```
 
-2. **Understand fallback behavior (not a bug):**
-   `www.rdap.net` is a redirect proxy used as a fallback.
+2. **Understand fallback behavior (not a bug):** `www.rdap.net` is a redirect
+   proxy used as a fallback.
+
    ```bash
    curl -sSI "https://www.rdap.net/rdap/domain/example.dev" | head
    ```
 
-2. **Check firewall rules:** Verify outbound HTTPS (port 443) to Google Registry is allowed
-3. **Use fallback mechanism:** NameLens now implements multi-server fallback:
+3. **Check firewall rules:** Verify outbound HTTPS (port 443) to Google Registry
+   is allowed
+4. **Use fallback mechanism:** NameLens now implements multi-server fallback:
    - Primary: `https://pubapi.registry.google/rdap`
    - Fallback: `https://www.rdap.net/rdap`
    - If primary fails, NameLens automatically retries with fallback
 
-4. **Wait and retry:** If service is temporarily unavailable, try again in 1-2 minutes
+5. **Wait and retry:** If service is temporarily unavailable, try again in 1-2
+   minutes
 
-**Version Info:** Fixed in v0.1.3 — See [docs/known-issues.md](known-issues.md) for version-specific changes.
+**Version Info:** Fixed in v0.1.3 — See [docs/known-issues.md](known-issues.md)
+for version-specific changes.
 
 ---
 
@@ -62,6 +72,7 @@ namelens check example --tlds=dev --output-format=json --no-cache | \
 **Symptom:** Domain checks fail immediately or return "server not found" errors.
 
 **Diagnosis:**
+
 ```bash
 # Test DNS resolution (Google Registry + fallback proxy)
 nslookup pubapi.registry.google
@@ -77,6 +88,7 @@ nslookup www.rdap.net
 **Solutions:**
 
 1. **Check DNS configuration:**
+
    ```bash
    # macOS
    scutil --dns
@@ -86,6 +98,7 @@ nslookup www.rdap.net
    ```
 
 2. **Flush local DNS cache:**
+
    ```bash
    # macOS
    sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder
@@ -93,7 +106,8 @@ nslookup www.rdap.net
    sudo systemd-resolve --flush-caches
    ```
 
-3. **Use alternative DNS:** Try using Google DNS (8.8.8.8) or Cloudflare DNS (1.1.1.1)
+3. **Use alternative DNS:** Try using Google DNS (8.8.8.8) or Cloudflare DNS
+   (1.1.1.1)
    ```bash
    # Test with specific DNS server
    namelens check myname --verbose 2>&1 | head -n 50
@@ -106,36 +120,44 @@ nslookup www.rdap.net
 #### Cache Returning Stale Data
 
 **Not a bug:** cache metadata is nested under `provenance` in JSON output.
+
 ```bash
 namelens check myname --output-format=json | \
   jq '.results[] | {name, from_cache: .provenance.from_cache, server: .provenance.server}'
 ```
 
-**Symptom:** Results show `from_cache: true` but contain old information (expired domains, wrong status).
+**Symptom:** Results show `from_cache: true` but contain old information
+(expired domains, wrong status).
 
 **Diagnosis:**
+
 ```bash
 # Check cache entry
 sqlite3 ~/.config/namelens/namelens.db "SELECT name, tld, expires_at FROM check_cache WHERE check_type='domain' ORDER BY expires_at DESC LIMIT 5"
 ```
 
-**Root Cause:** Cache TTL is too long or cache was not invalidated after configuration changes.
+**Root Cause:** Cache TTL is too long or cache was not invalidated after
+configuration changes.
 
 **Solution:** Force cache refresh:
+
 ```bash
 namelens check myname --no-cache
 ```
 
 Or clear cache entirely:
+
 ```bash
 rm ~/.config/namelens/namelens.db
 ```
 
 #### Cache Not Persisting
 
-**Symptom:** Running `namelens check` twice shows different results each time, suggesting cache isn't working.
+**Symptom:** Running `namelens check` twice shows different results each time,
+suggesting cache isn't working.
 
 **Diagnosis:**
+
 ```bash
 # Check cache file exists and is writable
 ls -la ~/.config/namelens/namelens.db
@@ -153,6 +175,7 @@ sqlite3 ~/.config/namelens/namelens.db "PRAGMA integrity_check"
 **Solutions:**
 
 1. **Fix permissions:**
+
    ```bash
    # Ensure cache directory exists with correct permissions
    mkdir -p ~/.config/namelens
@@ -173,9 +196,11 @@ sqlite3 ~/.config/namelens/namelens.db "PRAGMA integrity_check"
 
 ### Output Sinks Not Working
 
-**Symptom:** Using `--out /path` or `--out-dir /path` flags doesn't create files.
+**Symptom:** Using `--out /path` or `--out-dir /path` flags doesn't create
+files.
 
 **Diagnosis:**
+
 ```bash
 # First verify you're running a binary that supports sinks
 namelens check --help | grep -E -- "--out|--out-dir|--output-format"
@@ -186,25 +211,29 @@ namelens check myname --out /tmp/result.json --output-format=json
 
 **Root Causes:**
 
-1. **Stale binary** — You're running an old `namelens` binary that doesn't have the new output sink features
+1. **Stale binary** — You're running an old `namelens` binary that doesn't have
+   the new output sink features
 2. **Path permissions** — Target directory doesn't exist or isn't writable
 3. **Permission denied** — User doesn't have write access to the specified path
 
 **Solutions:**
 
 1. **Rebuild and reinstall:**
+
    ```bash
    make build
    make install
    ```
 
 2. **Verify new binary:**
+
    ```bash
    # Check for new flags in help
    namelens check --help | grep -E "out|out-dir|output-format"
    ```
 
 3. **Check directory permissions:**
+
    ```bash
    # Verify directory exists and is writable
    ls -ld /tmp
@@ -224,6 +253,7 @@ namelens check myname --out /tmp/result.json --output-format=json
 **Symptom:** `jq` commands fail with "syntax error" or "cannot parse".
 
 **Diagnosis:**
+
 ```bash
 # Validate JSON output
 namelens check myname --output-format=json | jq empty
@@ -241,6 +271,7 @@ namelens check myname --output-format=json | jq 'length'
 **Solutions:**
 
 1. **Validate with jq:**
+
    ```bash
    # Check JSON validity
    namelens check myname --output-format=json | jq empty
@@ -271,18 +302,23 @@ namelens check myname --output-format=json | jq 'length'
 }
 ```
 
-**Root Cause:** The xAI/Grok service is experiencing high load and is temporarily rejecting new requests.
+**Root Cause:** The xAI/Grok service is experiencing high load and is
+temporarily rejecting new requests.
 
 **Solutions:**
 
-1. **Wait and retry:** The service is temporarily overloaded; try again in 5-10 minutes
-2. **Disable expert mode:** For domain-only checks, disable expert via config/env:
+1. **Wait and retry:** The service is temporarily overloaded; try again in 5-10
+   minutes
+2. **Disable expert mode:** For domain-only checks, disable expert via
+   config/env:
    ```bash
    NAMELENS_EXPERT_ENABLED=false namelens check myname
    ```
-3. **Check service status:** Monitor https://status.x.ai/ for service availability
+3. **Check service status:** Monitor https://status.x.ai/ for service
+   availability
 
-**Status:** This is a provider-side issue, not a Namelens bug. Monitor the service status page for resolution.
+**Status:** This is a provider-side issue, not a Namelens bug. Monitor the
+service status page for resolution.
 
 ---
 
@@ -303,7 +339,9 @@ namelens check myname --output-format=json | jq 'length'
 
 **Solutions:**
 
-1. **Check configuration:** confirm which config file is being used, then inspect it:
+1. **Check configuration:** confirm which config file is being used, then
+   inspect it:
+
    ```bash
    # Prints the config file path when --verbose is enabled
    namelens check myname --verbose 2>&1 | head -n 5
@@ -312,10 +350,11 @@ namelens check myname --output-format=json | jq 'length'
    ```
 
 2. **Add API key:**
+
    ```bash
    # Set via environment variable (for xAI/Grok)
    NAMELENS_AILINK_PROVIDERS_NAMELENS_XAI_CREDENTIALS_0_API_KEY=your-key-here
-   
+
    # Or configure in your config file (typically ~/.config/namelens/config.yaml)
    ```
 
@@ -331,9 +370,11 @@ namelens check myname --output-format=json | jq 'length'
 
 ### Profiles Not Loading
 
-**Symptom:** Using `--profile startup` or other profiles returns error or uses default TLDs instead.
+**Symptom:** Using `--profile startup` or other profiles returns error or uses
+default TLDs instead.
 
 **Diagnosis:**
+
 ```bash
 # List available profiles
 namelens profile list
@@ -351,6 +392,7 @@ namelens profile show startup
 **Solutions:**
 
 1. **Check config location:**
+
    ```bash
    # Prints the config file path when --verbose is enabled
    namelens check myname --verbose 2>&1 | head -n 5
@@ -360,16 +402,18 @@ namelens profile show startup
    ```
 
 2. **Reset to defaults:**
+
    ```bash
    # Remove custom config to use defaults
    rm ~/.config/namelens/config.yaml
    ```
 
 3. **Create or repair profile:**
+
    ```bash
    # Edit startup profile
    namelens profile edit startup
-   
+
    # Or use built-in defaults without profile
    namelens check myname --tlds=com,io,dev
    ```
@@ -378,9 +422,11 @@ namelens profile show startup
 
 ### Environment Variables
 
-**Symptom:** Configuration settings aren't being applied, or NameLens behavior differs from documentation.
+**Symptom:** Configuration settings aren't being applied, or NameLens behavior
+differs from documentation.
 
 **Diagnosis:**
+
 ```bash
 # Check environment variables
 env | grep NAMELENS
@@ -391,29 +437,32 @@ echo $NAMELENS_EXPERT_ENABLED
 
 **Common Variables:**
 
-| Variable | Purpose |
-| -------- | ------- |
-| `NAMELENS_CONFIG_PATH` | Custom config file location |
-| `NAMELENS_DB_PATH` | Custom database location |
-| `NAMELENS_EXPERT_ENABLED` | Enable/disable expert mode |
-| `NAMELENS_AILINK_PROMPTS_DIR` | Custom prompts directory |
-| `NAMELENS_LOG_LEVEL` | Logging verbosity |
+| Variable                      | Purpose                     |
+| ----------------------------- | --------------------------- |
+| `NAMELENS_CONFIG_PATH`        | Custom config file location |
+| `NAMELENS_DB_PATH`            | Custom database location    |
+| `NAMELENS_EXPERT_ENABLED`     | Enable/disable expert mode  |
+| `NAMELENS_AILINK_PROMPTS_DIR` | Custom prompts directory    |
+| `NAMELENS_LOG_LEVEL`          | Logging verbosity           |
 
 **Solutions:**
 
 1. **Set environment variable:**
+
    ```bash
    export NAMELENS_LOG_LEVEL=debug
    namelens check myname
    ```
 
 2. **Unset conflicting variables:**
+
    ```bash
    unset NAMELENS_CONFIG_PATH
    namelens check myname
    ```
 
-3. **Use config file instead:** For complex configuration, use a config file rather than environment variables.
+3. **Use config file instead:** For complex configuration, use a config file
+   rather than environment variables.
 
 ---
 
@@ -424,6 +473,7 @@ echo $NAMELENS_EXPERT_ENABLED
 **Symptom:** `make build` fails with errors during compilation.
 
 **Diagnosis:**
+
 ```bash
 # Check Go version
 go version
@@ -444,15 +494,17 @@ make build 2>&1
 **Solutions:**
 
 1. **Update Go:**
+
    ```bash
    # macOS
    brew upgrade go
-   
+
    # Linux
    sudo apt-get update && sudo apt-get install golang
    ```
 
 2. **Clean dependencies:**
+
    ```bash
    go mod tidy
    go mod verify
@@ -471,6 +523,7 @@ make build 2>&1
 **Symptom:** `namelens` command not found after `make install`.
 
 **Diagnosis:**
+
 ```bash
 # Check if binary was installed
 which namelens
@@ -484,35 +537,39 @@ echo $PATH | tr ':' '\n' | grep local
 
 **Root Causes:**
 
-1. **PATH not updated** — Shell needs to reload PATH or you need to open new terminal
+1. **PATH not updated** — Shell needs to reload PATH or you need to open new
+   terminal
 2. **Installation failed** — `make install` had errors but didn't report them
 3. **Binary not created** — Build step failed silently
 
 **Solutions:**
 
 1. **Reload shell:**
+
    ```bash
    # Bash/Zsh
    source ~/.zshrc
-   
+
    # Fish
    source ~/.config/fish/config.fish
    ```
 
 2. **Manual installation:**
+
    ```bash
    # Install binary directly
    cp bin/namelens ~/.local/bin/namelens
-   
+
    # Verify it works
    ~/.local/bin/namelens --version
    ```
 
 3. **Check build output:**
+
    ```bash
    # Look for errors in build
    make build 2>&1 | tee build.log
-   
+
    # Check if binary was created
    ls -lh bin/namelens
    ```
@@ -526,6 +583,7 @@ echo $PATH | tr ':' '\n' | grep local
 **Symptom:** Running `namelens <command>` returns "command not found" error.
 
 **Diagnosis:**
+
 ```bash
 # List all available commands
 namelens --help
@@ -536,13 +594,16 @@ namelens check myname --help
 
 **Common Issues:**
 
-1. **Typo in command name** — Command names are case-sensitive (e.g., `Check` vs `check`)
-2. **Flag format** — Using wrong flag format (e.g., `-output json` instead of `--output-format json`)
+1. **Typo in command name** — Command names are case-sensitive (e.g., `Check` vs
+   `check`)
+2. **Flag format** — Using wrong flag format (e.g., `-output json` instead of
+   `--output-format json`)
 3. **Missing dependencies** — Some commands require additional setup
 
 **Solutions:**
 
 1. **Use --help:** Every command has help available:
+
    ```bash
    namelens check --help
    namelens review --help
@@ -568,7 +629,8 @@ For detailed debugging information, use the `-v` or `--verbose` flag:
 namelens check myname --verbose
 ```
 
-This will output additional debug logs (including which config file was loaded). It should be treated as best-effort diagnostic output, not a stable log schema.
+This will output additional debug logs (including which config file was loaded).
+It should be treated as best-effort diagnostic output, not a stable log schema.
 
 ---
 
@@ -601,6 +663,7 @@ namelens doctor
 ```
 
 This will display:
+
 - Configuration file location
 - Database status
 - AI provider configuration
@@ -613,7 +676,8 @@ This will display:
 
 Some failures are environmental rather than code defects:
 
-- **RDAP endpoint blocked**: corporate proxy/firewall blocks `pubapi.registry.google`.
+- **RDAP endpoint blocked**: corporate proxy/firewall blocks
+  `pubapi.registry.google`.
 - **Provider at capacity**: AILink provider returns 429/503 (e.g. Grok/xAI).
 - **Stale binary**: new flags exist in docs but your installed binary is old.
 
@@ -623,8 +687,10 @@ If you’ve ruled out the above and still see failures, file a bug report.
 
 If you're still experiencing problems after following this guide:
 
-1. **Check for known issues:** See [docs/known-issues.md](known-issues.md) for version-specific problems
-2. **Search existing issues:** Check GitHub issues at https://github.com/3leaps/namelens/issues
+1. **Check for known issues:** See [docs/known-issues.md](known-issues.md) for
+   version-specific problems
+2. **Search existing issues:** Check GitHub issues at
+   https://github.com/3leaps/namelens/issues
 3. **File a bug report:** Create an issue with:
    - Your NameLens version (`namelens --version`)
    - OS and architecture (`uname -a` on macOS/Linux, `uname -m` on Linux)
