@@ -245,7 +245,7 @@ func init() {
 	rootCmd.AddCommand(reviewCmd)
 
 	reviewCmd.Flags().String("profile", "startup", "Availability profile to use")
-	reviewCmd.Flags().String("mode", "core", "Review mode: core, brand, full")
+	reviewCmd.Flags().String("mode", "core", "Review mode: quick (screening), core (basic), brand (finalists), full (comprehensive)")
 	reviewCmd.Flags().String("depth", "quick", "Analysis depth: quick, deep")
 	reviewCmd.Flags().String("names-file", "", "Read names from file (one per line) or '-' for stdin")
 	reviewCmd.Flags().String("output-format", "table", "Output format: table, json, markdown")
@@ -587,7 +587,9 @@ func reviewPromptSet(mode string, registry interface {
 	core := []string{"name-availability", "name-phonetics", "name-suitability"}
 
 	switch mode {
-	case "core":
+	case "core", "quick":
+		// quick mode is semantically identical to core but signals "screening"
+		// workflow intent (4-10 candidates before expensive brand analysis).
 		return core, nil
 	case "brand":
 		set := append(core, "brand-proposal")
