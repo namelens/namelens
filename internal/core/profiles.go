@@ -39,7 +39,7 @@ var BuiltInProfiles = []Profile{
 		Name:        "developer",
 		Description: "Developer tool naming with package registries and code hosts",
 		TLDs:        []string{"com", "io", "dev", "app", "sh", "org", "net"},
-		Registries:  []string{"npm", "pypi"},
+		Registries:  []string{"npm", "pypi", "cargo"},
 		Handles:     []string{"github"},
 	},
 	{

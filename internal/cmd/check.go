@@ -38,7 +38,7 @@ func init() {
 	rootCmd.AddCommand(checkCmd)
 
 	checkCmd.Flags().StringSlice("tlds", []string{"com"}, "TLDs to check")
-	checkCmd.Flags().StringSlice("registries", nil, "Registries to check (npm, pypi)")
+	checkCmd.Flags().StringSlice("registries", nil, "Registries to check (npm, pypi, cargo)")
 	checkCmd.Flags().StringSlice("handles", nil, "Handles to check (github)")
 	checkCmd.Flags().String("profile", "", "Use predefined profile")
 	checkCmd.Flags().String("names-file", "", "Read names from file (one per line) or '-' for stdin")
@@ -423,6 +423,13 @@ func buildOrchestrator(cfg *config.Config, store *store.Store, useCache bool) *e
 		CachePolicy: cachePolicy,
 		UseCache:    useCache,
 	}
+	cargoChecker := &checker.CargoChecker{
+		Store:       store,
+		ToolVersion: versionInfo.Version,
+		Limiter:     limiter,
+		CachePolicy: cachePolicy,
+		UseCache:    useCache,
+	}
 	githubChecker := &checker.GitHubChecker{
 		Store:       store,
 		ToolVersion: versionInfo.Version,
@@ -437,8 +444,9 @@ func buildOrchestrator(cfg *config.Config, store *store.Store, useCache bool) *e
 			core.CheckTypeDomain: domainChecker,
 		},
 		RegistryCheckers: map[string]engine.Checker{
-			"npm":  npmChecker,
-			"pypi": pypiChecker,
+			"npm":   npmChecker,
+			"pypi":  pypiChecker,
+			"cargo": cargoChecker,
 		},
 		HandleCheckers: map[string]engine.Checker{
 			"github": githubChecker,

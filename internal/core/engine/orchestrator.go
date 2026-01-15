@@ -157,6 +157,8 @@ func checkTypeForKey(key string) (core.CheckType, bool) {
 		return core.CheckTypeNPM, true
 	case "pypi":
 		return core.CheckTypePyPI, true
+	case "cargo":
+		return core.CheckTypeCargo, true
 	case "github":
 		return core.CheckTypeGitHub, true
 	default:

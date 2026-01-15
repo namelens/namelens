@@ -9,6 +9,7 @@ const (
 	CheckTypeDomain CheckType = "domain"
 	CheckTypeNPM    CheckType = "npm"
 	CheckTypePyPI   CheckType = "pypi"
+	CheckTypeCargo  CheckType = "cargo"
 	CheckTypeGitHub CheckType = "github"
 )
 
