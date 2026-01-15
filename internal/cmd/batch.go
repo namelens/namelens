@@ -260,10 +260,6 @@ sendLoop:
 	return results, nil
 }
 
-func readBatchNames(path string) ([]string, error) {
-	return readNamesFile(path)
-}
-
 func filterBatchResults(results []*core.BatchResult, availableOnly bool) []*core.BatchResult {
 	if !availableOnly {
 		return results

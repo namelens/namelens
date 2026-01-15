@@ -273,7 +273,7 @@ func rdapDomainURL(server *url.URL, domain string) string {
 		return ""
 	}
 
-	temp := &*server
+	temp := *server
 	temp.RawQuery = ""
 	temp.Fragment = ""
 	base := temp.String()
