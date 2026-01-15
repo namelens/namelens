@@ -83,22 +83,29 @@ Follow the Fulmen "manifest-only" provenance pattern:
 
 #### Environment Variables
 
-All env vars use the `NAMELENS_` prefix for hygiene:
+All env vars use the `NAMELENS_NAMELENS_` prefix (org_repo pattern to avoid
+conflicts with other namelens org repos):
 
 ```bash
 # Required for all signing operations
-export NAMELENS_RELEASE_TAG=v<version>                    # e.g., v0.1.0 (include 'v' prefix)
+export NAMELENS_NAMELENS_RELEASE_TAG=v<version>                    # e.g., v0.1.0 (include 'v' prefix)
 
 # Minisign (required)
-export NAMELENS_MINISIGN_KEY=/path/to/namelens.key       # secret key for signing
-export NAMELENS_MINISIGN_PUB=/path/to/namelens.pub       # public key for export
+export NAMELENS_NAMELENS_MINISIGN_KEY=/path/to/namelens.key       # secret key for signing
+export NAMELENS_NAMELENS_MINISIGN_PUB=/path/to/namelens.pub       # public key for export
 
 # PGP (optional)
-export NAMELENS_PGP_KEY_ID="security@3leaps.net"          # may be email, fingerprint, or subkey
-export NAMELENS_GPG_HOME=/path/to/gnupg-3leaps            # required if PGP_KEY_ID is set
+export NAMELENS_NAMELENS_PGP_KEY_ID="security@3leaps.net"          # may be email, fingerprint, or subkey
+export NAMELENS_NAMELENS_GPG_HOME=/path/to/gnupg-3leaps            # required if PGP_KEY_ID is set
 ```
 
 #### Signing Workflow
+
+- [ ] Verify VERSION matches release tag:
+
+  ```bash
+  make release-guard-tag-version NAMELENS_NAMELENS_RELEASE_TAG=v<version>
+  ```
 
 - [ ] Download CI-built artifacts:
 
@@ -200,16 +207,16 @@ If a platform build fails:
 minisign -G -p namelens.pub -s namelens.key
 
 # Store securely and set env vars in your shell profile
-export NAMELENS_MINISIGN_KEY=/secure/path/namelens.key
-export NAMELENS_MINISIGN_PUB=/secure/path/namelens.pub
+export NAMELENS_NAMELENS_MINISIGN_KEY=/secure/path/namelens.key
+export NAMELENS_NAMELENS_MINISIGN_PUB=/secure/path/namelens.pub
 ```
 
 ### PGP (Optional)
 
 ```bash
 # Use isolated GPG homedir for signing keys
-export NAMELENS_GPG_HOME=/secure/path/gnupg-3leaps
-export NAMELENS_PGP_KEY_ID="security@3leaps.net"
+export NAMELENS_NAMELENS_GPG_HOME=/secure/path/gnupg-3leaps
+export NAMELENS_NAMELENS_PGP_KEY_ID="security@3leaps.net"
 ```
 
 ### Quick Reference
@@ -218,8 +225,8 @@ All env vars for release signing:
 
 | Variable                | Required | Description                                               |
 | ----------------------- | -------- | --------------------------------------------------------- |
-| `NAMELENS_RELEASE_TAG`  | Yes      | Release tag (e.g., `v0.1.0`)                              |
-| `NAMELENS_MINISIGN_KEY` | Yes      | Path to minisign secret key                               |
-| `NAMELENS_MINISIGN_PUB` | No       | Path to minisign public key (derived from key if not set) |
-| `NAMELENS_PGP_KEY_ID`   | No       | GPG key ID for PGP signing                                |
-| `NAMELENS_GPG_HOME`     | If PGP   | GPG homedir containing signing key                        |
+| `NAMELENS_NAMELENS_RELEASE_TAG`  | Yes      | Release tag (e.g., `v0.1.0`)                              |
+| `NAMELENS_NAMELENS_MINISIGN_KEY` | Yes      | Path to minisign secret key                               |
+| `NAMELENS_NAMELENS_MINISIGN_PUB` | No       | Path to minisign public key (derived from key if not set) |
+| `NAMELENS_NAMELENS_PGP_KEY_ID`   | No       | GPG key ID for PGP signing                                |
+| `NAMELENS_NAMELENS_GPG_HOME`     | If PGP   | GPG homedir containing signing key                        |

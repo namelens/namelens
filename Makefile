@@ -6,6 +6,7 @@
 .PHONY: release-clean release-download release-checksums release-verify-checksums
 .PHONY: release-sign release-export-keys release-verify-keys release-notes
 .PHONY: release-upload release-upload-provenance release-upload-all release-build
+.PHONY: release-guard-tag-version
 
 # Binary and version information
 BINARY_NAME := namelens
@@ -24,11 +25,14 @@ SFETCH_VERSION := latest
 GONEAT_VERSION := v0.3.24
 
 # Release signing configuration
-# All env vars use NAMELENS_ prefix for hygiene
-# Set NAMELENS_RELEASE_TAG=vX.Y.Z before running release targets
-NAMELENS_RELEASE_TAG ?= v$(VERSION)
+# Env vars use NAMELENS_NAMELENS_ prefix (ORG_REPO pattern).
+# Why doubled? The namelens org will have multiple repos (namelens, namelens-web, etc.)
+# and using just NAMELENS_ would conflict. This follows the fulmenhq pattern where
+# FULMENHQ_FULMINAR_, FULMENHQ_GONEAT_, etc. are used for disambiguation.
+# Set NAMELENS_NAMELENS_RELEASE_TAG=vX.Y.Z before running release targets
+NAMELENS_NAMELENS_RELEASE_TAG ?= v$(VERSION)
 DIST_RELEASE ?= dist/release
-SIGNING_ENV_PREFIX ?= $(shell echo "$(BINARY_NAME)" | tr '[:lower:]-' '[:upper:]_')
+SIGNING_ENV_PREFIX ?= NAMELENS_NAMELENS
 
 # Install configuration
 GOOS ?= $(shell go env GOOS)
@@ -238,13 +242,23 @@ licenses: ## Show dependency license summary
 #
 # Pattern: CI uploads binaries → maintainer downloads, signs, uploads provenance
 #
-# Env vars (use NAMELENS_ prefix):
-#   NAMELENS_RELEASE_TAG   - release tag (e.g., v0.1.0)
-#   NAMELENS_MINISIGN_KEY  - path to minisign secret key
-#   NAMELENS_MINISIGN_PUB  - path to minisign public key (optional, derived from key)
-#   NAMELENS_PGP_KEY_ID    - GPG key ID for PGP signing (optional)
-#   NAMELENS_GPG_HOME      - GPG homedir containing signing key (required if PGP_KEY_ID set)
+# Env vars (use NAMELENS_NAMELENS_ prefix - org_repo pattern):
+#   NAMELENS_NAMELENS_RELEASE_TAG   - release tag (e.g., v0.1.0)
+#   NAMELENS_NAMELENS_MINISIGN_KEY  - path to minisign secret key
+#   NAMELENS_NAMELENS_MINISIGN_PUB  - path to minisign public key (optional)
+#   NAMELENS_NAMELENS_PGP_KEY_ID    - GPG key ID for PGP signing (optional)
+#   NAMELENS_NAMELENS_GPG_HOME      - GPG homedir containing signing key (required if PGP_KEY_ID set)
 # ─────────────────────────────────────────────────────────────────────────────
+
+release-guard-tag-version: ## Guard: verify RELEASE_TAG matches VERSION file
+	@tag="$(NAMELENS_NAMELENS_RELEASE_TAG)"; \
+	ver="v$(VERSION)"; \
+	if [ "$$tag" != "$$ver" ]; then \
+		echo "❌ Version mismatch: RELEASE_TAG=$$tag but VERSION file says $$ver" >&2; \
+		echo "   Either update VERSION file or set correct NAMELENS_NAMELENS_RELEASE_TAG" >&2; \
+		exit 1; \
+	fi; \
+	echo "✅ Version guard passed: $$tag"
 
 release-clean: ## Clean dist/release staging
 	@echo "🧹 Cleaning $(DIST_RELEASE)..."
@@ -252,8 +266,8 @@ release-clean: ## Clean dist/release staging
 	@mkdir -p "$(DIST_RELEASE)"
 	@echo "✅ Cleaned"
 
-release-download: ## Download GitHub release assets (NAMELENS_RELEASE_TAG=vX.Y.Z)
-	@./scripts/release-download.sh "$(NAMELENS_RELEASE_TAG)" "$(DIST_RELEASE)"
+release-download: ## Download GitHub release assets (NAMELENS_NAMELENS_RELEASE_TAG=vX.Y.Z)
+	@./scripts/release-download.sh "$(NAMELENS_NAMELENS_RELEASE_TAG)" "$(DIST_RELEASE)"
 
 release-checksums: ## Generate SHA256SUMS and SHA512SUMS in dist/release
 	@echo "→ Generating checksum manifests in $(DIST_RELEASE)..."
@@ -264,7 +278,7 @@ release-verify-checksums: ## Verify SHA256SUMS and SHA512SUMS against artifacts
 
 release-sign: ## Sign checksum manifests (minisign required; PGP optional)
 	@SIGNING_ENV_PREFIX="$(SIGNING_ENV_PREFIX)" SIGNING_APP_NAME="$(BINARY_NAME)" \
-		./scripts/sign-release-manifests.sh "$(NAMELENS_RELEASE_TAG)" "$(DIST_RELEASE)"
+		./scripts/sign-release-manifests.sh "$(NAMELENS_NAMELENS_RELEASE_TAG)" "$(DIST_RELEASE)"
 
 release-export-keys: ## Export public signing keys into dist/release
 	@SIGNING_ENV_PREFIX="$(SIGNING_ENV_PREFIX)" SIGNING_APP_NAME="$(BINARY_NAME)" \
@@ -283,8 +297,8 @@ release-verify-keys: ## Verify exported public keys are public-only
 	fi
 
 release-notes: ## Copy docs/releases/vX.Y.Z.md into dist/release
-	@notes_src="docs/releases/$(NAMELENS_RELEASE_TAG).md"; \
-	notes_dst="$(DIST_RELEASE)/release-notes-$(NAMELENS_RELEASE_TAG).md"; \
+	@notes_src="docs/releases/$(NAMELENS_NAMELENS_RELEASE_TAG).md"; \
+	notes_dst="$(DIST_RELEASE)/release-notes-$(NAMELENS_NAMELENS_RELEASE_TAG).md"; \
 	if [ ! -f "$$notes_src" ]; then \
 		echo "ℹ️  No release notes found at $$notes_src (skipping)"; \
 	else \
@@ -292,14 +306,14 @@ release-notes: ## Copy docs/releases/vX.Y.Z.md into dist/release
 		echo "✅ Copied $$notes_src → $$notes_dst"; \
 	fi
 
-release-upload: release-upload-provenance ## Upload provenance assets to GitHub (NAMELENS_RELEASE_TAG=vX.Y.Z)
+release-upload: release-upload-provenance ## Upload provenance assets to GitHub (NAMELENS_NAMELENS_RELEASE_TAG=vX.Y.Z)
 	@:
 
 release-upload-provenance: release-verify-checksums release-verify-keys ## Upload manifests, signatures, keys, notes
-	@./scripts/release-upload-provenance.sh "$(NAMELENS_RELEASE_TAG)" "$(DIST_RELEASE)"
+	@./scripts/release-upload-provenance.sh "$(NAMELENS_NAMELENS_RELEASE_TAG)" "$(DIST_RELEASE)"
 
 release-upload-all: release-verify-checksums release-verify-keys ## Upload binaries + provenance (manual-only)
-	@./scripts/release-upload.sh "$(NAMELENS_RELEASE_TAG)" "$(DIST_RELEASE)"
+	@./scripts/release-upload.sh "$(NAMELENS_NAMELENS_RELEASE_TAG)" "$(DIST_RELEASE)"
 
 release-build: release-clean ## Build release artifacts locally (for manual release)
 	@echo "→ Building release artifacts for $(BINARY_NAME) v$(VERSION)..."
