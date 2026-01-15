@@ -5,6 +5,65 @@ order.
 
 ## Unreleased
 
+## v0.1.3 (2026-01-14)
+
+Candidate comparison and Rust ecosystem support.
+
+Highlights:
+
+- **Compare command**: New `namelens compare` for side-by-side candidate
+  screening with availability, risk, phonetics, and suitability scores
+- **Cargo/crates.io checker**: Rust crate availability now included in registry
+  checks
+- **Review quick mode**: New `--mode=quick` flag for fast screening workflows
+- **Improved reliability**: .app/.dev domains now route via Google RDAP
+
+### Compare Command
+
+Screen 2-10 candidates before running expensive brand analysis:
+
+```bash
+# Quick availability screening
+namelens compare fulgate agentanvil toolcrux --mode=quick
+
+# Full analysis with phonetics and suitability
+namelens compare fulgate toolcrux
+
+# Export for stakeholders
+namelens compare alpha beta gamma --output-format=markdown --out comparison.md
+```
+
+Output:
+
+```
+╭──────────┬──────────────┬──────┬───────────┬─────────────┬────────╮
+│ NAME     │ AVAILABILITY │ RISK │ PHONETICS │ SUITABILITY │ LENGTH │
+├──────────┼──────────────┼──────┼───────────┼─────────────┼────────┤
+│ fulgate  │ 7/7          │ low  │ 83        │ 95          │      7 │
+│ toolcrux │ 7/7          │ low  │ 81        │ 95          │      8 │
+╰──────────┴──────────────┴──────┴───────────┴─────────────┴────────╯
+```
+
+### Cargo/crates.io Support
+
+Check Rust crate availability:
+
+```bash
+# Check specific registry
+namelens check mycrate --registries=cargo
+
+# Developer profile now includes cargo
+namelens check myproject --profile=developer
+```
+
+### Review Quick Mode
+
+Fast screening without full brand analysis:
+
+```bash
+namelens review myproject --mode=quick
+```
+
 ## v0.1.2 (2026-01-11)
 
 Release workflow fix.
@@ -49,20 +108,3 @@ namelens rate-limit reset --all --dry-run
 # JSON output for automation
 namelens rate-limit list --output=json
 ```
-
-## v0.1.0 (2026-01-04)
-
-Initial release of NameLens.
-
-Highlights:
-
-- Domain availability via RDAP bootstrap with cache and rate limits
-- Optional WHOIS/DNS fallback for TLDs without RDAP
-- Registry and handle checks (npm, PyPI, GitHub)
-- Expert analysis via AILink prompt library (xAI/Grok)
-- Generate command for AI-powered naming ideation
-- Phonetics and suitability analysis prompts
-- Diagnostics: `doctor`, `doctor ailink`, and `doctor ailink connectivity`
-- Built-in profiles: startup, developer, website, minimal, web3
-- Tri-state availability: available/taken/unknown
-- Batch command and multiple output formats

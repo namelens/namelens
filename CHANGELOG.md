@@ -7,6 +7,32 @@ Versioning.
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-01-14
+
+### Added
+
+- `namelens compare` command for side-by-side candidate screening with
+  availability, risk, phonetics, and suitability scores
+- Cargo/crates.io registry checker for Rust crate availability
+- `--mode=quick` flag for `review` command to enable fast screening workflows
+- Standardized output sinks with `--out` and `--out-dir` flags across commands
+- Multi-name input support via `--names-file` flag for check command
+- Compare command documentation in user guide
+
+### Fixed
+
+- Domain checker now routes .app and .dev TLDs via Google RDAP for reliable
+  availability checks
+- SQLite store tolerates lock during WAL mode setup, improving initialization
+  reliability
+- Review command now honors `--include-raw` flag on failure paths
+
+### Changed
+
+- Developer profile now includes cargo registry alongside npm and pypi
+- Updated documentation to reflect crates.io support across all registry
+  references
+
 ## [0.1.2] - 2026-01-11
 
 ### Fixed
