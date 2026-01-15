@@ -23,7 +23,7 @@ for modes and attribution.
 **NameLens** is a Workhorse tool for checking name availability across:
 
 - Domains (via RDAP)
-- Package registries (npm, PyPI)
+- Package registries (npm, PyPI, crates.io)
 - Social handles (GitHub)
 
 Built on the Fulmen workhorse pattern using gofulmen for configuration, logging,

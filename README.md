@@ -18,7 +18,7 @@ intelligence**:
 **What we check:**
 
 - **Domains** — RDAP with WHOIS fallback (.com, .io, .dev, .app, and more)
-- **Package registries** — npm, PyPI
+- **Package registries** — npm, PyPI, crates.io
 - **Social handles** — GitHub (more coming soon)
 
 **What we discover:**

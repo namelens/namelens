@@ -36,7 +36,7 @@ Parameters:
 - `name` (required) — Name to check
 - `profile` (optional) — Predefined profile: `startup`, `minimal`, `web3`
 - `tlds` (optional) — Specific TLDs: `["com", "io", "dev"]`
-- `registries` (optional) — Package registries: `["npm", "pypi"]`
+- `registries` (optional) — Package registries: `["npm", "pypi", "cargo"]`
 - `handles` (optional) — Social handles: `["github"]`
 
 #### batch_check

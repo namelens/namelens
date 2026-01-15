@@ -73,7 +73,7 @@ More social platforms coming in future releases.
 ## Check Package Registries Only
 
 ```bash
-namelens check myproject --registries=npm,pypi
+namelens check myproject --registries=npm,pypi,cargo
 ```
 
 ## Multiple Names (Batch)
