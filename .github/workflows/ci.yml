@@ -53,6 +53,7 @@ jobs:
     env:
       FULMEN_WORKSPACE_ROOT: ${{ github.workspace }}
       CGO_ENABLED: "1"
+      GOPATH: ${{ github.workspace }}/.cache/go
       GOMODCACHE: ${{ github.workspace }}/.cache/go-mod
       GOCACHE: ${{ github.workspace }}/.cache/go-build
     steps:
@@ -64,7 +65,7 @@ jobs:
       - name: Prepare Go cache dirs
         run: |
           set -euo pipefail
-          mkdir -p "$GOMODCACHE" "$GOCACHE"
+          mkdir -p "$GOPATH" "$GOMODCACHE" "$GOCACHE"
         shell: bash
       - name: Check Go presence (pre-setup)
         run: |
