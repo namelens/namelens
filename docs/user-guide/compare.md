@@ -13,12 +13,12 @@ analysis.
 Use `compare` when you have 2-10 candidate names and need to quickly filter them
 before running expensive brand analysis with `review`.
 
-| Scenario                          | Use Compare?                        |
-| --------------------------------- | ----------------------------------- |
-| Generated 8 names, need top 3-4   | Yes - use `--mode=quick` to screen  |
-| Narrowed to 3 finalists           | Yes - full mode for phonetics/suit. |
-| Have 50+ names to check           | No - use `batch` first              |
-| Need trademark/brand deep dive    | No - use `review` after compare     |
+| Scenario                        | Use Compare?                        |
+| ------------------------------- | ----------------------------------- |
+| Generated 8 names, need top 3-4 | Yes - use `--mode=quick` to screen  |
+| Narrowed to 3 finalists         | Yes - full mode for phonetics/suit. |
+| Have 50+ names to check         | No - use `batch` first              |
+| Need trademark/brand deep dive  | No - use `review` after compare     |
 
 **Typical workflow**: `generate` -> `compare --mode=quick` -> `compare` (full)
 -> `review`
@@ -72,13 +72,13 @@ Output:
 
 **Columns explained**:
 
-| Column       | Description                                           |
-| ------------ | ----------------------------------------------------- |
-| Availability | Available checks / Total checks (based on profile)    |
-| Risk         | low/medium/high - derived from .com and key assets    |
-| Phonetics    | Combined score for pronunciation and typeability      |
-| Suitability  | Cultural appropriateness across markets               |
-| Length       | Character count (shorter = better for CLI tools)      |
+| Column       | Description                                        |
+| ------------ | -------------------------------------------------- |
+| Availability | Available checks / Total checks (based on profile) |
+| Risk         | low/medium/high - derived from .com and key assets |
+| Phonetics    | Combined score for pronunciation and typeability   |
+| Suitability  | Cultural appropriateness across markets            |
+| Length       | Character count (shorter = better for CLI tools)   |
 
 Full mode takes ~30-60 seconds for 2-4 names due to AI analysis.
 
@@ -143,25 +143,25 @@ namelens compare fulgate toolcrux --mode=quick --output-format=markdown
 
 ## Flags Reference
 
-| Flag              | Default   | Description                                  |
-| ----------------- | --------- | -------------------------------------------- |
-| `--mode`          | (full)    | `quick` for availability only                |
-| `--profile`       | `startup` | Availability profile (domains, registries)   |
-| `--output-format` | `table`   | Output format: table, json, markdown         |
-| `--out`           | stdout    | Write output to file                         |
-| `--no-cache`      | false     | Skip cache, force fresh lookups              |
+| Flag              | Default   | Description                                |
+| ----------------- | --------- | ------------------------------------------ |
+| `--mode`          | (full)    | `quick` for availability only              |
+| `--profile`       | `startup` | Availability profile (domains, registries) |
+| `--output-format` | `table`   | Output format: table, json, markdown       |
+| `--out`           | stdout    | Write output to file                       |
+| `--no-cache`      | false     | Skip cache, force fresh lookups            |
 
 ---
 
 ## Compare vs Batch
 
-| Feature              | `compare`                  | `batch`                       |
-| -------------------- | -------------------------- | ----------------------------- |
-| Input                | CLI args (2-20 names)      | File (unlimited names)        |
-| Phonetics/Suitability| Yes (full mode)            | No                            |
-| Risk scoring         | Yes                        | No                            |
-| Best for             | Finalist screening         | Initial bulk filtering        |
-| Speed                | ~10s quick, ~60s full      | ~2s per name                  |
+| Feature               | `compare`             | `batch`                |
+| --------------------- | --------------------- | ---------------------- |
+| Input                 | CLI args (2-20 names) | File (unlimited names) |
+| Phonetics/Suitability | Yes (full mode)       | No                     |
+| Risk scoring          | Yes                   | No                     |
+| Best for              | Finalist screening    | Initial bulk filtering |
+| Speed                 | ~10s quick, ~60s full | ~2s per name           |
 
 **Workflow**: Use `batch` for 20+ candidates, then `compare` for top 5-10.
 
