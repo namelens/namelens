@@ -2,6 +2,9 @@
 
 End-to-end guidance for naming your venture using Namelens.
 
+> **Note**: Example names in this guide (acmecorp, stellaplex, etc.) are for
+> illustration only and do not represent trademark claims.
+
 ---
 
 ## Phase 1: Ideation (0-2 days)
@@ -91,13 +94,29 @@ This tells you if a taken domain is:
 
 ### Compare Finalists
 
-Create a comparison table:
+Use `compare` to create a side-by-side comparison table:
 
-| Candidate  | .com Status         | Trademark Risk | Phonetics | Suitability | Notes            |
-| ---------- | ------------------- | -------------- | --------- | ----------- | ---------------- |
-| acmecorp   | Parked (acquirable) | Low            | 92/100    | 96/100      | Strong contender |
-| stellaplex | Available           | Low            | 88/100    | 94/100      | Easy to type     |
-| fluxio     | Active conflict     | High           | 85/100    | 82/100      | Risky            |
+```bash
+namelens compare acmecorp stellaplex fluxio
+```
+
+Output:
+
+```
+╭────────────┬──────────────┬────────┬───────────┬─────────────┬────────╮
+│ NAME       │ AVAILABILITY │ RISK   │ PHONETICS │ SUITABILITY │ LENGTH │
+├────────────┼──────────────┼────────┼───────────┼─────────────┼────────┤
+│ acmecorp   │ 6/7          │ medium │ 92        │ 96          │      8 │
+│ stellaplex │ 7/7          │ low    │ 88        │ 94          │     10 │
+│ fluxio     │ 3/7          │ high   │ 85        │ 82          │      6 │
+╰────────────┴──────────────┴────────┴───────────┴─────────────┴────────╯
+```
+
+Export to markdown for stakeholder review:
+
+```bash
+namelens compare acmecorp stellaplex fluxio --output-format=markdown --out finalists.md
+```
 
 ### Get Brand Proposal
 

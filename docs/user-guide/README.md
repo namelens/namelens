@@ -87,9 +87,28 @@ See: [Name Generation](generate.md)
 
 ---
 
-### Workflow 4: Batch Screening
+### Workflow 4: Compare Finalists
 
-Compare multiple candidates side-by-side.
+Compare 2-10 candidates with phonetics and suitability scores.
+
+```bash
+namelens compare acmecorp stellaplex fluxio
+```
+
+**When to use:**
+
+- Shortlisted 3-5 names from batch or generate
+- Need phonetics and cultural suitability scores
+- Stakeholder presentations
+- Decision matrices
+
+See: [Compare Command](compare.md)
+
+---
+
+### Workflow 5: Batch Screening
+
+Check many names from a file for initial filtering.
 
 ```bash
 namelens batch candidates.txt --output-format=table
@@ -97,10 +116,9 @@ namelens batch candidates.txt --output-format=table
 
 **When to use:**
 
-- Shortlisted 3-5 names
-- Need to compare trade-offs
-- Stakeholder presentations
-- Decision matrices
+- 20+ candidates to filter
+- Initial availability screening
+- Bulk checking before compare
 
 See: [Batch Processing](batch.md)
 
@@ -132,6 +150,7 @@ MCP server, API, and CI/CD integration.
 
 | Document                              | Description                       |
 | ------------------------------------- | --------------------------------- |
+| [Compare Command](compare.md)         | Side-by-side finalist comparison  |
 | [Configuration](configuration.md)     | Profiles, env vars, customization |
 | [Domain Fallback](domain-fallback.md) | WHOIS and DNS fallback for TLDs   |
 | [Expert Prompts](expert-prompts.md)   | Available AI analysis prompts     |

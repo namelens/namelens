@@ -57,7 +57,7 @@ func init() {
 	rootCmd.AddCommand(compareCmd)
 
 	compareCmd.Flags().String("profile", "startup", "Availability profile to use")
-	compareCmd.Flags().String("mode", "", "Compare mode: quick (availability only), or empty for full analysis")
+	compareCmd.Flags().String("mode", "", "Analysis mode: 'quick' for availability only, omit for full analysis with phonetics/suitability")
 	compareCmd.Flags().String("output-format", "table", "Output format: table, json, markdown")
 	compareCmd.Flags().String("out", "", "Write output to a file (default stdout)")
 	compareCmd.Flags().String("out-dir", "", "Write output to a directory")
