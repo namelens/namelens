@@ -136,7 +136,14 @@ remote libsql/Turso database instead of a local file.
 ### AILink Provider Configuration
 
 AILink providers are configured as **named instances** under `ailink.providers`.
-The instance id is a slug (e.g. `namelens-xai`).
+The instance id is a slug (e.g. `namelens-xai`, `namelens-openai`).
+
+NameLens ships with an `xai` driver (for Grok via x.ai) and supports an `openai` driver for OpenAI-hosted models.
+
+Important terminology note:
+
+- `ai_provider: xai` targets x.ai (Grok). The API is “OpenAI-compatible”, but the model is not an OpenAI model.
+- `ai_provider: openai` targets OpenAI (GPT models).
 
 | Variable                           | Default        | Description               |
 | ---------------------------------- | -------------- | ------------------------- |
@@ -151,6 +158,9 @@ Provider instances can be overridden via env vars using this pattern
 - `NAMELENS_AILINK_PROVIDERS_<INSTANCE>_AI_PROVIDER`
 - `NAMELENS_AILINK_PROVIDERS_<INSTANCE>_BASE_URL`
 - `NAMELENS_AILINK_PROVIDERS_<INSTANCE>_MODELS_DEFAULT`
+- `NAMELENS_AILINK_PROVIDERS_<INSTANCE>_MODELS_REASONING`
+- `NAMELENS_AILINK_PROVIDERS_<INSTANCE>_MODELS_FAST`
+- `NAMELENS_AILINK_PROVIDERS_<INSTANCE>_MODELS_IMAGE`
 - `NAMELENS_AILINK_PROVIDERS_<INSTANCE>_SELECTION_POLICY`
 - `NAMELENS_AILINK_PROVIDERS_<INSTANCE>_DEFAULT_CREDENTIAL`
 - `NAMELENS_AILINK_PROVIDERS_<INSTANCE>_CREDENTIALS_0_API_KEY`

@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/namelens/namelens/internal/ailink/driver"
+	"github.com/namelens/namelens/internal/ailink/driver/openai"
 	"github.com/namelens/namelens/internal/ailink/driver/xai"
 	"github.com/namelens/namelens/internal/ailink/prompt"
 )
@@ -32,6 +33,10 @@ func NewRegistry(cfg Config) *Registry {
 }
 
 func (r *Registry) Resolve(role string, promptDef *prompt.Prompt, modelOverride string) (*ResolvedProvider, error) {
+	return r.ResolveWithDepth(role, promptDef, modelOverride, "")
+}
+
+func (r *Registry) ResolveWithDepth(role string, promptDef *prompt.Prompt, modelOverride string, depth string) (*ResolvedProvider, error) {
 	providerID, providerCfg, err := r.resolveProvider(role)
 	if err != nil {
 		return nil, err
@@ -49,7 +54,7 @@ func (r *Registry) Resolve(role string, promptDef *prompt.Prompt, modelOverride 
 		return nil, err
 	}
 
-	model, err := resolveModel(providerCfg, promptDef, modelOverride)
+	model, err := resolveModel(providerCfg, promptDef, modelOverride, depth)
 	if err != nil {
 		return nil, err
 	}
@@ -233,6 +238,11 @@ func (r *Registry) driverFor(providerID string, providerCfg ProviderInstanceConf
 		client.Timeout = r.cfg.DefaultTimeout
 		r.drivers[driverKey] = client
 		return client, nil
+	case "openai":
+		client := openai.NewClient(providerCfg.BaseURL, cred.APIKey)
+		client.Timeout = r.cfg.DefaultTimeout
+		r.drivers[driverKey] = client
+		return client, nil
 	default:
 		if providerType == "" {
 			providerType = "(unset)"
@@ -241,10 +251,27 @@ func (r *Registry) driverFor(providerID string, providerCfg ProviderInstanceConf
 	}
 }
 
-func resolveModel(providerCfg ProviderInstanceConfig, promptDef *prompt.Prompt, override string) (string, error) {
+func resolveModel(providerCfg ProviderInstanceConfig, promptDef *prompt.Prompt, override string, depth string) (string, error) {
 	model := strings.TrimSpace(override)
 	if model != "" {
 		return model, nil
+	}
+
+	// Prefer provider-configured model tiers over prompt-level preferred_models.
+	// Prompts may be authored with provider-specific model names (e.g. Grok),
+	// while provider routing may select a different vendor instance.
+	tier := modelTierForDepth(depth)
+	if providerCfg.Models != nil {
+		if tier != "" {
+			model = strings.TrimSpace(providerCfg.Models[tier])
+			if model != "" {
+				return model, nil
+			}
+		}
+		model = strings.TrimSpace(providerCfg.Models["default"])
+		if model != "" {
+			return model, nil
+		}
 	}
 
 	if promptDef != nil {
@@ -256,14 +283,19 @@ func resolveModel(providerCfg ProviderInstanceConfig, promptDef *prompt.Prompt, 
 		}
 	}
 
-	if providerCfg.Models != nil {
-		model = strings.TrimSpace(providerCfg.Models["default"])
-		if model != "" {
-			return model, nil
-		}
-	}
-
 	return "", fmt.Errorf("model not configured")
+}
+
+func modelTierForDepth(depth string) string {
+	value := strings.ToLower(strings.TrimSpace(depth))
+	switch value {
+	case "deep":
+		return "reasoning"
+	case "fast", "triage":
+		return "fast"
+	default:
+		return ""
+	}
 }
 
 func preferredModels(promptDef *prompt.Prompt) []string {

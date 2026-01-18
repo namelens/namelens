@@ -70,7 +70,7 @@ func (s *Service) Search(ctx context.Context, req SearchRequest) (*SearchRespons
 		role = slug
 	}
 
-	resolved, err := s.Providers.Resolve(role, promptDef, req.Model)
+	resolved, err := s.Providers.ResolveWithDepth(role, promptDef, req.Model, req.Depth)
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +171,7 @@ func (s *Service) Generate(ctx context.Context, req GenerateRequest) (*GenerateR
 		role = slug
 	}
 
-	resolved, err := s.Providers.Resolve(role, promptDef, req.Model)
+	resolved, err := s.Providers.ResolveWithDepth(role, promptDef, req.Model, depth)
 	if err != nil {
 		return nil, err
 	}
