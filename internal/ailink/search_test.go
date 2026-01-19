@@ -50,6 +50,7 @@ func TestServiceSearchDropsSearchParametersForNonXAI(t *testing.T) {
 	require.NotNil(t, resp)
 	require.NotNil(t, drv.req)
 	require.Nil(t, drv.req.SearchParameters)
+	require.Nil(t, drv.req.Tools)
 }
 
 type stubPromptRegistry struct {

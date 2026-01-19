@@ -87,8 +87,10 @@ func (s *Service) Search(ctx context.Context, req SearchRequest) (*SearchRespons
 	}
 
 	// search_parameters only works with the xAI driver. For other drivers, run “offline”.
+	// Note: some prompts declare web_search/x_search tools; these are xAI-only.
 	if resolved.Driver.Name() != "xai" {
 		driverReq.SearchParameters = nil
+		driverReq.Tools = nil
 	}
 	if driverReq.SearchParameters != nil {
 		driverReq.Tools = nil // Prefer search_parameters for xAI; avoid conflicts
@@ -196,8 +198,10 @@ func (s *Service) Generate(ctx context.Context, req GenerateRequest) (*GenerateR
 	}
 
 	// search_parameters only works with the xAI driver. For other drivers, run “offline”.
+	// Note: some prompts declare web_search/x_search tools; these are xAI-only.
 	if resolved.Driver.Name() != "xai" {
 		driverReq.SearchParameters = nil
+		driverReq.Tools = nil
 	}
 	if driverReq.SearchParameters != nil {
 		driverReq.Tools = nil
