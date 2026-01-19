@@ -249,8 +249,6 @@ func (s *Service) Generate(ctx context.Context, req GenerateRequest) (*GenerateR
 	response := &GenerateResponse{Raw: json.RawMessage(raw)}
 	if isRawCaptureEnabled(s.Providers.cfg, req.IncludeRaw) {
 		response.Raw = truncateJSONRaw(response.Raw, rawLimit(s.Providers.cfg))
-	} else {
-		response.Raw = nil
 	}
 
 	return response, nil

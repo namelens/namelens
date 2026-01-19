@@ -23,7 +23,7 @@ func TestMapProviderErrorStatusCodes(t *testing.T) {
 
 	for _, tc := range cases {
 		err := &driver.ProviderError{Provider: "openai", StatusCode: tc.statusCode, Message: "boom"}
-		mapped := mapProviderError(err)
+		mapped := MapProviderError(err)
 		require.NotNil(t, mapped)
 		require.Equal(t, tc.wantCode, mapped.Code)
 	}

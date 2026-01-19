@@ -8,7 +8,7 @@ import (
 	"github.com/namelens/namelens/internal/ailink/driver"
 )
 
-func mapProviderError(err error) *SearchError {
+func MapProviderError(err error) *SearchError {
 	if err == nil {
 		return nil
 	}

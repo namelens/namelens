@@ -100,7 +100,7 @@ func runReviewSearch(ctx context.Context, cfg *config.Config, store *corestore.S
 	svc := &ailink.Service{Providers: providers, Registry: registry, Catalog: catalog}
 	response, err := svc.Search(ctx, ailink.SearchRequest{Role: role, Name: name, PromptSlug: promptSlug, Depth: depth, Model: modelOverride, UseTools: true})
 	if err != nil {
-		return nil, mapExpertError(err), rawFromAILinkError(err)
+		return nil, ailink.MapProviderError(err), rawFromAILinkError(err)
 	}
 
 	raw := json.RawMessage(response.Raw)
@@ -191,7 +191,7 @@ func runReviewGenerate(ctx context.Context, cfg *config.Config, store *corestore
 	svc := &ailink.Service{Providers: providers, Registry: registry, Catalog: catalog}
 	response, err := svc.Generate(ctx, ailink.GenerateRequest{Role: role, PromptSlug: promptSlug, Variables: cleaned, Depth: depth, Model: modelOverride, UseTools: true})
 	if err != nil {
-		return nil, mapExpertError(err), rawFromAILinkError(err)
+		return nil, ailink.MapProviderError(err), rawFromAILinkError(err)
 	}
 
 	raw := response.Raw

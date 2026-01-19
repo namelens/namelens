@@ -708,6 +708,10 @@ func mapExpertError(err error) *ailink.SearchError {
 		return &ailink.SearchError{Code: "AILINK_TIMEOUT", Message: "expert request timed out"}
 	}
 
+	if mapped := ailink.MapProviderError(err); mapped != nil {
+		return mapped
+	}
+
 	message := err.Error()
 	switch {
 	case strings.Contains(message, "schema validation failed"):
