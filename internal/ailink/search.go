@@ -120,14 +120,25 @@ func (s *Service) Search(ctx context.Context, req SearchRequest) (*SearchRespons
 		return nil, errors.New("empty response content")
 	}
 
-	if err := s.validateResponse(promptDef, []byte(raw)); err != nil {
-		return nil, &RawResponseError{Err: err, Raw: json.RawMessage(raw)}
-	}
-
 	parsed, err := decodeSearchResponse([]byte(raw))
 	if err != nil {
 		return nil, &RawResponseError{Err: err, Raw: json.RawMessage(raw)}
 	}
+
+	if err := s.validateResponse(promptDef, []byte(raw)); err != nil {
+		// Preserve parsed fields to keep CLI output useful, but still signal schema failure.
+		parsed.Raw = append(parsed.Raw[:0], raw...)
+		parsed.Raw = truncateJSONRaw(parsed.Raw, rawLimit(s.Providers.cfg))
+		return parsed, &RawResponseError{Err: err, Raw: json.RawMessage(raw)}
+	}
+
+	if isRawCaptureEnabled(s.Providers.cfg, req.IncludeRaw) {
+		parsed.Raw = append(parsed.Raw[:0], raw...)
+		parsed.Raw = truncateJSONRaw(parsed.Raw, rawLimit(s.Providers.cfg))
+	} else {
+		parsed.Raw = nil
+	}
+
 	return parsed, nil
 }
 
@@ -235,7 +246,14 @@ func (s *Service) Generate(ctx context.Context, req GenerateRequest) (*GenerateR
 		return nil, &RawResponseError{Err: err, Raw: json.RawMessage(raw)}
 	}
 
-	return &GenerateResponse{Raw: json.RawMessage(raw)}, nil
+	response := &GenerateResponse{Raw: json.RawMessage(raw)}
+	if isRawCaptureEnabled(s.Providers.cfg, req.IncludeRaw) {
+		response.Raw = truncateJSONRaw(response.Raw, rawLimit(s.Providers.cfg))
+	} else {
+		response.Raw = nil
+	}
+
+	return response, nil
 }
 
 func promptTools(def *prompt.Prompt, enabled bool) []driver.Tool {

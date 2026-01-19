@@ -47,6 +47,9 @@ ailink:
   default_timeout: 60s
   cache_ttl: 24h
   prompts_dir: ""
+  debug:
+    capture_raw_enabled: false
+    capture_raw_max_bytes: 16384
   providers:
     namelens-xai:
       enabled: true

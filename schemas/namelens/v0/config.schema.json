@@ -139,6 +139,18 @@
         "prompts_dir": {
           "type": "string"
         },
+        "debug": {
+          "type": "object",
+          "properties": {
+            "capture_raw_enabled": {
+              "type": "boolean"
+            },
+            "capture_raw_max_bytes": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
         "providers": {
           "type": "object",
           "additionalProperties": {

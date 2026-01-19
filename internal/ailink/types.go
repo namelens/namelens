@@ -11,6 +11,7 @@ type SearchRequest struct {
 	Model      string
 	TimeoutSec int
 	UseTools   bool
+	IncludeRaw bool
 }
 
 // SearchResponse captures the parsed response plus raw JSON.
@@ -51,6 +52,7 @@ type GenerateRequest struct {
 	Model      string
 	TimeoutSec int
 	UseTools   bool
+	IncludeRaw bool
 }
 
 // GenerateResponse captures the raw JSON response from generation prompts.

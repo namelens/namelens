@@ -99,7 +99,7 @@ func (c *Client) Complete(ctx context.Context, req *driver.Request) (*driver.Res
 	}
 
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		return nil, fmt.Errorf("xai request failed: status %d: %s", resp.StatusCode, strings.TrimSpace(string(respBody)))
+		return nil, &driver.ProviderError{Provider: "xai", StatusCode: resp.StatusCode, Message: strings.TrimSpace(string(respBody)), RawResponse: respBody}
 	}
 
 	var parsed chatCompletionResponse

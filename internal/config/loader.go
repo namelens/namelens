@@ -292,6 +292,8 @@ func getEnvSpecs() []EnvVarSpec {
 		{Name: prefix + "AILINK_DEFAULT_TIMEOUT", Path: []string{"ailink", "default_timeout"}, Type: EnvString},
 		{Name: prefix + "AILINK_CACHE_TTL", Path: []string{"ailink", "cache_ttl"}, Type: EnvString},
 		{Name: prefix + "AILINK_PROMPTS_DIR", Path: []string{"ailink", "prompts_dir"}, Type: EnvString},
+		{Name: prefix + "AILINK_DEBUG_CAPTURE_RAW_ENABLED", Path: []string{"ailink", "debug", "capture_raw_enabled"}, Type: EnvBool},
+		{Name: prefix + "AILINK_DEBUG_CAPTURE_RAW_MAX_BYTES", Path: []string{"ailink", "debug", "capture_raw_max_bytes"}, Type: EnvInt},
 
 		// Expert feature config
 		{Name: prefix + "EXPERT_ENABLED", Path: []string{"expert", "enabled"}, Type: EnvBool},

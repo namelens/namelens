@@ -15,12 +15,20 @@ type Config struct {
 	// Prompts are owned by the application, but must follow AILink prompt rules.
 	PromptsDir string `mapstructure:"prompts_dir"`
 
+	// Debug controls optional diagnostics like raw payload capture.
+	Debug DebugConfig `mapstructure:"debug"`
+
 	// Providers is a set of provider instances keyed by a user-defined id (slug).
 	// Each instance declares its underlying provider type via AIProvider.
 	Providers map[string]ProviderInstanceConfig `mapstructure:"providers"`
 
 	Routing   map[string]string   `mapstructure:"routing"`
 	Fallbacks map[string][]string `mapstructure:"fallbacks"`
+}
+
+type DebugConfig struct {
+	CaptureRawEnabled  bool `mapstructure:"capture_raw_enabled"`
+	CaptureRawMaxBytes int  `mapstructure:"capture_raw_max_bytes"`
 }
 
 // ProviderInstanceConfig defines a configured provider instance (e.g. "namelens-xai").
