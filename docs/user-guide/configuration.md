@@ -58,10 +58,11 @@ domain:
 
 # AILink providers
 ailink:
-  default_provider: namelens-xai
+  default_provider: namelens-xai # or namelens-openai
   default_timeout: 60s
   cache_ttl: 24h
   providers:
+    # xAI provider - recommended for expert search (web intelligence)
     namelens-xai:
       enabled: true
       ai_provider: xai
@@ -72,7 +73,21 @@ ailink:
       credentials:
         - label: default
           priority: 0
-          api_key: "" # Better to use NAMELENS_AILINK_PROVIDERS_NAMELENS_XAI_CREDENTIALS_0_API_KEY env var
+          api_key: "" # Use NAMELENS_AILINK_PROVIDERS_NAMELENS_XAI_CREDENTIALS_0_API_KEY env var
+
+    # OpenAI provider - recommended for structured analysis
+    namelens-openai:
+      enabled: true
+      ai_provider: openai
+      base_url: https://api.openai.com/v1
+      models:
+        default: gpt-4o
+        reasoning: gpt-5.1
+        fast: gpt-4o-mini
+      credentials:
+        - label: default
+          priority: 0
+          api_key: "" # Use NAMELENS_AILINK_PROVIDERS_NAMELENS_OPENAI_CREDENTIALS_0_API_KEY env var
 
 # Expert output (routes through AILink)
 expert:
@@ -138,12 +153,58 @@ remote libsql/Turso database instead of a local file.
 AILink providers are configured as **named instances** under `ailink.providers`.
 The instance id is a slug (e.g. `namelens-xai`, `namelens-openai`).
 
-NameLens ships with an `xai` driver (for Grok via x.ai) and supports an `openai` driver for OpenAI-hosted models.
+NameLens ships with an `xai` driver (for Grok via x.ai) and an `openai` driver for OpenAI-hosted models.
 
 Important terminology note:
 
-- `ai_provider: xai` targets x.ai (Grok). The API is “OpenAI-compatible”, but the model is not an OpenAI model.
+- `ai_provider: xai` targets x.ai (Grok). The API is "OpenAI-compatible", but the model is not an OpenAI model.
 - `ai_provider: openai` targets OpenAI (GPT models).
+
+#### Provider Recommendations
+
+| Use Case | Recommended Provider | Reason |
+|----------|---------------------|--------|
+| Expert search (`--expert`) | xAI (Grok) | Real-time web intelligence via live search |
+| Phonetics (`--phonetics`) | OpenAI or xAI | Both produce comparable results |
+| Suitability (`--suitability`) | OpenAI or xAI | Both work; xAI may catch more via web search |
+| Generate (`generate`) | OpenAI | Fast, reliable structured JSON output |
+| Review (`review`) | Either | Works on both providers |
+
+**Key difference:** xAI/Grok has built-in web search capabilities for real-time internet intelligence. OpenAI runs "offline" without live web search but is faster for structured analysis.
+
+#### OpenAI Provider Setup
+
+```bash
+# Enable OpenAI provider
+NAMELENS_AILINK_PROVIDERS_NAMELENS_OPENAI_ENABLED=true
+NAMELENS_AILINK_PROVIDERS_NAMELENS_OPENAI_AI_PROVIDER=openai
+NAMELENS_AILINK_PROVIDERS_NAMELENS_OPENAI_BASE_URL=https://api.openai.com/v1
+NAMELENS_AILINK_PROVIDERS_NAMELENS_OPENAI_CREDENTIALS_0_API_KEY=sk-your-key
+
+# Model tiers (recommended)
+NAMELENS_AILINK_PROVIDERS_NAMELENS_OPENAI_MODELS_DEFAULT=gpt-4o
+NAMELENS_AILINK_PROVIDERS_NAMELENS_OPENAI_MODELS_REASONING=gpt-5.1
+NAMELENS_AILINK_PROVIDERS_NAMELENS_OPENAI_MODELS_FAST=gpt-4o-mini
+
+# To use OpenAI as default provider
+NAMELENS_AILINK_DEFAULT_PROVIDER=namelens-openai
+```
+
+#### Model Tiers
+
+NameLens supports model tiers for different workloads:
+
+| Tier | OpenAI Model | xAI Model | Used When |
+|------|--------------|-----------|-----------|
+| `default` | gpt-4o | grok-4-1-fast-reasoning | Most prompts, `--depth=quick` |
+| `reasoning` | gpt-5.1 | - | Deep analysis, `--depth=deep` |
+| `fast` | gpt-4o-mini | - | Quick triage, `--depth=fast` |
+
+**Note:** For fast tier, use `gpt-4o-mini`. Smaller models like `gpt-5-mini` may fail schema validation on structured prompts.
+
+#### OpenAI Structured Outputs
+
+NameLens automatically uses OpenAI's native `json_schema` structured outputs with `strict: true` when the prompt defines a response schema. This ensures reliable JSON output that validates against the schema. If a model doesn't support `json_schema`, AILink falls back to `json_object` mode.
 
 | Variable                           | Default        | Description               |
 | ---------------------------------- | -------------- | ------------------------- |

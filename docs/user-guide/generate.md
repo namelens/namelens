@@ -18,13 +18,18 @@ a concept description. This enables the full naming workflow:
 
 ## Prerequisites
 
-Requires an AI backend (xAI/Grok) with API key configured:
+Requires an AI backend with API key configured. OpenAI is recommended for generate due to fast, reliable structured outputs:
 
 ```bash
+# OpenAI (recommended for generate)
+export NAMELENS_AILINK_PROVIDERS_NAMELENS_OPENAI_CREDENTIALS_0_API_KEY=your-api-key
+export NAMELENS_AILINK_DEFAULT_PROVIDER=namelens-openai
+
+# Or xAI/Grok
 export NAMELENS_AILINK_PROVIDERS_NAMELENS_XAI_CREDENTIALS_0_API_KEY=your-api-key
-# Optional: override default model
-export NAMELENS_AILINK_PROVIDERS_NAMELENS_XAI_MODELS_DEFAULT=grok-4-1-fast-reasoning
 ```
+
+See [Configuration](configuration.md) for full provider setup.
 
 ## Usage
 
@@ -63,10 +68,13 @@ namelens generate "static analyzer for shell scripts" \
 ### Generation Depth
 
 ```bash
-# Quick generation (default)
+# Quick generation (default) - uses default model
 namelens generate "agent gateway" --depth quick
 
-# Deep generation (more thorough, slower)
+# Fast generation - uses fast model tier (gpt-4o-mini for OpenAI)
+namelens generate "agent gateway" --depth fast
+
+# Deep generation - uses reasoning model (gpt-5.1 for OpenAI)
 namelens generate "agent gateway" --depth deep
 ```
 
@@ -89,7 +97,7 @@ namelens generate "process utilities library" --json
 | `--description`      | `-d`  | string | Inline product description                           |
 | `--description-file` | `-f`  | path   | Read description from file (truncated to 2000 chars) |
 | `--constraints`      | `-c`  | string | Naming constraints/requirements                      |
-| `--depth`            |       | string | `quick` (default) or `deep`                          |
+| `--depth`            |       | string | `quick` (default), `fast`, or `deep`                 |
 | `--json`             |       | bool   | Output raw JSON response                             |
 | `--model`            |       | string | Model override                                       |
 | `--prompt`           |       | string | Prompt slug (default: `name-alternatives`)           |
@@ -165,25 +173,42 @@ namelens check fulsigil --phonetics --suitability --locales=en-US,de-DE,ja-JP
 Set the model via environment or flag:
 
 ```bash
+# For OpenAI
+export NAMELENS_AILINK_PROVIDERS_NAMELENS_OPENAI_MODELS_DEFAULT=gpt-4o
+
+# For xAI
 export NAMELENS_AILINK_PROVIDERS_NAMELENS_XAI_MODELS_DEFAULT=grok-4-1-fast-reasoning
-# or
-namelens generate "my concept" --model grok-4-1-fast-reasoning
+
+# Or override per-command
+namelens generate "my concept" --model gpt-4o
 ```
 
 ### "API key not configured"
 
-Set the API key:
+Set the API key for your provider:
 
 ```bash
+# For OpenAI
+export NAMELENS_AILINK_PROVIDERS_NAMELENS_OPENAI_CREDENTIALS_0_API_KEY=your-key
+
+# For xAI
 export NAMELENS_AILINK_PROVIDERS_NAMELENS_XAI_CREDENTIALS_0_API_KEY=your-key
 ```
 
 ### Slow Response
 
-Generation can take 10-30 seconds. Use `--depth quick` for faster results:
+OpenAI typically responds in 1-5 seconds. xAI can take 10-30 seconds due to web search.
+
+Use `--depth quick` for faster results:
 
 ```bash
 namelens generate "my concept" --depth quick
+```
+
+Use `--depth fast` with OpenAI for fastest results (uses gpt-4o-mini):
+
+```bash
+namelens generate "my concept" --depth fast
 ```
 
 ## Related
