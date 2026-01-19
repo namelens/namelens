@@ -58,6 +58,8 @@ func (s *Service) Search(ctx context.Context, req SearchRequest) (*SearchRespons
 
 	tools := promptTools(promptDef, req.UseTools)
 
+	// search_parameters is an xAI-specific extension used to enable server-side web/X search.
+	// Other providers (e.g. OpenAI) should run without search rather than failing.
 	searchParams := buildSearchParams(promptDef.Config.Tools, req.UseTools)
 
 	messages := []content.Message{
@@ -83,7 +85,12 @@ func (s *Service) Search(ctx context.Context, req SearchRequest) (*SearchRespons
 		ResponseFormat:   &driver.ResponseFormat{Type: "json_object"},
 		PromptSlug:       promptDef.Config.Slug,
 	}
-	if searchParams != nil {
+
+	// search_parameters only works with the xAI driver. For other drivers, run “offline”.
+	if resolved.Driver.Name() != "xai" {
+		driverReq.SearchParameters = nil
+	}
+	if driverReq.SearchParameters != nil {
 		driverReq.Tools = nil // Prefer search_parameters for xAI; avoid conflicts
 	}
 
@@ -159,6 +166,9 @@ func (s *Service) Generate(ctx context.Context, req GenerateRequest) (*GenerateR
 	}
 
 	tools := promptTools(promptDef, req.UseTools)
+
+	// search_parameters is an xAI-specific extension used to enable server-side web/X search.
+	// Other providers (e.g. OpenAI) should run without search rather than failing.
 	searchParams := buildSearchParams(promptDef.Config.Tools, req.UseTools)
 
 	messages := []content.Message{
@@ -184,7 +194,12 @@ func (s *Service) Generate(ctx context.Context, req GenerateRequest) (*GenerateR
 		ResponseFormat:   &driver.ResponseFormat{Type: "json_object"},
 		PromptSlug:       promptDef.Config.Slug,
 	}
-	if searchParams != nil {
+
+	// search_parameters only works with the xAI driver. For other drivers, run “offline”.
+	if resolved.Driver.Name() != "xai" {
+		driverReq.SearchParameters = nil
+	}
+	if driverReq.SearchParameters != nil {
 		driverReq.Tools = nil
 	}
 
