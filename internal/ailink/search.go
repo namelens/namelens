@@ -82,7 +82,7 @@ func (s *Service) Search(ctx context.Context, req SearchRequest) (*SearchRespons
 		Messages:         messages,
 		Tools:            tools,
 		SearchParameters: searchParams,
-		ResponseFormat:   &driver.ResponseFormat{Type: "json_object"},
+		ResponseFormat:   responseFormatForProvider(resolved, promptDef),
 		PromptSlug:       promptDef.Config.Slug,
 	}
 
@@ -112,7 +112,16 @@ func (s *Service) Search(ctx context.Context, req SearchRequest) (*SearchRespons
 
 	resp, err := resolved.Driver.Complete(ctx, driverReq)
 	if err != nil {
-		return nil, err
+		// If OpenAI rejects json_schema, retry once with json_object.
+		if resolved.Driver.Name() == "openai" && isOpenAIUnsupportedSchemaError(err) {
+			fallbackToJSONObject(driverReq)
+			resp, err = resolved.Driver.Complete(ctx, driverReq)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
 	}
 
 	raw := extractContent(resp)
@@ -204,7 +213,7 @@ func (s *Service) Generate(ctx context.Context, req GenerateRequest) (*GenerateR
 		Messages:         messages,
 		Tools:            tools,
 		SearchParameters: searchParams,
-		ResponseFormat:   &driver.ResponseFormat{Type: "json_object"},
+		ResponseFormat:   responseFormatForProvider(resolved, promptDef),
 		PromptSlug:       promptDef.Config.Slug,
 	}
 
@@ -234,7 +243,16 @@ func (s *Service) Generate(ctx context.Context, req GenerateRequest) (*GenerateR
 
 	resp, err := resolved.Driver.Complete(ctx, driverReq)
 	if err != nil {
-		return nil, err
+		// If OpenAI rejects json_schema, retry once with json_object.
+		if resolved.Driver.Name() == "openai" && isOpenAIUnsupportedSchemaError(err) {
+			fallbackToJSONObject(driverReq)
+			resp, err = resolved.Driver.Complete(ctx, driverReq)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
 	}
 
 	raw := extractContent(resp)

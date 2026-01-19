@@ -31,8 +31,21 @@ type Tool struct {
 }
 
 // ResponseFormat specifies the expected response format.
+//
+// Note: Some providers (e.g. OpenAI) support additional structured modes such as
+// "json_schema".
 type ResponseFormat struct {
-	Type string `json:"type"` // "text", "json_object"
+	Type string `json:"type"` // "text", "json_object", "json_schema"
+
+	// JSONSchema is provider-specific configuration for strict JSON schema output.
+	// When Type is "json_schema", drivers may use this to request schema-constrained output.
+	JSONSchema *JSONSchema `json:"json_schema,omitempty"`
+}
+
+type JSONSchema struct {
+	Name   string         `json:"name"`
+	Strict bool           `json:"strict"`
+	Schema map[string]any `json:"schema"`
 }
 
 // Usage contains token usage statistics.

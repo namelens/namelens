@@ -23,7 +23,14 @@ type chatMessage struct {
 }
 
 type responseFormat struct {
-	Type string `json:"type"`
+	Type       string            `json:"type"`
+	JSONSchema *responseJSONSpec `json:"json_schema,omitempty"`
+}
+
+type responseJSONSpec struct {
+	Name   string         `json:"name"`
+	Strict bool           `json:"strict"`
+	Schema map[string]any `json:"schema"`
 }
 
 type contentBlock struct {
@@ -58,6 +65,13 @@ func buildChatRequest(req *driver.Request) (*chatCompletionRequest, error) {
 	}
 	if req.ResponseFormat != nil {
 		payload.ResponseFormat = &responseFormat{Type: req.ResponseFormat.Type}
+		if req.ResponseFormat.JSONSchema != nil {
+			payload.ResponseFormat.JSONSchema = &responseJSONSpec{
+				Name:   req.ResponseFormat.JSONSchema.Name,
+				Strict: req.ResponseFormat.JSONSchema.Strict,
+				Schema: req.ResponseFormat.JSONSchema.Schema,
+			}
+		}
 	}
 
 	return payload, nil

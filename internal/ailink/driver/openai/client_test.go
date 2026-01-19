@@ -86,6 +86,9 @@ func TestClientErrorsOnNon2xx(t *testing.T) {
 
 	_, err := client.Complete(context.Background(), &driver.Request{Model: "test", Messages: []content.Message{{Role: "user", Content: []content.ContentBlock{{Type: content.ContentTypeText, Text: "hi"}}}}})
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "status 401")
-	require.Contains(t, err.Error(), "nope")
+
+	var perr *driver.ProviderError
+	require.ErrorAs(t, err, &perr)
+	require.Equal(t, 401, perr.StatusCode)
+	require.Contains(t, perr.Message, "nope")
 }
