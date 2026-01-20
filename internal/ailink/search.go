@@ -82,7 +82,7 @@ func (s *Service) Search(ctx context.Context, req SearchRequest) (*SearchRespons
 		Messages:         messages,
 		Tools:            tools,
 		SearchParameters: searchParams,
-		ResponseFormat:   responseFormatForProvider(resolved, promptDef),
+		ResponseFormat:   responseFormatForProvider(resolved, promptDef, s.Catalog),
 		PromptSlug:       promptDef.Config.Slug,
 	}
 
@@ -213,7 +213,7 @@ func (s *Service) Generate(ctx context.Context, req GenerateRequest) (*GenerateR
 		Messages:         messages,
 		Tools:            tools,
 		SearchParameters: searchParams,
-		ResponseFormat:   responseFormatForProvider(resolved, promptDef),
+		ResponseFormat:   responseFormatForProvider(resolved, promptDef, s.Catalog),
 		PromptSlug:       promptDef.Config.Slug,
 	}
 

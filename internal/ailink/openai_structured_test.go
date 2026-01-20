@@ -13,7 +13,7 @@ func TestResponseFormatForProviderUsesJSONSchemaForOpenAIWhenSchemaPresent(t *te
 	resolved := &ResolvedProvider{Driver: &recordingDriver{name: "openai"}}
 	def := &prompt.Prompt{Config: prompt.Config{Slug: "name-phonetics", ResponseSchema: map[string]any{"type": "object"}}}
 
-	format := responseFormatForProvider(resolved, def)
+	format := responseFormatForProvider(resolved, def, nil)
 	require.NotNil(t, format)
 	require.Equal(t, "json_schema", format.Type)
 	require.NotNil(t, format.JSONSchema)

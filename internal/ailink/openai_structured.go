@@ -4,17 +4,18 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/fulmenhq/gofulmen/schema"
 	"github.com/namelens/namelens/internal/ailink/driver"
 	"github.com/namelens/namelens/internal/ailink/prompt"
 )
 
-func responseFormatForProvider(resolved *ResolvedProvider, def *prompt.Prompt) *driver.ResponseFormat {
+func responseFormatForProvider(resolved *ResolvedProvider, def *prompt.Prompt, catalog *schema.Catalog) *driver.ResponseFormat {
 	if def == nil {
 		return &driver.ResponseFormat{Type: "json_object"}
 	}
 
 	if resolved != nil && resolved.Driver != nil && resolved.Driver.Name() == "openai" {
-		if schema := def.Config.ResponseSchema; len(schema) > 0 {
+		if schema := openAISchemaForPrompt(def, catalog); len(schema) > 0 {
 			name := strings.TrimSpace(def.Config.Slug)
 			if name == "" {
 				name = "namelens_schema"
