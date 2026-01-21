@@ -48,7 +48,7 @@ func (c *Client) Name() string {
 func (c *Client) Capabilities() driver.Capabilities {
 	return driver.Capabilities{
 		SupportsTools:     true,
-		SupportsImages:    false,
+		SupportsImages:    true,
 		SupportsStreaming: false,
 	}
 }

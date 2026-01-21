@@ -16,6 +16,32 @@ type Driver interface {
 	Capabilities() Capabilities
 }
 
+// ImageGenerator is an optional interface implemented by drivers that support image generation.
+//
+// This keeps the core Driver interface stable for text-only providers.
+type ImageGenerator interface {
+	GenerateImage(ctx context.Context, req *ImageRequest) (*ImageResponse, error)
+}
+
+type ImageRequest struct {
+	Model        string
+	Prompt       string
+	Count        int
+	Size         string
+	OutputFormat string
+	Background   string
+	Quality      string
+	PromptSlug   string
+}
+
+type ImageResponse struct {
+	Created      int64
+	OutputFormat string
+	Size         string
+	Quality      string
+	Images       []content.ContentBlock
+}
+
 // Capabilities describes driver features.
 type Capabilities struct {
 	SupportsTools     bool
