@@ -31,8 +31,14 @@ Guidelines:
 - Keep directions suitable for a CLI/developer audience.
 - Avoid generic clipart and avoid trademarked shapes/logos.
 - Prefer simple vector-like marks that could scale to a small favicon.
-- Provide an image prompt that is self-contained and can be used as-is.
 - Use a consistent neutral background unless otherwise specified.
+
+Image prompt requirements:
+- Each image_prompt MUST include "no text, no letters, no words" to prevent unwanted typography.
+- Each image_prompt MUST specify the visual style: "flat vector logo", "minimalist symbol", or "clean geometric mark".
+- Each image_prompt should be 40-80 words and describe the symbol concept clearly.
+- Include: "centered composition", "simple shapes", "professional brand mark".
+- Avoid: photorealistic, 3D rendering, gradients, complex textures.
 
 Respond EXCLUSIVELY in this JSON structure (no markdown, no extra text):
 

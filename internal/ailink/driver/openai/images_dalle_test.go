@@ -19,6 +19,7 @@ func TestClientGenerateImageDALLEOmitsOutputFormatAndBackground(t *testing.T) {
 
 		require.Equal(t, "dall-e-3", payload["model"])
 		require.Equal(t, "b64_json", payload["response_format"])
+		require.Equal(t, "standard", payload["quality"])
 		_, hasOutput := payload["output_format"]
 		require.False(t, hasOutput)
 		_, hasBackground := payload["background"]
@@ -32,7 +33,7 @@ func TestClientGenerateImageDALLEOmitsOutputFormatAndBackground(t *testing.T) {
 	client := NewClient(server.URL, "test-key")
 	client.HTTPClient = server.Client()
 
-	resp, err := client.GenerateImage(context.Background(), &driver.ImageRequest{Model: "dall-e-3", Prompt: "hello", Count: 1, OutputFormat: "webp", Background: "transparent"})
+	resp, err := client.GenerateImage(context.Background(), &driver.ImageRequest{Model: "dall-e-3", Prompt: "hello", Count: 1, OutputFormat: "webp", Background: "transparent", Quality: "auto"})
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 }

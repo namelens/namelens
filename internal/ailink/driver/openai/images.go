@@ -71,9 +71,14 @@ func (c *Client) GenerateImage(ctx context.Context, req *driver.ImageRequest) (*
 	}
 
 	// DALL·E models require response_format and do not support output_format/background.
+	// DALL·E 3 expects quality standard|hd; default "auto" coerces to standard.
 	// GPT image models accept output_format/background and always return base64.
 	if strings.HasPrefix(payload.Model, "dall-e") {
 		payload.ResponseFormat = "b64_json"
+		q := strings.ToLower(strings.TrimSpace(payload.Quality))
+		if q == "" || q == "auto" {
+			payload.Quality = "standard"
+		}
 	} else {
 		payload.OutputFormat = strings.TrimSpace(req.OutputFormat)
 		payload.Background = strings.TrimSpace(req.Background)
