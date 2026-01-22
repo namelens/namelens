@@ -38,7 +38,7 @@ func init() {
 	markCmd.Flags().String("background", "auto", "Background: auto, transparent, opaque")
 	markCmd.Flags().String("out-dir", "", "Write images to a directory (required)")
 	markCmd.Flags().String("model", "", "Text model override")
-	markCmd.Flags().String("image-provider-role", "brand-mark:image", "Role key used for image provider routing")
+	markCmd.Flags().String("image-provider-role", "brand-mark-image", "Role key used for image provider routing")
 	markCmd.Flags().String("image-model", "", "Image model override (default from provider models.image, else models.default)")
 }
 
@@ -101,7 +101,7 @@ func runMark(cmd *cobra.Command, args []string) error {
 
 	imageProviderRole = strings.TrimSpace(imageProviderRole)
 	if imageProviderRole == "" {
-		imageProviderRole = "brand-mark:image"
+		imageProviderRole = "brand-mark-image"
 	}
 	resolvedImage, err := providers.ResolveWithDepth(imageProviderRole, promptDef, "", depth)
 	if err != nil {

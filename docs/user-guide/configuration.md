@@ -231,6 +231,18 @@ Role routing can be set with:
 
 - `NAMELENS_AILINK_ROUTING_<ROLE>=<provider-id>`
 
+For `namelens mark`, use separate roles for text vs image generation:
+
+- `brand-mark` (mark directions + image prompts)
+- `brand-mark-image` (image generation)
+
+Example:
+
+```bash
+NAMELENS_AILINK_ROUTING_BRAND_MARK=namelens-openai
+NAMELENS_AILINK_ROUTING_BRAND_MARK_IMAGE=namelens-openai-image
+```
+
 ### Expert Feature Configuration
 
 NameLens “expert” features are prompt-driven; provider selection is handled by
