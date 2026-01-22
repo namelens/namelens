@@ -37,7 +37,9 @@ func init() {
 	markCmd.Flags().String("quality", "auto", "Quality: auto, low, medium, high")
 	markCmd.Flags().String("background", "auto", "Background: auto, transparent, opaque")
 	markCmd.Flags().String("out-dir", "", "Write images to a directory (required)")
-	markCmd.Flags().String("model", "", "Model override")
+	markCmd.Flags().String("model", "", "Text model override")
+	markCmd.Flags().String("image-provider-role", "brand-mark:image", "Role key used for image provider routing")
+	markCmd.Flags().String("image-model", "", "Image model override (default from provider models.image, else models.default)")
 }
 
 func runMark(cmd *cobra.Command, args []string) error {
@@ -55,6 +57,8 @@ func runMark(cmd *cobra.Command, args []string) error {
 	background, _ := cmd.Flags().GetString("background")
 	outDir, _ := cmd.Flags().GetString("out-dir")
 	modelOverride, _ := cmd.Flags().GetString("model")
+	imageProviderRole, _ := cmd.Flags().GetString("image-provider-role")
+	imageModelOverride, _ := cmd.Flags().GetString("image-model")
 
 	promptSlug = strings.TrimSpace(promptSlug)
 	if promptSlug == "" {
@@ -90,14 +94,23 @@ func runMark(cmd *cobra.Command, args []string) error {
 	}
 
 	providers := ailink.NewRegistry(cfg.AILink)
-	resolved, err := providers.ResolveWithDepth(promptSlug, promptDef, modelOverride, depth)
+	resolvedText, err := providers.ResolveWithDepth(promptSlug, promptDef, modelOverride, depth)
 	if err != nil {
-		return fmt.Errorf("resolving provider: %w", err)
+		return fmt.Errorf("resolving text provider: %w", err)
 	}
 
-	gen, ok := resolved.Driver.(driver.ImageGenerator)
+	imageProviderRole = strings.TrimSpace(imageProviderRole)
+	if imageProviderRole == "" {
+		imageProviderRole = "brand-mark:image"
+	}
+	resolvedImage, err := providers.ResolveWithDepth(imageProviderRole, promptDef, "", depth)
+	if err != nil {
+		return fmt.Errorf("resolving image provider: %w", err)
+	}
+
+	gen, ok := resolvedImage.Driver.(driver.ImageGenerator)
 	if !ok {
-		return fmt.Errorf("provider %q does not support image generation", resolved.Driver.Name())
+		return fmt.Errorf("provider %q does not support image generation", resolvedImage.Driver.Name())
 	}
 
 	catalog, err := buildSchemaCatalog()
@@ -107,8 +120,25 @@ func runMark(cmd *cobra.Command, args []string) error {
 	service := &ailink.Service{Providers: providers, Registry: registry, Catalog: catalog}
 	_ = service
 
+	imageModel := strings.TrimSpace(imageModelOverride)
+	if imageModel == "" {
+		if cfg.AILink.Providers != nil {
+			if providerCfg, ok := cfg.AILink.Providers[resolvedImage.ProviderID]; ok {
+				if providerCfg.Models != nil {
+					imageModel = strings.TrimSpace(providerCfg.Models["image"])
+					if imageModel == "" {
+						imageModel = strings.TrimSpace(providerCfg.Models["default"])
+					}
+				}
+			}
+		}
+	}
+	if imageModel == "" {
+		imageModel = resolvedImage.Model
+	}
+
 	// Step 1: generate mark directions + per-image prompts (schema-validated).
-	markJSON, genErr, _ := runReviewGenerate(ctx, cfg, nil, promptSlug, name, depth, modelOverride, map[string]string{"name": name}, false)
+	markJSON, genErr, _ := runReviewGenerate(ctx, cfg, nil, promptSlug, name, depth, resolvedText.Model, map[string]string{"name": name}, false)
 	if genErr != nil {
 		return fmt.Errorf("mark prompt failed: %s: %s", genErr.Code, genErr.Message)
 	}
@@ -143,7 +173,7 @@ func runMark(cmd *cobra.Command, args []string) error {
 	for i := 0; i < limit; i++ {
 		mark := parsed.Marks[i]
 		imgResp, err := gen.GenerateImage(ctx, &driver.ImageRequest{
-			Model:        resolved.Model,
+			Model:        imageModel,
 			Prompt:       mark.ImagePrompt,
 			Count:        1,
 			Size:         size,
