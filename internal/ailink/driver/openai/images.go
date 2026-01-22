@@ -60,21 +60,23 @@ func (c *Client) GenerateImage(ctx context.Context, req *driver.ImageRequest) (*
 	}
 
 	payload := imageGenerationRequest{
-		Model:        strings.TrimSpace(req.Model),
-		Prompt:       req.Prompt,
-		N:            count,
-		Size:         strings.TrimSpace(req.Size),
-		Quality:      strings.TrimSpace(req.Quality),
-		OutputFormat: strings.TrimSpace(req.OutputFormat),
-		Background:   strings.TrimSpace(req.Background),
+		Model:   strings.TrimSpace(req.Model),
+		Prompt:  req.Prompt,
+		N:       count,
+		Size:    strings.TrimSpace(req.Size),
+		Quality: strings.TrimSpace(req.Quality),
 	}
 	if payload.Model == "" {
 		payload.Model = "dall-e-2"
 	}
 
-	// DALL·E models require response_format for base64; GPT image models always return b64_json.
+	// DALL·E models require response_format and do not support output_format/background.
+	// GPT image models accept output_format/background and always return base64.
 	if strings.HasPrefix(payload.Model, "dall-e") {
 		payload.ResponseFormat = "b64_json"
+	} else {
+		payload.OutputFormat = strings.TrimSpace(req.OutputFormat)
+		payload.Background = strings.TrimSpace(req.Background)
 	}
 
 	ctx, cancel := withTimeout(ctx, c.Timeout)
