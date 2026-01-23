@@ -85,6 +85,11 @@ func runImageThumb(cmd *cobra.Command, _ []string) error {
 		if !strings.HasSuffix(lower, ".png") && !strings.HasSuffix(lower, ".jpg") && !strings.HasSuffix(lower, ".jpeg") {
 			continue
 		}
+		if strings.HasSuffix(lower, "."+strings.ToLower(suffix)+".png") ||
+			strings.HasSuffix(lower, "."+strings.ToLower(suffix)+".jpg") ||
+			strings.HasSuffix(lower, "."+strings.ToLower(suffix)+".jpeg") {
+			continue
+		}
 
 		inPath := filepath.Join(absIn, name)
 		outPath := thumbnailPath(absOut, name, suffix, format)
