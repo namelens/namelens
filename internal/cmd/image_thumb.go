@@ -13,6 +13,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"golang.org/x/image/draw"
+	_ "golang.org/x/image/webp"
 )
 
 var imageThumbCmd = &cobra.Command{
@@ -82,12 +83,13 @@ func runImageThumb(cmd *cobra.Command, _ []string) error {
 		}
 		name := entry.Name()
 		lower := strings.ToLower(name)
-		if !strings.HasSuffix(lower, ".png") && !strings.HasSuffix(lower, ".jpg") && !strings.HasSuffix(lower, ".jpeg") {
+		if !strings.HasSuffix(lower, ".png") && !strings.HasSuffix(lower, ".jpg") && !strings.HasSuffix(lower, ".jpeg") && !strings.HasSuffix(lower, ".webp") {
 			continue
 		}
 		if strings.HasSuffix(lower, "."+strings.ToLower(suffix)+".png") ||
 			strings.HasSuffix(lower, "."+strings.ToLower(suffix)+".jpg") ||
-			strings.HasSuffix(lower, "."+strings.ToLower(suffix)+".jpeg") {
+			strings.HasSuffix(lower, "."+strings.ToLower(suffix)+".jpeg") ||
+			strings.HasSuffix(lower, "."+strings.ToLower(suffix)+".webp") {
 			continue
 		}
 

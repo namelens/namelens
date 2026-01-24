@@ -40,6 +40,7 @@ func init() {
 	markCmd.Flags().String("model", "", "Text model override")
 	markCmd.Flags().String("image-provider-role", "brand-mark-image", "Role key used for image provider routing")
 	markCmd.Flags().String("image-model", "", "Image model override (default from provider models.image, else models.default)")
+	markCmd.Flags().String("color", "", "Color mode: monochrome, brand, vibrant")
 }
 
 func runMark(cmd *cobra.Command, args []string) error {
@@ -59,6 +60,7 @@ func runMark(cmd *cobra.Command, args []string) error {
 	modelOverride, _ := cmd.Flags().GetString("model")
 	imageProviderRole, _ := cmd.Flags().GetString("image-provider-role")
 	imageModelOverride, _ := cmd.Flags().GetString("image-model")
+	colorMode, _ := cmd.Flags().GetString("color")
 
 	promptSlug = strings.TrimSpace(promptSlug)
 	if promptSlug == "" {
@@ -103,7 +105,24 @@ func runMark(cmd *cobra.Command, args []string) error {
 	if imageProviderRole == "" {
 		imageProviderRole = "brand-mark-image"
 	}
-	resolvedImage, err := providers.ResolveWithDepth(imageProviderRole, promptDef, "", depth)
+	// Pre-resolve the image model so image-only providers don't need MODELS_DEFAULT.
+	imageModel := strings.TrimSpace(imageModelOverride)
+	if imageModel == "" {
+		if cfg.AILink.Providers != nil {
+			providerID := strings.TrimSpace(cfg.AILink.Routing[imageProviderRole])
+			if providerID != "" {
+				if providerCfg, ok := cfg.AILink.Providers[providerID]; ok {
+					if providerCfg.Models != nil {
+						imageModel = strings.TrimSpace(providerCfg.Models["image"])
+						if imageModel == "" {
+							imageModel = strings.TrimSpace(providerCfg.Models["default"])
+						}
+					}
+				}
+			}
+		}
+	}
+	resolvedImage, err := providers.ResolveWithDepth(imageProviderRole, promptDef, imageModel, depth)
 	if err != nil {
 		return fmt.Errorf("resolving image provider: %w", err)
 	}
@@ -120,25 +139,16 @@ func runMark(cmd *cobra.Command, args []string) error {
 	service := &ailink.Service{Providers: providers, Registry: registry, Catalog: catalog}
 	_ = service
 
-	imageModel := strings.TrimSpace(imageModelOverride)
-	if imageModel == "" {
-		if cfg.AILink.Providers != nil {
-			if providerCfg, ok := cfg.AILink.Providers[resolvedImage.ProviderID]; ok {
-				if providerCfg.Models != nil {
-					imageModel = strings.TrimSpace(providerCfg.Models["image"])
-					if imageModel == "" {
-						imageModel = strings.TrimSpace(providerCfg.Models["default"])
-					}
-				}
-			}
-		}
-	}
 	if imageModel == "" {
 		imageModel = resolvedImage.Model
 	}
 
 	// Step 1: generate mark directions + per-image prompts (schema-validated).
-	markJSON, genErr, _ := runReviewGenerate(ctx, cfg, nil, promptSlug, name, depth, resolvedText.Model, map[string]string{"name": name}, false)
+	vars := map[string]string{"name": name}
+	if strings.TrimSpace(colorMode) != "" {
+		vars["color_mode"] = strings.TrimSpace(colorMode)
+	}
+	markJSON, genErr, _ := runReviewGenerate(ctx, cfg, nil, promptSlug, name, depth, resolvedText.Model, vars, false)
 	if genErr != nil {
 		return fmt.Errorf("mark prompt failed: %s: %s", genErr.Code, genErr.Message)
 	}
