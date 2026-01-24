@@ -34,11 +34,11 @@ Guidelines:
 - Use a consistent neutral background unless otherwise specified.
 
 Image prompt requirements:
-- Each image_prompt MUST include "no text, no letters, no words" to prevent unwanted typography.
+- CRITICAL: Each image_prompt MUST begin with "A logo mark with absolutely no text, no letters, no words, no typography, no characters anywhere in the image."
 - Each image_prompt MUST specify the visual style: "flat vector logo", "minimalist symbol", or "clean geometric mark".
-- Each image_prompt should be 40-80 words and describe the symbol concept clearly.
-- Include: "centered composition", "simple shapes", "professional brand mark".
-- Avoid: photorealistic, 3D rendering, gradients, complex textures.
+- Each image_prompt should be 50-90 words and describe the symbol concept clearly.
+- Include: "centered composition", "simple shapes", "professional brand mark", "clean negative space".
+- Avoid: photorealistic, 3D rendering, gradients, complex textures, any form of text or letterforms.
 
 Respond EXCLUSIVELY in this JSON structure (no markdown, no extra text):
 

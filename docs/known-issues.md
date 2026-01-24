@@ -3,6 +3,48 @@
 This file documents version-specific issues and temporary gaps in NameLens. See
 [Troubleshooting Guide](troubleshooting.md) for evergreen patterns.
 
+## Version 0.1.4
+
+### xAI Image Generation (Experimental)
+
+**Status:** ⚠️ Experimental
+
+**Issue:** xAI's grok-2-image model is supported but has significant limitations
+for brand mark generation:
+
+- **No size control:** The API does not support `size` parameters; output
+  dimensions are model-determined (often non-square aspect ratios)
+- **No quality/style control:** `quality` and `style` parameters are ignored
+- **Inconsistent aspect ratios:** Brand marks typically require 1:1 square
+  output for favicon/icon use; grok-2-image produces varied aspect ratios
+- **Photorealistic tendency:** Output style leans photorealistic/3D rather than
+  flat vector logos suitable for brand marks
+
+Per [xAI documentation](https://docs.x.ai/docs/guides/image-generations), only
+`model`, `prompt`, `n`, and `response_format` are currently supported.
+
+**Recommendation:** Use OpenAI GPT Image models (e.g. `gpt-image-1.5`) for
+`brand-mark-image` routing until xAI adds dimension and style controls. xAI image
+generation may be viable for other use cases where aspect ratio and style are
+less constrained.
+
+**Future:** xAI may expose additional parameters through their SDK or future API
+updates. Monitor their documentation for `size`, `aspect_ratio`, or `style`
+support.
+
+**Configuration:**
+
+```bash
+# Recommended: OpenAI GPT Image models for brand marks
+NAMELENS_AILINK_ROUTING_BRAND_MARK_IMAGE=namelens-openai-image
+NAMELENS_AILINK_PROVIDERS_NAMELENS_OPENAI_IMAGE_MODELS_IMAGE=gpt-image-1.5
+
+# Experimental: xAI (non-square output, photorealistic style)
+# NAMELENS_AILINK_ROUTING_BRAND_MARK_IMAGE=namelens-xai
+```
+
+---
+
 ## Version 0.1.3
 
 ### RDAP Canonical Endpoint for .app/.dev TLDs

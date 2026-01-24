@@ -23,6 +23,7 @@ type imageGenerationRequest struct {
 	OutputFormat string `json:"output_format,omitempty"`
 	Background   string `json:"background,omitempty"`
 	// response_format is used for DALL·E models; GPT image models always return base64.
+	// DALL·E support is deprecated in NameLens; this field is kept for compatibility.
 	ResponseFormat string `json:"response_format,omitempty"`
 }
 
@@ -67,22 +68,13 @@ func (c *Client) GenerateImage(ctx context.Context, req *driver.ImageRequest) (*
 		Quality: strings.TrimSpace(req.Quality),
 	}
 	if payload.Model == "" {
-		payload.Model = "dall-e-2"
+		payload.Model = "gpt-image-1.5"
 	}
 
-	// DALL·E models require response_format and do not support output_format/background.
-	// DALL·E 3 expects quality standard|hd; default "auto" coerces to standard.
-	// GPT image models accept output_format/background and always return base64.
-	if strings.HasPrefix(payload.Model, "dall-e") {
-		payload.ResponseFormat = "b64_json"
-		q := strings.ToLower(strings.TrimSpace(payload.Quality))
-		if q == "" || q == "auto" {
-			payload.Quality = "standard"
-		}
-	} else {
-		payload.OutputFormat = strings.TrimSpace(req.OutputFormat)
-		payload.Background = strings.TrimSpace(req.Background)
-	}
+	// GPT Image models accept output_format/background and always return base64.
+	payload.OutputFormat = strings.TrimSpace(req.OutputFormat)
+	payload.Background = strings.TrimSpace(req.Background)
+	payload.ResponseFormat = ""
 
 	ctx, cancel := withTimeout(ctx, c.Timeout)
 	if cancel != nil {
