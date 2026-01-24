@@ -41,6 +41,8 @@ func init() {
 	markCmd.Flags().String("image-provider-role", "brand-mark-image", "Role key used for image provider routing")
 	markCmd.Flags().String("image-model", "", "Image model override (default from provider models.image, else models.default)")
 	markCmd.Flags().String("color", "", "Color mode: monochrome, brand, vibrant")
+	markCmd.Flags().String("description", "", "One-line product description (helps image direction)")
+	markCmd.Flags().String("audience", "", "Target audience (e.g. developers, startups)")
 }
 
 func runMark(cmd *cobra.Command, args []string) error {
@@ -61,6 +63,8 @@ func runMark(cmd *cobra.Command, args []string) error {
 	imageProviderRole, _ := cmd.Flags().GetString("image-provider-role")
 	imageModelOverride, _ := cmd.Flags().GetString("image-model")
 	colorMode, _ := cmd.Flags().GetString("color")
+	description, _ := cmd.Flags().GetString("description")
+	audience, _ := cmd.Flags().GetString("audience")
 
 	promptSlug = strings.TrimSpace(promptSlug)
 	if promptSlug == "" {
@@ -147,6 +151,12 @@ func runMark(cmd *cobra.Command, args []string) error {
 	vars := map[string]string{"name": name}
 	if strings.TrimSpace(colorMode) != "" {
 		vars["color_mode"] = strings.TrimSpace(colorMode)
+	}
+	if strings.TrimSpace(description) != "" {
+		vars["description"] = strings.TrimSpace(description)
+	}
+	if strings.TrimSpace(audience) != "" {
+		vars["audience"] = strings.TrimSpace(audience)
 	}
 	markJSON, genErr, _ := runReviewGenerate(ctx, cfg, nil, promptSlug, name, depth, resolvedText.Model, vars, false)
 	if genErr != nil {

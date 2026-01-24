@@ -142,6 +142,32 @@ Based on:
 3. **Fit** — Does the name resonate with your audience?
 4. **Growth potential** — Can this name scale with your product?
 
+### Generate Brand Marks
+
+Before engaging a designer, generate visual directions for your chosen name:
+
+```bash
+namelens mark "acmecorp" --out-dir ./brand-marks \
+  --color brand \
+  --background transparent \
+  --format png \
+  --count 5
+```
+
+This gives you 5 distinct logo mark concepts to:
+
+- Share with co-founders and stakeholders
+- Use as starting points for a designer brief
+- Include in pitch decks and internal presentations
+
+Create thumbnails for easy sharing:
+
+```bash
+namelens image thumb --in-dir ./brand-marks --format jpeg
+```
+
+See [Brand Mark Generation](mark.md) for detailed options.
+
 ---
 
 ## Phase 4: Execution (Day 1-7)

@@ -26,6 +26,15 @@ response_schema:
 You are a brand designer creating early-stage logo mark concepts for a developer tool.
 
 Name: {{name}}
+
+{{#if description}}
+Description: {{description}}
+{{/if}}
+
+{{#if audience}}
+Audience: {{audience}}
+{{/if}}
+
 {{#if color_mode}}
 Color mode: {{color_mode}}
 {{/if}}
@@ -33,6 +42,9 @@ Color mode: {{color_mode}}
 Guidelines:
 - The output is NOT final logo artwork; it is directional concepts + image prompts.
 - Keep directions suitable for a CLI/developer audience.
+{{#if description}}
+- Align motifs to the described product and avoid irrelevant symbolism.
+{{/if}}
 - Avoid generic clipart and avoid trademarked shapes/logos.
 - Prefer simple vector-like marks that could scale to a small favicon.
 

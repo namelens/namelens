@@ -14,6 +14,7 @@
 | "I have a name, is it available?"           | [Quick Availability Check](quick-start.md) |
 | "I need name ideas, not just checks"        | [Name Generation](generate.md)             |
 | "I'm serious about this name—deep research" | [Expert Analysis](expert-search.md)        |
+| "I want logo/mark directions for my name"   | [Brand Mark Generation](mark.md)           |
 | "I run a startup, need the full picture"    | [Startup Naming Guide](startup-guide.md)   |
 | "I'm integrating into my workflow"          | [Configuration](configuration.md)          |
 
@@ -106,7 +107,33 @@ See: [Compare Command](compare.md)
 
 ---
 
-### Workflow 5: Batch Screening
+### Workflow 5: Brand Mark Generation
+
+Generate logo/mark directions for finalist names.
+
+```bash
+namelens mark "myproject" --out-dir ./marks --color brand
+```
+
+**What you get:**
+
+- 3+ distinct logo mark directions
+- AI-generated images for each concept
+- Configurable color palettes
+- Transparent background support
+
+**When to use:**
+
+- After selecting 1-3 finalist names
+- Before engaging a designer
+- Internal presentations
+- Quick visual exploration
+
+See: [Brand Mark Generation](mark.md)
+
+---
+
+### Workflow 6: Batch Screening
 
 Check many names from a file for initial filtering.
 
@@ -150,6 +177,7 @@ MCP server, API, and CI/CD integration.
 
 | Document                              | Description                       |
 | ------------------------------------- | --------------------------------- |
+| [Brand Mark Generation](mark.md)      | Logo/mark directions and images   |
 | [Compare Command](compare.md)         | Side-by-side finalist comparison  |
 | [Configuration](configuration.md)     | Profiles, env vars, customization |
 | [Domain Fallback](domain-fallback.md) | WHOIS and DNS fallback for TLDs   |

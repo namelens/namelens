@@ -7,6 +7,36 @@ Versioning.
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-01-24
+
+### Added
+
+- `namelens mark` command for generating brand mark/logo directions and images
+  - Routes text generation (mark directions) and image generation separately
+  - Supports `--color` flag with modes: `monochrome`, `brand`, `vibrant`
+  - Supports `--description` and `--audience` for better context
+  - Supports `--background transparent` for compositing-ready output
+  - Outputs WebP, PNG, or JPEG in configurable sizes
+- `namelens image thumb` command for generating thumbnails
+  - Produces agent-friendly JPEG/PNG thumbnails from mark images
+  - Supports WebP, PNG, and JPEG input formats
+  - Configurable max size (64-1024px) and output format
+- OpenAI GPT Image model support for image generation
+  - Recommended backend for brand mark generation
+  - Better instruction following and cleaner output than legacy models
+- xAI image generation support (experimental)
+  - grok-2-image model available but limited (no size/aspect control)
+  - Documented as experimental in known-issues.md
+- Separate image provider routing via `brand-mark-image` role
+  - Allows different providers for text vs image generation
+- Brand mark prompt with color mode support and text-free enforcement
+
+### Changed
+
+- AILink now supports image-only provider configurations
+  - Providers no longer require `models.default` for image-only routing
+- Updated `.env.example` with GPT Image and image provider routing examples
+
 ## [0.1.3] - 2026-01-14
 
 ### Added

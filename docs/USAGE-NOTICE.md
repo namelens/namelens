@@ -41,6 +41,40 @@ AI-generated content:
 - Represents a point-in-time analysis that may become outdated
 - Does not replace human judgment or professional review
 
+## AI-Generated Images
+
+The `namelens mark` command uses AI image generation models (e.g., OpenAI GPT
+Image) to create brand mark concepts. Regarding AI-generated images:
+
+**Ownership and Commercial Use**
+
+- Most providers (including OpenAI) grant you ownership of generated images
+- Commercial use is typically permitted under provider terms
+- Review your specific provider's terms of service before commercial use
+
+**Copyright Limitations**
+
+- AI-generated images generally cannot be copyrighted (per current legal
+  precedent) because they are not considered the work of a human creator
+- You may use them commercially, but you cannot claim exclusive copyright
+  protection over the generated content
+
+**Trademark Considerations**
+
+- Generated marks may inadvertently resemble existing trademarks
+- Before using any generated mark for branding, perform visual similarity
+  searches using tools like [TinEye](https://tineye.com),
+  [WIPO Global Brand Database](https://branddb.wipo.int), or professional
+  trademark clearance services
+- Consult with trademark counsel before registration or commercial use
+
+**Best Practices**
+
+- Treat generated marks as directional concepts, not final artwork
+- Use generated marks as starting points for professional design refinement
+- Conduct due diligence on visual similarity before adoption
+- Document your generation process for potential trademark applications
+
 ## Recommended Actions
 
 Before adopting any name for commercial use, you should:

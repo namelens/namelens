@@ -291,6 +291,7 @@ analysis and brand proposal.
 ```bash
 namelens check --help
 namelens batch --help
+namelens mark --help
 namelens doctor  # Troubleshooting
 ```
 
@@ -298,4 +299,5 @@ See also:
 
 - [Startup Naming Guide](startup-guide.md) — End-to-end venture naming
 - [Expert Analysis](expert-search.md) — Deep research capabilities
+- [Brand Mark Generation](mark.md) — Logo/mark directions for finalists
 - [Batch Processing](batch.md) — Compare multiple names
