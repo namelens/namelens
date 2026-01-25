@@ -4,7 +4,7 @@
 .PHONY: all help bootstrap check fmt fmt-check lint check-prompts test test-cov build build-all clean run version install
 .PHONY: precommit prepush dependencies licenses
 .PHONY: release-clean release-download release-checksums release-verify-checksums
-.PHONY: release-sign release-export-keys release-verify-keys release-notes
+.PHONY: release-sign release-export-keys release-verify-keys release-verify-signatures release-notes
 .PHONY: release-upload release-upload-provenance release-upload-all release-build
 .PHONY: release-guard-tag-version
 
@@ -295,6 +295,43 @@ release-verify-keys: ## Verify exported public keys are public-only
 	else \
 		echo "ℹ️  No PGP public key found (skipping)"; \
 	fi
+
+release-verify-signatures: ## Verify signatures on checksum manifests
+	@echo "🔍 Verifying signatures for $(NAMELENS_NAMELENS_RELEASE_TAG)..."
+	@if [ -z "$(NAMELENS_NAMELENS_RELEASE_TAG)" ]; then \
+		echo "❌ NAMELENS_NAMELENS_RELEASE_TAG not set. Use: make release-verify-signatures NAMELENS_NAMELENS_RELEASE_TAG=vX.Y.Z"; \
+		exit 1; \
+	fi
+	@if [ ! -d "$(DIST_RELEASE)" ]; then \
+		echo "❌ $(DIST_RELEASE) directory not found."; \
+		exit 1; \
+	fi
+	@cd "$(DIST_RELEASE)" && \
+		GPG_HOMEDIR_EFF="$${$(SIGNING_ENV_PREFIX)_GPG_HOMEDIR}"; \
+		if [ -z "$$GPG_HOMEDIR_EFF" ]; then GPG_HOMEDIR_EFF="$$GPG_HOMEDIR"; fi; \
+		echo "🔐 Verifying GPG signatures..."; \
+		for asc in SHA256SUMS.asc SHA512SUMS.asc; do \
+			if [ -f "$$asc" ]; then \
+				if [ -n "$$GPG_HOMEDIR_EFF" ]; then \
+					gpg --homedir "$$GPG_HOMEDIR_EFF" --verify "$$asc" "$${asc%.asc}" && \
+					echo "  ✅ $$asc - Good signature"; \
+				else \
+					echo "  ⚠️  $$asc - GPG_HOMEDIR not set; skipping verification"; \
+				fi; \
+			else \
+				echo "  ⚠️  $$asc - Signature file not found"; \
+			fi; \
+		done; \
+		echo "🔏 Verifying minisign signatures..."; \
+		for sig in SHA256SUMS.minisig SHA512SUMS.minisig; do \
+			if [ -f "$$sig" ] && [ -f "$(BINARY_NAME)-minisign.pub" ]; then \
+				minisign -Vm "$${sig%.minisig}" -p $(BINARY_NAME)-minisign.pub && \
+				echo "  ✅ $$sig - Good signature"; \
+			else \
+				echo "  ⚠️  $$sig - Signature or public key file not found"; \
+			fi; \
+		done
+	@echo "✅ Signature verification completed for $(NAMELENS_NAMELENS_RELEASE_TAG)"
 
 release-notes: ## Copy docs/releases/vX.Y.Z.md into dist/release
 	@notes_src="docs/releases/$(NAMELENS_NAMELENS_RELEASE_TAG).md"; \
