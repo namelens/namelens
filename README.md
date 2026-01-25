@@ -1,3 +1,5 @@
+<img src="https://raw.githubusercontent.com/namelens/.github/main/assets/namelens-icon-128.png" width="64" align="right" alt="namelens">
+
 # NameLens
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/3leaps/namelens)](https://goreportcard.com/report/github.com/3leaps/namelens)
@@ -42,6 +44,10 @@ intelligence**:
 > critical trademark conflict our initial codename had—saving us from an
 > expensive rebrand.
 > [Read the origin story →](docs/examples/namelens-origin-story.md)
+>
+> **Designed with itself**: The namelens icon was generated using `namelens mark`,
+> validated through TinEye (0 matches), and adopted as our official brand mark.
+> [Read the brand mark story →](docs/examples/namelens-brand-mark-story.md)
 
 ## Quick Start
 

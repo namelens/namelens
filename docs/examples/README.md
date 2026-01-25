@@ -1,6 +1,6 @@
 ---
-last_updated: 2026-01-05
-tool_version: 0.1.0
+last_updated: 2026-01-25
+tool_version: 0.1.4
 ---
 
 # Examples
@@ -30,10 +30,11 @@ simple availability check missed.
 
 ## Available Examples
 
-| Example                                             | Description                                     | Prompts Used                                                                        |
-| --------------------------------------------------- | ----------------------------------------------- | ----------------------------------------------------------------------------------- |
-| [Tesla Trademark Lesson](tesla-trademark-lesson.md) | Why domain availability doesn't equal usability | name-availability, domain-content                                                   |
-| [namelens Origin Story](namelens-origin-story.md)   | How this tool named itself (with 2026 update)   | name-availability, domain-content, brand-proposal, name-phonetics, name-suitability |
+| Example                                                 | Description                                     | Features Used                                                                       |
+| ------------------------------------------------------- | ----------------------------------------------- | ----------------------------------------------------------------------------------- |
+| [Tesla Trademark Lesson](tesla-trademark-lesson.md)     | Why domain availability doesn't equal usability | name-availability, domain-content                                                   |
+| [namelens Origin Story](namelens-origin-story.md)       | How this tool named itself (with 2026 update)   | name-availability, domain-content, brand-proposal, name-phonetics, name-suitability |
+| [namelens Brand Mark Story](namelens-brand-mark-story.md) | How this tool created its own icon              | namelens mark, --color, --description, --audience, TinEye validation                |
 
 ## Example Categories
 
@@ -46,6 +47,11 @@ simple availability check missed.
 
 - **namelens Origin Story** - Full naming journey from codename discovery
   through candidate evaluation to final brand selection
+
+### Brand Identity
+
+- **namelens Brand Mark Story** - Generating, iterating, and validating a brand
+  mark using the mark command and TinEye similarity checking
 
 ## Running These Examples
 
