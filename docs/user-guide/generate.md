@@ -18,7 +18,8 @@ a concept description. This enables the full naming workflow:
 
 ## Prerequisites
 
-Requires an AI backend with API key configured. OpenAI is recommended for generate due to fast, reliable structured outputs:
+Requires an AI backend with API key configured. OpenAI is recommended for
+generate due to fast, reliable structured outputs:
 
 ```bash
 # OpenAI (recommended for generate)
@@ -197,7 +198,8 @@ export NAMELENS_AILINK_PROVIDERS_NAMELENS_XAI_CREDENTIALS_0_API_KEY=your-key
 
 ### Slow Response
 
-OpenAI typically responds in 1-5 seconds. xAI can take 10-30 seconds due to web search.
+OpenAI typically responds in 1-5 seconds. xAI can take 10-30 seconds due to web
+search.
 
 Use `--depth quick` for faster results:
 

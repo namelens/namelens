@@ -45,8 +45,9 @@ intelligence**:
 > expensive rebrand.
 > [Read the origin story →](docs/examples/namelens-origin-story.md)
 >
-> **Designed with itself**: The namelens icon was generated using `namelens mark`,
-> validated through TinEye (0 matches), and adopted as our official brand mark.
+> **Designed with itself**: The namelens icon was generated using
+> `namelens mark`, validated through TinEye (0 matches), and adopted as our
+> official brand mark.
 > [Read the brand mark story →](docs/examples/namelens-brand-mark-story.md)
 
 ## Quick Start

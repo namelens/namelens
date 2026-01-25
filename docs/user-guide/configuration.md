@@ -153,24 +153,28 @@ remote libsql/Turso database instead of a local file.
 AILink providers are configured as **named instances** under `ailink.providers`.
 The instance id is a slug (e.g. `namelens-xai`, `namelens-openai`).
 
-NameLens ships with an `xai` driver (for Grok via x.ai) and an `openai` driver for OpenAI-hosted models.
+NameLens ships with an `xai` driver (for Grok via x.ai) and an `openai` driver
+for OpenAI-hosted models.
 
 Important terminology note:
 
-- `ai_provider: xai` targets x.ai (Grok). The API is "OpenAI-compatible", but the model is not an OpenAI model.
+- `ai_provider: xai` targets x.ai (Grok). The API is "OpenAI-compatible", but
+  the model is not an OpenAI model.
 - `ai_provider: openai` targets OpenAI (GPT models).
 
 #### Provider Recommendations
 
-| Use Case | Recommended Provider | Reason |
-|----------|---------------------|--------|
-| Expert search (`--expert`) | xAI (Grok) | Real-time web intelligence via live search |
-| Phonetics (`--phonetics`) | OpenAI or xAI | Both produce comparable results |
-| Suitability (`--suitability`) | OpenAI or xAI | Both work; xAI may catch more via web search |
-| Generate (`generate`) | OpenAI | Fast, reliable structured JSON output |
-| Review (`review`) | Either | Works on both providers |
+| Use Case                      | Recommended Provider | Reason                                       |
+| ----------------------------- | -------------------- | -------------------------------------------- |
+| Expert search (`--expert`)    | xAI (Grok)           | Real-time web intelligence via live search   |
+| Phonetics (`--phonetics`)     | OpenAI or xAI        | Both produce comparable results              |
+| Suitability (`--suitability`) | OpenAI or xAI        | Both work; xAI may catch more via web search |
+| Generate (`generate`)         | OpenAI               | Fast, reliable structured JSON output        |
+| Review (`review`)             | Either               | Works on both providers                      |
 
-**Key difference:** xAI/Grok has built-in web search capabilities for real-time internet intelligence. OpenAI runs "offline" without live web search but is faster for structured analysis.
+**Key difference:** xAI/Grok has built-in web search capabilities for real-time
+internet intelligence. OpenAI runs "offline" without live web search but is
+faster for structured analysis.
 
 #### OpenAI Provider Setup
 
@@ -194,17 +198,21 @@ NAMELENS_AILINK_DEFAULT_PROVIDER=namelens-openai
 
 NameLens supports model tiers for different workloads:
 
-| Tier | OpenAI Model | xAI Model | Used When |
-|------|--------------|-----------|-----------|
-| `default` | gpt-4o | grok-4-1-fast-reasoning | Most prompts, `--depth=quick` |
-| `reasoning` | gpt-5.1 | - | Deep analysis, `--depth=deep` |
-| `fast` | gpt-4o-mini | - | Quick triage, `--depth=fast` |
+| Tier        | OpenAI Model | xAI Model               | Used When                     |
+| ----------- | ------------ | ----------------------- | ----------------------------- |
+| `default`   | gpt-4o       | grok-4-1-fast-reasoning | Most prompts, `--depth=quick` |
+| `reasoning` | gpt-5.1      | -                       | Deep analysis, `--depth=deep` |
+| `fast`      | gpt-4o-mini  | -                       | Quick triage, `--depth=fast`  |
 
-**Note:** For fast tier, use `gpt-4o-mini`. Smaller models like `gpt-5-mini` may fail schema validation on structured prompts.
+**Note:** For fast tier, use `gpt-4o-mini`. Smaller models like `gpt-5-mini` may
+fail schema validation on structured prompts.
 
 #### OpenAI Structured Outputs
 
-NameLens automatically uses OpenAI's native `json_schema` structured outputs with `strict: true` when the prompt defines a response schema. This ensures reliable JSON output that validates against the schema. If a model doesn't support `json_schema`, AILink falls back to `json_object` mode.
+NameLens automatically uses OpenAI's native `json_schema` structured outputs
+with `strict: true` when the prompt defines a response schema. This ensures
+reliable JSON output that validates against the schema. If a model doesn't
+support `json_schema`, AILink falls back to `json_object` mode.
 
 | Variable                           | Default        | Description               |
 | ---------------------------------- | -------------- | ------------------------- |
@@ -220,7 +228,8 @@ Provider instances can be overridden via env vars using this pattern
 - `NAMELENS_AILINK_PROVIDERS_<INSTANCE>_BASE_URL`
 - `NAMELENS_AILINK_PROVIDERS_<INSTANCE>_MODELS_DEFAULT`
 - `NAMELENS_AILINK_PROVIDERS_<INSTANCE>_MODELS_REASONING`
-- `NAMELENS_AILINK_PROVIDERS_<INSTANCE>_MODELS_FAST` (recommend `gpt-4o-mini`; some small models may fail schema validation)
+- `NAMELENS_AILINK_PROVIDERS_<INSTANCE>_MODELS_FAST` (recommend `gpt-4o-mini`;
+  some small models may fail schema validation)
 - `NAMELENS_AILINK_PROVIDERS_<INSTANCE>_MODELS_IMAGE`
 - `NAMELENS_AILINK_PROVIDERS_<INSTANCE>_SELECTION_POLICY`
 - `NAMELENS_AILINK_PROVIDERS_<INSTANCE>_DEFAULT_CREDENTIAL`

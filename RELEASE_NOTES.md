@@ -50,11 +50,11 @@ Output:
 
 Control the color palette of generated marks:
 
-| Mode | Description |
-|------|-------------|
-| `brand` | Modern tech palette (teal, navy, coral accents) |
-| `monochrome` | Black, white, and greys only |
-| `vibrant` | Bold, saturated startup colors |
+| Mode         | Description                                     |
+| ------------ | ----------------------------------------------- |
+| `brand`      | Modern tech palette (teal, navy, coral accents) |
+| `monochrome` | Black, white, and greys only                    |
+| `vibrant`    | Bold, saturated startup colors                  |
 
 ```bash
 # Tech-forward brand colors (recommended)
@@ -104,10 +104,10 @@ NAMELENS_AILINK_PROVIDERS_NAMELENS_OPENAI_IMAGE_MODELS_IMAGE=gpt-image-1.5
 
 ### Provider Recommendations
 
-| Provider | Status | Notes |
-|----------|--------|-------|
-| OpenAI GPT Image | Recommended | Best instruction following, no text leakage |
-| xAI grok-2-image | Experimental | No size control, photorealistic bias |
+| Provider         | Status       | Notes                                       |
+| ---------------- | ------------ | ------------------------------------------- |
+| OpenAI GPT Image | Recommended  | Best instruction following, no text leakage |
+| xAI grok-2-image | Experimental | No size control, photorealistic bias        |
 
 See [known-issues.md](docs/known-issues.md) for xAI limitations.
 

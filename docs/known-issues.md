@@ -24,9 +24,9 @@ Per [xAI documentation](https://docs.x.ai/docs/guides/image-generations), only
 `model`, `prompt`, `n`, and `response_format` are currently supported.
 
 **Recommendation:** Use OpenAI GPT Image models (e.g. `gpt-image-1.5`) for
-`brand-mark-image` routing until xAI adds dimension and style controls. xAI image
-generation may be viable for other use cases where aspect ratio and style are
-less constrained.
+`brand-mark-image` routing until xAI adds dimension and style controls. xAI
+image generation may be viable for other use cases where aspect ratio and style
+are less constrained.
 
 **Future:** xAI may expose additional parameters through their SDK or future API
 updates. Monitor their documentation for `size`, `aspect_ratio`, or `style`

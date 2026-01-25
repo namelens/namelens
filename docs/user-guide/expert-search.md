@@ -78,15 +78,17 @@ Drivers are pure `net/http` implementations—no SDKs, no vendor packages.
 
 ### Provider Comparison
 
-| Capability | xAI (Grok) | OpenAI | Notes |
-|------------|------------|--------|-------|
-| Expert search | ✅ Best | ✅ Works | xAI has live web search; OpenAI runs "offline" |
-| Phonetics | ✅ | ✅ | Comparable results |
-| Suitability | ✅ | ✅ | xAI may catch more via web search |
-| Generate | ✅ | ✅ Best | OpenAI faster with structured outputs |
-| Response time | ~30-60s | ~1-5s | xAI slower due to live search |
+| Capability    | xAI (Grok) | OpenAI   | Notes                                          |
+| ------------- | ---------- | -------- | ---------------------------------------------- |
+| Expert search | ✅ Best    | ✅ Works | xAI has live web search; OpenAI runs "offline" |
+| Phonetics     | ✅         | ✅       | Comparable results                             |
+| Suitability   | ✅         | ✅       | xAI may catch more via web search              |
+| Generate      | ✅         | ✅ Best  | OpenAI faster with structured outputs          |
+| Response time | ~30-60s    | ~1-5s    | xAI slower due to live search                  |
 
-**Recommendation:** Use xAI for expert search (real-time web intelligence) and OpenAI for structured analysis (phonetics, generate). See [Configuration](configuration.md) for multi-provider setup.
+**Recommendation:** Use xAI for expert search (real-time web intelligence) and
+OpenAI for structured analysis (phonetics, generate). See
+[Configuration](configuration.md) for multi-provider setup.
 
 ### Request Flow
 
@@ -282,13 +284,14 @@ namelens check myproject --expert --output-format=json
 
 ## Supported Providers
 
-| Provider    | Base URL                      | Models                              | Best For |
-| ----------- | ----------------------------- | ----------------------------------- | -------- |
-| x.ai (Grok) | `https://api.x.ai/v1`         | `grok-4-1-fast-reasoning`, `grok-4` | Expert search (web intelligence) |
-| OpenAI      | `https://api.openai.com/v1`   | `gpt-4o`, `gpt-5.1`, `gpt-4o-mini`  | Structured analysis (generate, phonetics) |
+| Provider    | Base URL                    | Models                              | Best For                                  |
+| ----------- | --------------------------- | ----------------------------------- | ----------------------------------------- |
+| x.ai (Grok) | `https://api.x.ai/v1`       | `grok-4-1-fast-reasoning`, `grok-4` | Expert search (web intelligence)          |
+| OpenAI      | `https://api.openai.com/v1` | `gpt-4o`, `gpt-5.1`, `gpt-4o-mini`  | Structured analysis (generate, phonetics) |
 
 The xAI driver uses OpenAI-compatible API format with x.ai's `search_parameters`
-extension for live web search. The OpenAI driver uses native `json_schema` structured outputs for reliable JSON responses.
+extension for live web search. The OpenAI driver uses native `json_schema`
+structured outputs for reliable JSON responses.
 
 ## Prompts
 
@@ -399,17 +402,20 @@ Use `namelens doctor ailink connectivity` to diagnose connection issues.
 
 ### "provider authentication failed" (AILINK_PROVIDER_AUTH)
 
-Your API key is invalid or expired. Verify the key and ensure it has the correct permissions.
+Your API key is invalid or expired. Verify the key and ensure it has the correct
+permissions.
 
 ### "provider rejected request" (AILINK_PROVIDER_BAD_REQUEST)
 
 The model name may be incorrect or unsupported. Check the model configuration:
+
 - xAI: `grok-4-1-fast-reasoning`
 - OpenAI: `gpt-4o`, `gpt-5.1`, `gpt-4o-mini`
 
 ### Slow response times
 
-xAI expert search can take 30-60 seconds due to live web searches. OpenAI is faster (1-5 seconds) but doesn't include live web intelligence.
+xAI expert search can take 30-60 seconds due to live web searches. OpenAI is
+faster (1-5 seconds) but doesn't include live web intelligence.
 
 Increase timeout if needed:
 

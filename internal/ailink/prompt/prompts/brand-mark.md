@@ -40,24 +40,27 @@ Color mode: {{color_mode}}
 {{/if}}
 
 Guidelines:
+
 - The output is NOT final logo artwork; it is directional concepts + image prompts.
 - Keep directions suitable for a CLI/developer audience.
-{{#if description}}
+  {{#if description}}
 - Align motifs to the described product and avoid irrelevant symbolism.
-{{/if}}
+  {{/if}}
 - Avoid generic clipart and avoid trademarked shapes/logos.
 - Prefer simple vector-like marks that could scale to a small favicon.
 
 Color guidance:
 {{#if color_mode}}
+
 - If `color_mode` is `monochrome`, use black/white/greys only.
 - If `color_mode` is `brand`, use a cohesive 2-3 color palette (e.g., deep blue + accent, teal + coral) and specify exact colors in the image prompt.
 - If `color_mode` is `vibrant`, use bold, saturated colors that stand out.
-{{else}}
+  {{else}}
 - IMPORTANT: Use color, not greyscale. Default to a modern tech palette with deep blues, teals, or purple accents. Every mark should have at least one distinctive color.
-{{/if}}
+  {{/if}}
 
 Image prompt requirements:
+
 - CRITICAL: Each image_prompt MUST begin with "A logo mark with absolutely no text, no letters, no words, no typography, no characters anywhere in the image."
 - Each image_prompt MUST specify the visual style: "flat vector logo", "minimalist symbol", or "clean geometric mark".
 - Each image_prompt MUST include specific color direction - NOT greyscale. Use colors like "deep navy blue", "teal", "purple", "coral accent". Only use monochrome if color_mode is explicitly set to monochrome.

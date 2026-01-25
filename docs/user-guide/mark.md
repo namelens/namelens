@@ -60,12 +60,12 @@ Output:
 
 Control the color palette with `--color`:
 
-| Mode | Description | Best For |
-|------|-------------|----------|
-| `brand` | Modern tech palette (teal, navy, coral) | SaaS, dev tools, startups |
-| `monochrome` | Black, white, and greys | Classic brands, print-first |
-| `vibrant` | Bold, saturated colors | Consumer apps, creative tools |
-| _(default)_ | Tech-forward palette | General use |
+| Mode         | Description                             | Best For                      |
+| ------------ | --------------------------------------- | ----------------------------- |
+| `brand`      | Modern tech palette (teal, navy, coral) | SaaS, dev tools, startups     |
+| `monochrome` | Black, white, and greys                 | Classic brands, print-first   |
+| `vibrant`    | Bold, saturated colors                  | Consumer apps, creative tools |
+| _(default)_  | Tech-forward palette                    | General use                   |
 
 ```bash
 # Tech-forward brand colors (recommended for most projects)
@@ -86,11 +86,11 @@ namelens mark "myproject" --out-dir ./marks --color vibrant
 
 Choose output format with `--format`:
 
-| Format | Transparency | File Size | Best For |
-|--------|--------------|-----------|----------|
-| `png` | Yes | Larger | Print, design tools |
-| `webp` | Yes | Smaller | Web, sharing |
-| `jpeg` | No | Smallest | Quick previews |
+| Format | Transparency | File Size | Best For            |
+| ------ | ------------ | --------- | ------------------- |
+| `png`  | Yes          | Larger    | Print, design tools |
+| `webp` | Yes          | Smaller   | Web, sharing        |
+| `jpeg` | No           | Smallest  | Quick previews      |
 
 ```bash
 # PNG for design work
@@ -175,10 +175,10 @@ NAMELENS_AILINK_PROVIDERS_NAMELENS_OPENAI_IMAGE_CREDENTIALS_0_API_KEY=sk-...
 
 ### Provider Recommendations
 
-| Provider | Status | Notes |
-|----------|--------|-------|
-| **OpenAI GPT Image** | Recommended | Best instruction following, no text in images |
-| xAI grok-2-image | Experimental | No size/aspect control, photorealistic style |
+| Provider             | Status       | Notes                                         |
+| -------------------- | ------------ | --------------------------------------------- |
+| **OpenAI GPT Image** | Recommended  | Best instruction following, no text in images |
+| xAI grok-2-image     | Experimental | No size/aspect control, photorealistic style  |
 
 See [known-issues.md](../known-issues.md) for detailed provider limitations.
 

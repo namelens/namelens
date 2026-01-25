@@ -29,6 +29,7 @@ requirements:
 ### Round 1-4: Finding the Right Model
 
 We started with DALL-E 3, which produced decent results but had issues:
+
 - Occasional text leakage ("COMPRNY" appearing in one mark)
 - Inconsistent instruction following
 
@@ -95,25 +96,28 @@ images on the web.
 
 ## The Final Asset
 
-The icon is stored in the [namelens/.github](https://github.com/namelens/.github)
-repository with full provenance:
+The icon is stored in the
+[namelens/.github](https://github.com/namelens/.github) repository with full
+provenance:
 
-| File | Size | Use |
-|------|------|-----|
-| `namelens-icon-original.png` | 1024×1024 | Master |
-| `namelens-icon-512.png` | 512×512 | High-res |
-| `namelens-icon-256.png` | 256×256 | Web |
-| `namelens-icon-128.png` | 128×128 | README |
-| `namelens-icon-64.png` | 64×64 | Badges |
-| `namelens-icon-32.png` | 32×32 | Favicon |
+| File                         | Size      | Use      |
+| ---------------------------- | --------- | -------- |
+| `namelens-icon-original.png` | 1024×1024 | Master   |
+| `namelens-icon-512.png`      | 512×512   | High-res |
+| `namelens-icon-256.png`      | 256×256   | Web      |
+| `namelens-icon-128.png`      | 128×128   | README   |
+| `namelens-icon-64.png`       | 64×64     | Badges   |
+| `namelens-icon-32.png`       | 32×32     | Favicon  |
 
-See [PROVENANCE.md](https://github.com/namelens/.github/blob/main/assets/PROVENANCE.md)
+See
+[PROVENANCE.md](https://github.com/namelens/.github/blob/main/assets/PROVENANCE.md)
 for full generation details.
 
 ## Lessons Learned
 
 1. **Context matters**: Without `--description`, the model infers from the name
-   alone. "namelens" → camera imagery. With context → network/validation imagery.
+   alone. "namelens" → camera imagery. With context → network/validation
+   imagery.
 
 2. **Color needs explicit control**: Default output was greyscale. The `--color`
    flag ensures consistent brand palette.
