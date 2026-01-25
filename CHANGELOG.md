@@ -9,6 +9,19 @@ Versioning.
 
 ## [0.1.4] - 2026-01-24
 
+### Security
+
+- Updated golang.org/x/crypto v0.9.0 → v0.47.0 (addresses GHSA-v778-237x-gjrc
+  critical, GHSA-hcg3-q754-cr77 high)
+- Updated golang.org/x/net v0.10.0 → v0.48.0 (addresses GHSA-4374-p667-p6c8
+  high)
+- Updated golang.org/x/sys v0.36.0 → v0.40.0
+- Updated github.com/stretchr/testify v1.4.0 → v1.11.1 (removes yaml.v2
+  transitive)
+- Updated github.com/alecthomas/units to latest (removes yaml.v2 transitive)
+- Added SDR-001 documenting scanner false positives from openrdap's declared
+  requirements
+
 ### Added
 
 - `namelens mark` command for generating brand mark/logo directions and images

@@ -111,6 +111,20 @@ NAMELENS_AILINK_PROVIDERS_NAMELENS_OPENAI_IMAGE_MODELS_IMAGE=gpt-image-1.5
 
 See [known-issues.md](docs/known-issues.md) for xAI limitations.
 
+### Security Updates
+
+Transitive dependency updates addressing critical and high CVEs:
+
+| Package    | Update           | Advisory               |
+| ---------- | ---------------- | ---------------------- |
+| x/crypto   | v0.9.0 → v0.47.0 | GHSA-v778-237x-gjrc    |
+| x/net      | v0.10.0 → v0.48.0| GHSA-4374-p667-p6c8    |
+| x/sys      | v0.36.0 → v0.40.0| (transitive)           |
+| testify    | v1.4.0 → v1.11.1 | removes yaml.v2        |
+
+See [SDR-001](docs/security/decisions/SDR-001-x-crypto-x-net-false-positives.md)
+for details on scanner false positives.
+
 ## v0.1.3 (2026-01-14)
 
 Candidate comparison and Rust ecosystem support.
