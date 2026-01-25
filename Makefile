@@ -247,7 +247,7 @@ licenses: ## Show dependency license summary
 #   NAMELENS_NAMELENS_MINISIGN_KEY  - path to minisign secret key
 #   NAMELENS_NAMELENS_MINISIGN_PUB  - path to minisign public key (optional)
 #   NAMELENS_NAMELENS_PGP_KEY_ID    - GPG key ID for PGP signing (optional)
-#   NAMELENS_NAMELENS_GPG_HOME      - GPG homedir containing signing key (required if PGP_KEY_ID set)
+#   NAMELENS_NAMELENS_GPG_HOMEDIR   - GPG homedir containing signing key (required if PGP_KEY_ID set)
 # ─────────────────────────────────────────────────────────────────────────────
 
 release-guard-tag-version: ## Guard: verify RELEASE_TAG matches VERSION file

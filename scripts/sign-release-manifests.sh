@@ -13,7 +13,7 @@ set -euo pipefail
 #   MINISIGN_KEY       - path to minisign secret key (required for minisign signing)
 #   MINISIGN_PUB       - optional path to minisign public key (not required for signing)
 #   PGP_KEY_ID         - gpg key/email/fingerprint for PGP signing (optional)
-#   GPG_HOME           - isolated gpg homedir for signing (required if PGP_KEY_ID is set)
+#   GPG_HOMEDIR        - isolated gpg homedir for signing (required if PGP_KEY_ID is set)
 #   CI                 - if "true", signing is refused (safety guard)
 
 TAG=${1:?'usage: sign-release-manifests.sh <tag> [dir]'}
@@ -52,7 +52,7 @@ get_var() {
 MINISIGN_KEY="$(get_var MINISIGN_KEY)"
 MINISIGN_PUB="$(get_var MINISIGN_PUB)"
 PGP_KEY_ID="$(get_var PGP_KEY_ID)"
-GPG_HOME="$(get_var GPG_HOME)"
+GPG_HOMEDIR="$(get_var GPG_HOMEDIR)"
 
 # NOTE: MINISIGN_PUB is intentionally unused for signing; it is used by export-release-keys.sh.
 
@@ -78,16 +78,16 @@ if [ -n "${PGP_KEY_ID}" ]; then
         echo "error: PGP_KEY_ID set but gpg not found in PATH" >&2
         exit 1
     fi
-    if [ -z "${GPG_HOME}" ]; then
-        echo "error: GPG_HOME (or ${SIGNING_ENV_PREFIX}_GPG_HOME) must be set for PGP signing" >&2
+    if [ -z "${GPG_HOMEDIR}" ]; then
+        echo "error: GPG_HOMEDIR (or ${SIGNING_ENV_PREFIX}_GPG_HOMEDIR) must be set for PGP signing" >&2
         exit 1
     fi
-    if ! gpg --homedir "${GPG_HOME}" --list-secret-keys "${PGP_KEY_ID}" > /dev/null 2>&1; then
-        echo "error: secret key ${PGP_KEY_ID} not found in GPG_HOME=${GPG_HOME}" >&2
+    if ! gpg --homedir "${GPG_HOMEDIR}" --list-secret-keys "${PGP_KEY_ID}" > /dev/null 2>&1; then
+        echo "error: secret key ${PGP_KEY_ID} not found in GPG_HOMEDIR=${GPG_HOMEDIR}" >&2
         exit 1
     fi
     has_pgp=true
-    echo "PGP signing enabled (key: ${PGP_KEY_ID}, homedir: ${GPG_HOME})"
+    echo "PGP signing enabled (key: ${PGP_KEY_ID}, homedir: ${GPG_HOMEDIR})"
 fi
 
 echo ""
@@ -129,7 +129,7 @@ sign_pgp() {
 
     echo "🔏 [PGP] Signing ${manifest}"
     rm -f "${base}.asc"
-    gpg --batch --yes --armor --homedir "${GPG_HOME}" --local-user "${PGP_KEY_ID}" --detach-sign -o "${base}.asc" "${base}"
+    gpg --batch --yes --armor --homedir "${GPG_HOMEDIR}" --local-user "${PGP_KEY_ID}" --detach-sign -o "${base}.asc" "${base}"
 }
 
 if [ "${has_minisign}" = true ]; then

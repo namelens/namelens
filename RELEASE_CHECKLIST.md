@@ -96,7 +96,7 @@ export NAMELENS_NAMELENS_MINISIGN_PUB=/path/to/namelens.pub       # public key f
 
 # PGP (optional)
 export NAMELENS_NAMELENS_PGP_KEY_ID="security@3leaps.net"          # may be email, fingerprint, or subkey
-export NAMELENS_NAMELENS_GPG_HOME=/path/to/gnupg-3leaps            # required if PGP_KEY_ID is set
+export NAMELENS_NAMELENS_GPG_HOMEDIR=/path/to/gnupg-3leaps         # required if PGP_KEY_ID is set
 ```
 
 #### Signing Workflow
@@ -215,7 +215,7 @@ export NAMELENS_NAMELENS_MINISIGN_PUB=/secure/path/namelens.pub
 
 ```bash
 # Use isolated GPG homedir for signing keys
-export NAMELENS_NAMELENS_GPG_HOME=/secure/path/gnupg-3leaps
+export NAMELENS_NAMELENS_GPG_HOMEDIR=/secure/path/gnupg-3leaps
 export NAMELENS_NAMELENS_PGP_KEY_ID="security@3leaps.net"
 ```
 
@@ -223,10 +223,10 @@ export NAMELENS_NAMELENS_PGP_KEY_ID="security@3leaps.net"
 
 All env vars for release signing:
 
-| Variable                | Required | Description                                               |
-| ----------------------- | -------- | --------------------------------------------------------- |
+| Variable                         | Required | Description                                               |
+| -------------------------------- | -------- | --------------------------------------------------------- |
 | `NAMELENS_NAMELENS_RELEASE_TAG`  | Yes      | Release tag (e.g., `v0.1.0`)                              |
 | `NAMELENS_NAMELENS_MINISIGN_KEY` | Yes      | Path to minisign secret key                               |
 | `NAMELENS_NAMELENS_MINISIGN_PUB` | No       | Path to minisign public key (derived from key if not set) |
 | `NAMELENS_NAMELENS_PGP_KEY_ID`   | No       | GPG key ID for PGP signing                                |
-| `NAMELENS_NAMELENS_GPG_HOME`     | If PGP   | GPG homedir containing signing key                        |
+| `NAMELENS_NAMELENS_GPG_HOMEDIR`  | If PGP   | GPG homedir containing signing key                        |
