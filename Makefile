@@ -290,8 +290,8 @@ release-verify-keys: ## Verify exported public keys are public-only
 	else \
 		echo "ℹ️  No minisign public key found (skipping)"; \
 	fi
-	@if [ -f "$(DIST_RELEASE)/3leaps-release-signing-key.asc" ]; then \
-		./scripts/verify-public-key.sh "$(DIST_RELEASE)/3leaps-release-signing-key.asc"; \
+	@if [ -f "$(DIST_RELEASE)/$(BINARY_NAME)-pgp.asc" ]; then \
+		./scripts/verify-public-key.sh "$(DIST_RELEASE)/$(BINARY_NAME)-pgp.asc"; \
 	else \
 		echo "ℹ️  No PGP public key found (skipping)"; \
 	fi

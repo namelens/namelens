@@ -75,7 +75,7 @@ if [ -n "${PGP_KEY_ID}" ]; then
         echo "error: public key ${PGP_KEY_ID} not found in GPG_HOMEDIR=${GPG_HOMEDIR}" >&2
         exit 1
     fi
-    out="${DIR}/3leaps-release-signing-key.asc"
+    out="${DIR}/${SIGNING_APP_NAME}-pgp.asc"
     gpg --homedir "${GPG_HOMEDIR}" --armor --output "${out}" --export "${PGP_KEY_ID}"
     echo "✅ Exported PGP public key to ${out} (homedir: ${GPG_HOMEDIR})"
     exported_any=true
