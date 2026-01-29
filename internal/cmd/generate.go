@@ -12,7 +12,10 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/namelens/namelens/internal/ailink"
+	ailinkctx "github.com/namelens/namelens/internal/ailink/context"
 	"github.com/namelens/namelens/internal/config"
+	"github.com/namelens/namelens/internal/observability"
+	"go.uber.org/zap"
 )
 
 var generateCmd = &cobra.Command{
@@ -30,6 +33,9 @@ func init() {
 	generateCmd.Flags().StringP("tagline", "t", "", "Product tagline/slogan")
 	generateCmd.Flags().StringP("description", "d", "", "Inline product description")
 	generateCmd.Flags().StringP("description-file", "f", "", "Read description from file (truncated to 2000 chars)")
+	generateCmd.Flags().String("corpus", "", "Use pre-generated corpus file (JSON/markdown, or - for stdin)")
+	generateCmd.Flags().StringP("scan-dir", "s", "", "Scan directory for context files (README.md, *.md, etc.)")
+	generateCmd.Flags().Int("scan-budget", 32000, "Max characters to include from scanned files")
 	generateCmd.Flags().StringP("constraints", "c", "", "Naming constraints/requirements")
 	generateCmd.Flags().String("depth", "quick", "Generation depth: quick, deep")
 	generateCmd.Flags().Bool("json", false, "Output raw JSON response")
@@ -47,6 +53,9 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 	tagline, _ := cmd.Flags().GetString("tagline")
 	description, _ := cmd.Flags().GetString("description")
 	descriptionFile, _ := cmd.Flags().GetString("description-file")
+	corpusPath, _ := cmd.Flags().GetString("corpus")
+	scanDir, _ := cmd.Flags().GetString("scan-dir")
+	scanBudget, _ := cmd.Flags().GetInt("scan-budget")
 	constraints, _ := cmd.Flags().GetString("constraints")
 	depth, _ := cmd.Flags().GetString("depth")
 	jsonOutput, _ := cmd.Flags().GetBool("json")
@@ -66,14 +75,50 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 	if tagline != "" {
 		variables["tagline"] = tagline
 	}
+
+	// Gather description from various sources (priority: inline > corpus > file > scan-dir)
 	if description != "" {
 		variables["description"] = description
+	} else if corpusPath != "" {
+		// Load pre-generated corpus
+		corpus, err := loadCorpus(corpusPath)
+		if err != nil {
+			return fmt.Errorf("loading corpus: %w", err)
+		}
+		variables["description"] = corpus.ToPromptContext()
+		if verbose {
+			observability.CLILogger.Debug("Context loaded from corpus",
+				zap.String("source", corpus.Source.Path),
+				zap.Int("files", corpus.Manifest.FilesIncluded),
+				zap.Int("chars", corpus.Budget.UsedChars))
+		}
 	} else if descriptionFile != "" {
 		content, err := readTruncatedFile(descriptionFile, 2000)
 		if err != nil {
 			return fmt.Errorf("reading description file: %w", err)
 		}
 		variables["description"] = content
+	} else if scanDir != "" {
+		// Scan directory for context files
+		cfg := ailinkctx.Config{
+			Patterns: ailinkctx.DefaultPatterns,
+			MaxChars: scanBudget,
+		}
+		result, err := ailinkctx.Gather(scanDir, cfg)
+		if err != nil {
+			return fmt.Errorf("scanning directory: %w", err)
+		}
+		if result.Context != "" {
+			variables["description"] = result.Context
+			if verbose {
+				observability.CLILogger.Debug("Context gathered from directory",
+					zap.String("dir", scanDir),
+					zap.Strings("files", result.FilesUsed),
+					zap.Int("chars", result.TotalChars),
+					zap.Int("trimmed", result.FilesTrimmed),
+					zap.Int("skipped", result.FilesSkipped))
+			}
+		}
 	}
 	if constraints != "" {
 		variables["constraints"] = constraints
@@ -177,6 +222,66 @@ func readTruncatedFile(path string, maxLen int) (result string, err error) {
 		content += "..."
 	}
 	return content, nil
+}
+
+// loadCorpus loads a corpus from a file path or stdin (if path is "-").
+// It auto-detects JSON vs markdown format.
+func loadCorpus(path string) (*ailinkctx.Corpus, error) {
+	var data []byte
+	var err error
+
+	if path == "-" {
+		// Read from stdin
+		data, err = io.ReadAll(os.Stdin)
+		if err != nil {
+			return nil, fmt.Errorf("reading stdin: %w", err)
+		}
+	} else {
+		data, err = os.ReadFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("reading file: %w", err)
+		}
+	}
+
+	// Auto-detect format: JSON starts with { or whitespace then {
+	trimmed := strings.TrimSpace(string(data))
+	if strings.HasPrefix(trimmed, "{") {
+		return ailinkctx.ParseCorpusJSON(data)
+	}
+
+	// Assume markdown - convert to corpus
+	return parseCorpusMarkdown(data)
+}
+
+// parseCorpusMarkdown extracts content from a markdown-formatted corpus.
+// This is a simplified parser that extracts the content section.
+func parseCorpusMarkdown(data []byte) (*ailinkctx.Corpus, error) {
+	content := string(data)
+
+	// For markdown corpus, we use the content directly as prompt context
+	// The corpus command produces well-structured markdown that can be used as-is
+	corpus := &ailinkctx.Corpus{
+		Version: "1.0.0",
+		Source: ailinkctx.CorpusSource{
+			Type: "markdown",
+			Path: "stdin",
+		},
+	}
+
+	// Extract content section if present
+	if idx := strings.Index(content, "## Content"); idx > 0 {
+		// Use content from the Content section onwards
+		corpus.Content = []ailinkctx.FileContent{
+			{File: "corpus", Text: strings.TrimSpace(content[idx:])},
+		}
+	} else {
+		// Use entire content
+		corpus.Content = []ailinkctx.FileContent{
+			{File: "corpus", Text: strings.TrimSpace(content)},
+		}
+	}
+
+	return corpus, nil
 }
 
 func printGenerateResults(raw json.RawMessage, concept string) error {

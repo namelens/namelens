@@ -3,8 +3,9 @@
 ## Read First
 
 1. Check `AGENTS.local.md` if it exists (gitignored)
-2. Read `MAINTAINERS.md` for contacts and governance
-3. Understand project scope before making changes
+2. Check `.plans/` for active work briefs and roadmaps (gitignored)
+3. Read `MAINTAINERS.md` for contacts and governance
+4. Understand project scope before making changes
 
 ## Operating Model
 

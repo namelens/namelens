@@ -56,6 +56,16 @@ namelens generate "static analyzer for shell scripts" \
 
 # With description from file
 namelens generate "static analyzer for shell scripts" --description-file ./README.md
+
+# With pre-generated corpus (recommended for complex projects)
+namelens context ./my-project > corpus.json
+namelens generate "static analyzer for shell scripts" --corpus=corpus.json
+
+# Pipeline: scan and generate in one step
+namelens context ./my-project | namelens generate "my product" --corpus=-
+
+# Quick scan (deprecated, use context command instead)
+namelens generate "my product" --scan-dir=./my-project
 ```
 
 ### With Constraints
@@ -97,6 +107,9 @@ namelens generate "process utilities library" --json
 | `--tagline`          | `-t`  | string | Product tagline/slogan                               |
 | `--description`      | `-d`  | string | Inline product description                           |
 | `--description-file` | `-f`  | path   | Read description from file (truncated to 2000 chars) |
+| `--corpus`           |       | path   | Use pre-generated corpus file (JSON/markdown, `-` for stdin) |
+| `--scan-dir`         | `-s`  | path   | Scan directory for context files (prefer `--corpus`) |
+| `--scan-budget`      |       | int    | Max chars from scanned files (default: 32000)        |
 | `--constraints`      | `-c`  | string | Naming constraints/requirements                      |
 | `--depth`            |       | string | `quick` (default), `fast`, or `deep`                 |
 | `--json`             |       | bool   | Output raw JSON response                             |
@@ -215,5 +228,6 @@ namelens generate "my concept" --depth fast
 
 ## Related
 
+- [Context](context.md) - Generate and inspect context corpus
 - [Expert Search](expert-search.md) - AI-powered availability analysis
 - [Configuration](configuration.md) - Environment and config file setup
