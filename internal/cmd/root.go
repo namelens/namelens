@@ -11,6 +11,7 @@ import (
 	"github.com/fulmenhq/gofulmen/foundry"
 	"github.com/fulmenhq/gofulmen/telemetry"
 
+	"github.com/namelens/namelens/internal/ailink/driver"
 	"github.com/namelens/namelens/internal/appid"
 	"github.com/namelens/namelens/internal/config"
 	"github.com/spf13/cobra"
@@ -21,8 +22,9 @@ import (
 )
 
 var (
-	cfgFile string
-	verbose bool
+	cfgFile   string
+	verbose   bool
+	traceFile string
 
 	// App identity loaded from .fulmen/app.yaml
 	appIdentity *appidentity.Identity
@@ -89,6 +91,7 @@ func init() {
 	// Global flags
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (optional; defaults to app identity config path)")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output (sets log level to debug)")
+	rootCmd.PersistentFlags().StringVar(&traceFile, "trace", "", "trace AILink requests/responses to NDJSON file")
 
 	// Bind flags to viper
 	_ = viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
@@ -120,6 +123,19 @@ func initConfig() {
 
 	// Initialize CLI logger early so we can use it in config loading
 	observability.InitCLILogger(appIdentity.BinaryName, verbose)
+
+	// Enable AILink tracing if requested
+	if traceFile != "" {
+		cleanup, err := driver.EnableTracing(traceFile)
+		if err != nil {
+			observability.CLILogger.Warn("Failed to enable tracing", zap.Error(err))
+		} else {
+			observability.CLILogger.Debug("AILink tracing enabled", zap.String("file", traceFile))
+			// Note: cleanup is not called here since we want tracing for the entire session
+			// The file will be closed when the process exits
+			_ = cleanup
+		}
+	}
 
 	if cfgFile != "" {
 		// Use config file from flag

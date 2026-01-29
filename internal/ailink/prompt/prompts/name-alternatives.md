@@ -2,9 +2,9 @@
 slug: name-alternatives
 name: Name Alternatives Generator
 description: Generate alternative naming candidates for a product based on concept and constraints
-version: 1.0.0
+version: 1.1.0
 author: namelens
-updated: 2025-12-31
+updated: 2026-01-29
 input:
   required_variables:
     - concept
@@ -15,15 +15,15 @@ input:
     - constraints
     - depth
   accepts_images: false
-tools:
-  - type: web_search
 provider_hints:
   preferred_models:
+    - gpt-4o
+    - claude-sonnet-4-20250514
     - grok-4-1-fast-reasoning
-  supports_tools: true
+  supports_tools: false
 depth_variants:
   quick: "Generate 5 naming alternatives for: {{concept}}"
-  deep: "Research competitive landscape and generate 10+ naming alternatives with availability pre-screening for: {{concept}}"
+  deep: "Generate 10+ naming alternatives with diverse strategies for: {{concept}}"
 response_schema:
   $ref: "ailink/v0/name-alternatives-response"
 ---
@@ -41,8 +41,7 @@ Guidelines:
 
 - Generate 8-12 naming candidates that fit the product concept
 - Prioritize: brevity (CLI-friendly), memorability, developer appeal, uniqueness
-- Use web_search to quickly verify candidates aren't already major projects
-- For each candidate, note potential conflicts if found
+- Use your knowledge to avoid names that are likely already major projects
 - Mix naming strategies: descriptive, metaphorical, coined, compound words
 - Avoid names that are too generic or already dominated by existing tools
 - Consider pronunciation ease and international accessibility

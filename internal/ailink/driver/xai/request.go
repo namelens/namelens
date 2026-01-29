@@ -8,25 +8,34 @@ import (
 	"github.com/namelens/namelens/internal/ailink/driver"
 )
 
+// chatCompletionRequest is for the legacy /v1/chat/completions endpoint (no tools).
 type chatCompletionRequest struct {
-	Model            string            `json:"model"`
-	Messages         []chatMessage     `json:"messages"`
-	Tools            []map[string]any  `json:"tools,omitempty"`
-	SearchParameters *searchParameters `json:"search_parameters,omitempty"`
-	ResponseFormat   *responseFormat   `json:"response_format,omitempty"`
-	Temperature      *float64          `json:"temperature,omitempty"`
-	MaxTokens        *int              `json:"max_tokens,omitempty"`
+	Model          string          `json:"model"`
+	Messages       []chatMessage   `json:"messages"`
+	ResponseFormat *responseFormat `json:"response_format,omitempty"`
+	Temperature    *float64        `json:"temperature,omitempty"`
+	MaxTokens      *int            `json:"max_tokens,omitempty"`
 }
 
-type searchParameters struct {
-	Mode            string                   `json:"mode,omitempty"`
-	ReturnCitations bool                     `json:"return_citations,omitempty"`
-	Sources         []map[string]interface{} `json:"sources,omitempty"`
+// responsesAPIRequest is for the new /v1/responses endpoint (with tools).
+type responsesAPIRequest struct {
+	Model string          `json:"model"`
+	Input []inputMessage  `json:"input"`
+	Tools []responsesTool `json:"tools,omitempty"`
+}
+
+type inputMessage struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+type responsesTool struct {
+	Type string `json:"type"`
 }
 
 type chatMessage struct {
-	Role    string      `json:"role"`
-	Content interface{} `json:"content"`
+	Role    string `json:"role"`
+	Content any    `json:"content"`
 }
 
 type responseFormat struct {
@@ -38,6 +47,56 @@ type contentBlock struct {
 	Text string `json:"text,omitempty"`
 }
 
+// useResponsesAPI returns true if the request should use the new /v1/responses endpoint.
+func useResponsesAPI(req *driver.Request) bool {
+	return req != nil && req.SearchParameters != nil && len(req.SearchParameters.Sources) > 0
+}
+
+// buildResponsesRequest builds a request for the /v1/responses endpoint.
+func buildResponsesRequest(req *driver.Request) (*responsesAPIRequest, error) {
+	if req == nil {
+		return nil, fmt.Errorf("request is required")
+	}
+	if strings.TrimSpace(req.Model) == "" {
+		return nil, fmt.Errorf("model is required")
+	}
+	if len(req.Messages) == 0 {
+		return nil, fmt.Errorf("messages are required")
+	}
+
+	// Convert messages to input format
+	input := make([]inputMessage, 0, len(req.Messages))
+	for _, msg := range req.Messages {
+		text := extractTextContent(msg.Content)
+		input = append(input, inputMessage{Role: msg.Role, Content: text})
+	}
+
+	// Convert search sources to tools
+	var tools []responsesTool
+	if req.SearchParameters != nil {
+		for _, src := range req.SearchParameters.Sources {
+			toolType := src.Type
+			// Map source type to tool type
+			switch toolType {
+			case "web":
+				toolType = "web_search"
+			case "x":
+				toolType = "x_search"
+			}
+			tools = append(tools, responsesTool{Type: toolType})
+		}
+	}
+
+	payload := &responsesAPIRequest{
+		Model: req.Model,
+		Input: input,
+		Tools: tools,
+	}
+
+	return payload, nil
+}
+
+// buildChatRequest builds a request for the legacy /v1/chat/completions endpoint.
 func buildChatRequest(req *driver.Request) (*chatCompletionRequest, error) {
 	if req == nil {
 		return nil, fmt.Errorf("request is required")
@@ -53,24 +112,24 @@ func buildChatRequest(req *driver.Request) (*chatCompletionRequest, error) {
 	payload := &chatCompletionRequest{
 		Model:       req.Model,
 		Messages:    messages,
-		Tools:       flattenTools(req.Tools),
 		Temperature: req.Temperature,
 		MaxTokens:   req.MaxTokens,
-	}
-	if req.SearchParameters != nil {
-		payload.SearchParameters = &searchParameters{
-			Mode:            req.SearchParameters.Mode,
-			ReturnCitations: req.SearchParameters.ReturnCitations,
-			Sources:         make([]map[string]interface{}, len(req.SearchParameters.Sources)),
-		}
-		for i, src := range req.SearchParameters.Sources {
-			payload.SearchParameters.Sources[i] = map[string]interface{}{"type": src.Type}
-		}
 	}
 	if req.ResponseFormat != nil {
 		payload.ResponseFormat = &responseFormat{Type: req.ResponseFormat.Type}
 	}
 	return payload, nil
+}
+
+// extractTextContent extracts plain text from content blocks.
+func extractTextContent(blocks []content.ContentBlock) string {
+	var parts []string
+	for _, block := range blocks {
+		if block.Type == content.ContentTypeText && block.Text != "" {
+			parts = append(parts, block.Text)
+		}
+	}
+	return strings.Join(parts, "\n")
 }
 
 func convertMessages(messages []content.Message) ([]chatMessage, error) {
@@ -88,24 +147,7 @@ func convertMessages(messages []content.Message) ([]chatMessage, error) {
 	return result, nil
 }
 
-// flattenTools converts driver.Tool to a flat map format expected by x.ai/OpenAI.
-// The Config fields are promoted to the top level alongside Type.
-func flattenTools(tools []driver.Tool) []map[string]any {
-	if len(tools) == 0 {
-		return nil
-	}
-	result := make([]map[string]any, 0, len(tools))
-	for _, t := range tools {
-		flat := map[string]any{"type": t.Type}
-		for k, v := range t.Config {
-			flat[k] = v
-		}
-		result = append(result, flat)
-	}
-	return result
-}
-
-func convertContent(blocks []content.ContentBlock) (interface{}, error) {
+func convertContent(blocks []content.ContentBlock) (any, error) {
 	if len(blocks) == 0 {
 		return "", nil
 	}
