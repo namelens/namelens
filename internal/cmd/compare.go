@@ -117,6 +117,9 @@ func runCompare(cmd *cobra.Command, args []string) error {
 		return errors.New("config not loaded")
 	}
 
+	// Show guidance about AI backend if not configured
+	showExpertGuidanceWarning(cfg.AILink, nil)
+
 	profile, err := resolveProfile(ctx, store, profileName, nil, nil, nil)
 	if err != nil {
 		return err

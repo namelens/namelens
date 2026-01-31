@@ -141,6 +141,9 @@ func runCheck(cmd *cobra.Command, args []string) error {
 		return errors.New("config not loaded")
 	}
 
+	// Show guidance about AI backend if not configured
+	showExpertGuidanceWarning(cfg.AILink, nil)
+
 	profile, err := resolveProfile(ctx, store, profileName, tlds, registries, handles)
 	if err != nil {
 		return err
@@ -305,6 +308,9 @@ func runCheck(cmd *cobra.Command, args []string) error {
 				totalCount += batch.Total
 			}
 			logThroughput(totalCount, startedAt)
+
+			// Show tip about --expert if AI is configured but not used
+			showExpertTip(cfg.AILink, expertEnabled || cfg.Expert.Enabled, nil)
 		}
 	}
 
