@@ -38,7 +38,7 @@ var doctorCmd = &cobra.Command{
 		observability.CLILogger.Info("")
 
 		allChecks := true
-		totalChecks := 7
+		totalChecks := 8
 
 		// Check 1: Go version
 		goVersion := runtime.Version()
@@ -142,6 +142,18 @@ var doctorCmd = &cobra.Command{
 			}
 		} else {
 			observability.CLILogger.Warn(fmt.Sprintf("[7/%d] Checking bootstrap cache... ⚠️  skipped (config not loaded)", totalChecks))
+		}
+
+		// Check 8: AI backend
+		if cfgErr == nil {
+			if isAIBackendConfigured(cfg.AILink) {
+				observability.CLILogger.Info(fmt.Sprintf("[8/%d] Checking AI backend... ✅ configured", totalChecks))
+			} else {
+				observability.CLILogger.Warn(fmt.Sprintf("[8/%d] Checking AI backend... ⚠️  not configured (run 'namelens setup' or see docs)", totalChecks))
+				observability.CLILogger.Info("       Expert analysis, name generation, and suitability checks require an AI backend.")
+			}
+		} else {
+			observability.CLILogger.Warn(fmt.Sprintf("[8/%d] Checking AI backend... ⚠️  skipped (config not loaded)", totalChecks))
 		}
 
 		observability.CLILogger.Info("")
