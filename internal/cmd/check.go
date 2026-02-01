@@ -311,10 +311,11 @@ func runCheck(cmd *cobra.Command, args []string) error {
 		go worker()
 	}
 
+enqueue:
 	for i, name := range names {
 		select {
 		case <-ctx.Done():
-			break
+			break enqueue
 		case jobs <- checkJob{index: i, name: name}:
 		}
 	}
