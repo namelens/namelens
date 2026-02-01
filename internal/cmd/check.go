@@ -721,7 +721,7 @@ func mapExpertError(err error) *ailink.SearchError {
 	message := err.Error()
 	switch {
 	case strings.Contains(message, "schema validation failed"):
-		return &ailink.SearchError{Code: "AILINK_VALIDATION_ERROR", Message: "expert response failed schema validation", Details: message}
+		return &ailink.SearchError{Code: "AILINK_VALIDATION_ERROR", Message: "expert response failed schema validation (try again with --trace <file> to capture the raw payload)", Details: message}
 	case strings.Contains(message, "prompt") && strings.Contains(message, "not found"):
 		return &ailink.SearchError{Code: "AILINK_PROMPT_NOT_FOUND", Message: message}
 	default:
