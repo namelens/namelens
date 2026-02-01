@@ -91,16 +91,49 @@ func (c *Client) Complete(ctx context.Context, req *driver.Request) (*driver.Res
 		client = http.DefaultClient
 	}
 
+	start := time.Now()
 	resp, err := client.Do(httpReq)
+	duration := time.Since(start)
 	if err != nil {
+		driver.Trace(driver.TraceEntry{
+			Driver:      "openai",
+			Endpoint:    url,
+			Method:      "POST",
+			Model:       payload.Model,
+			RequestBody: body,
+			Error:       err.Error(),
+			DurationMs:  duration.Milliseconds(),
+		})
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
 	defer resp.Body.Close() // nolint:errcheck // best-effort cleanup
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
+		driver.Trace(driver.TraceEntry{
+			Driver:      "openai",
+			Endpoint:    url,
+			Method:      "POST",
+			Model:       payload.Model,
+			RequestBody: body,
+			StatusCode:  resp.StatusCode,
+			Error:       err.Error(),
+			DurationMs:  duration.Milliseconds(),
+		})
 		return nil, fmt.Errorf("read response: %w", err)
 	}
+
+	// Trace the request/response
+	driver.Trace(driver.TraceEntry{
+		Driver:      "openai",
+		Endpoint:    url,
+		Method:      "POST",
+		Model:       payload.Model,
+		RequestBody: body,
+		StatusCode:  resp.StatusCode,
+		Response:    respBody,
+		DurationMs:  duration.Milliseconds(),
+	})
 
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
 		return nil, &driver.ProviderError{Provider: "openai", StatusCode: resp.StatusCode, Message: strings.TrimSpace(string(respBody)), RawResponse: respBody}
