@@ -19,6 +19,7 @@ require (
 )
 
 require (
+	github.com/3leaps/docprims/bindings/go/docprims v0.1.3 // indirect
 	github.com/alecthomas/kingpin/v2 v2.3.2 // indirect
 	github.com/alecthomas/units v0.0.0-20240927000941-0f3dac36c52b // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect

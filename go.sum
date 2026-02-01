@@ -1,3 +1,11 @@
+github.com/3leaps/docprims/bindings/go/docprims v0.1.0 h1:0BEtZcVE4OHhN7J6JI92UPWl15cd749ncDP4NV0VZRU=
+github.com/3leaps/docprims/bindings/go/docprims v0.1.0/go.mod h1:WvtK+kDlOjQx4i+Eznf7DQZw7iuJX2Z90G4BLPc5/Mw=
+github.com/3leaps/docprims/bindings/go/docprims v0.1.1 h1:TFogKlBxhIXAGS4k2lFfSFq7ywhWkCdCBvedD+/Jy/c=
+github.com/3leaps/docprims/bindings/go/docprims v0.1.1/go.mod h1:WvtK+kDlOjQx4i+Eznf7DQZw7iuJX2Z90G4BLPc5/Mw=
+github.com/3leaps/docprims/bindings/go/docprims v0.1.2 h1:kNV5uf5erXHL7sGhFEsid1hsmOdV5pIR/lrOmmOoEQw=
+github.com/3leaps/docprims/bindings/go/docprims v0.1.2/go.mod h1:WvtK+kDlOjQx4i+Eznf7DQZw7iuJX2Z90G4BLPc5/Mw=
+github.com/3leaps/docprims/bindings/go/docprims v0.1.3 h1:r01PbgkNB6kfSmkEQzc0YVxLc/Nh6zHaCQnOn4e2SXo=
+github.com/3leaps/docprims/bindings/go/docprims v0.1.3/go.mod h1:WvtK+kDlOjQx4i+Eznf7DQZw7iuJX2Z90G4BLPc5/Mw=
 github.com/alecthomas/kingpin/v2 v2.3.2 h1:H0aULhgmSzN8xQ3nX1uxtdlTHYoPLu5AhHxWrKI6ocU=
 github.com/alecthomas/kingpin/v2 v2.3.2/go.mod h1:0gyi0zQnjuFk8xrkNKamJoyUo382HRL7ATRpFZCw6tE=
 github.com/alecthomas/units v0.0.0-20240927000941-0f3dac36c52b h1:mimo19zliBX/vSQ6PWWSL9lK8qwHozUj03+zLoEB8O0=
