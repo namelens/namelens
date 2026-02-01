@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crucible.3leaps.dev/schemas/ailink/v0/search-bulk-response",
+  "title": "AILink Bulk Search Response",
+  "description": "Schema for bulk name availability risk assessment across multiple candidate names",
+  "type": "object",
+  "required": [
+    "items"
+  ],
+  "properties": {
+    "summary": {
+      "type": "string",
+      "description": "Optional global summary across the candidate set"
+    },
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "summary"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Candidate name"
+          },
+          "summary": {
+            "type": "string",
+            "description": "Concise per-name assessment"
+          },
+          "likely_available": {
+            "type": "boolean",
+            "description": "Whether this name appears available"
+          },
+          "risk_level": {
+            "$ref": "ailink/v0/search-response#/properties/risk_level"
+          },
+          "confidence": {
+            "$ref": "ailink/v0/search-response#/properties/confidence"
+          },
+          "insights": {
+            "$ref": "ailink/v0/search-response#/properties/insights"
+          },
+          "mentions": {
+            "$ref": "ailink/v0/search-response#/properties/mentions"
+          },
+          "recommendations": {
+            "$ref": "ailink/v0/search-response#/properties/recommendations"
+          }
+        },
+        "additionalProperties": true
+      },
+      "description": "Per-name expert analysis results"
+    }
+  },
+  "additionalProperties": true
+}

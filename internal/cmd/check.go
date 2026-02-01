@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -46,7 +47,11 @@ func init() {
 	checkCmd.Flags().String("out", "", "Write output to a file (default stdout)")
 	checkCmd.Flags().String("out-dir", "", "Write per-name outputs to a directory")
 	checkCmd.Flags().Bool("no-cache", false, "Skip cache lookup")
+	checkCmd.Flags().Int("concurrency", 3, "Concurrent checks across names")
 	checkCmd.Flags().Bool("expert", false, "Include expert search backend")
+	checkCmd.Flags().Bool("expert-bulk", false, "Run one expert request for multiple names (best for shortlists)")
+	checkCmd.Flags().Int("expert-bulk-limit", 10, "Max names allowed with --expert-bulk")
+	checkCmd.Flags().Int("expert-bulk-fallback-limit", 1, "Max per-name expert fallbacks when bulk response is missing items")
 	checkCmd.Flags().String("expert-depth", "quick", "Expert search depth: quick, deep")
 	checkCmd.Flags().String("expert-model", "", "Expert model override")
 	checkCmd.Flags().String("expert-prompt", "", "Expert prompt slug (defaults to config)")
@@ -91,6 +96,13 @@ func runCheck(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	concurrency, err := cmd.Flags().GetInt("concurrency")
+	if err != nil {
+		return err
+	}
+	if concurrency < 1 {
+		return errors.New("concurrency must be at least 1")
+	}
 	expertEnabled, err := cmd.Flags().GetBool("expert")
 	if err != nil {
 		return err
@@ -106,6 +118,21 @@ func runCheck(cmd *cobra.Command, args []string) error {
 	expertPrompt, err := cmd.Flags().GetString("expert-prompt")
 	if err != nil {
 		return err
+	}
+	expertBulk, err := cmd.Flags().GetBool("expert-bulk")
+	if err != nil {
+		return err
+	}
+	expertBulkLimit, err := cmd.Flags().GetInt("expert-bulk-limit")
+	if err != nil {
+		return err
+	}
+	expertBulkFallbackLimit, err := cmd.Flags().GetInt("expert-bulk-fallback-limit")
+	if err != nil {
+		return err
+	}
+	if expertBulkFallbackLimit < 0 {
+		return errors.New("expert-bulk-fallback-limit must be 0 or greater")
 	}
 	phoneticsEnabled, err := cmd.Flags().GetBool("phonetics")
 	if err != nil {
@@ -157,47 +184,145 @@ func runCheck(cmd *cobra.Command, args []string) error {
 	locales := normalizeInputList(localesRaw)
 	keyboards := normalizeInputList(keyboardsRaw)
 
-	batches := make([]*core.BatchResult, 0, len(names))
-	for _, name := range names {
-		results, err := orchestrator.Check(ctx, name, profile)
-		if err != nil {
-			return err
+	var (
+		bulkAttempted    bool
+		bulkExpertByName map[string]*ailink.SearchResponse
+		bulkFatalErr     *ailink.SearchError
+		fallbackMu       sync.Mutex
+		fallbackRemain   = expertBulkFallbackLimit
+	)
+	if (expertEnabled || cfg.Expert.Enabled) && expertBulk && len(names) > 1 {
+		bulkAttempted = true
+		if expertBulkLimit <= 0 {
+			expertBulkLimit = 10
 		}
+		if len(names) > expertBulkLimit {
+			return fmt.Errorf("--expert-bulk supports up to %d names (got %d)", expertBulkLimit, len(names))
+		}
+		bulkExpertByName, bulkFatalErr = runExpertBulk(ctx, cfg, store, names, expertDepth, expertModel, expertPrompt, !noCache)
+		if bulkExpertByName == nil {
+			bulkExpertByName = map[string]*ailink.SearchResponse{}
+		}
+	}
 
-		var (
-			expertResult    *ailink.SearchResponse
-			expertError     *ailink.SearchError
-			phoneticsResult json.RawMessage
-			phoneticsError  *ailink.SearchError
-			suitabilityRaw  json.RawMessage
-			suitabilityErr  *ailink.SearchError
-		)
-		if expertEnabled || cfg.Expert.Enabled {
-			expertResult, expertError = runExpert(ctx, cfg, store, name, expertDepth, expertModel, expertPrompt, !noCache)
-		}
-		if phoneticsEnabled {
-			vars := map[string]string{"name": name}
-			if len(locales) > 0 {
-				vars["locales"] = strings.Join(locales, ", ")
-			}
-			if len(keyboards) > 0 {
-				vars["keyboards"] = strings.Join(keyboards, ", ")
-			}
-			phoneticsResult, phoneticsError = runAnalysis(ctx, cfg, store, "name-phonetics", name, expertDepth, expertModel, vars, !noCache)
-		}
-		if suitabilityEnabled {
-			vars := map[string]string{"name": name}
-			if len(locales) > 0 {
-				vars["locales"] = strings.Join(locales, ", ")
-			}
-			if trimmed := strings.TrimSpace(sensitivity); trimmed != "" {
-				vars["sensitivity_level"] = trimmed
-			}
-			suitabilityRaw, suitabilityErr = runAnalysis(ctx, cfg, store, "name-suitability", name, expertDepth, expertModel, vars, !noCache)
-		}
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
-		batch := summarizeResults(name, results, expertResult, expertError, phoneticsResult, phoneticsError, suitabilityRaw, suitabilityErr)
-		batches = append(batches, batch)
+	type checkJob struct {
+		index int
+		name  string
+	}
+
+	batches := make([]*core.BatchResult, len(names))
+	jobs := make(chan checkJob)
+
+	var (
+		wg       sync.WaitGroup
+		errOnce  sync.Once
+		firstErr error
+	)
+	setErr := func(err error) {
+		if err == nil {
+			return
+		}
+		errOnce.Do(func() {
+			firstErr = err
+			cancel()
+		})
+	}
+
+	worker := func() {
+		defer wg.Done()
+		for job := range jobs {
+			if ctx.Err() != nil {
+				return
+			}
+
+			name := job.name
+			results, err := orchestrator.Check(ctx, name, profile)
+			if err != nil {
+				setErr(err)
+				return
+			}
+
+			var (
+				expertResult    *ailink.SearchResponse
+				expertError     *ailink.SearchError
+				phoneticsResult json.RawMessage
+				phoneticsError  *ailink.SearchError
+				suitabilityRaw  json.RawMessage
+				suitabilityErr  *ailink.SearchError
+			)
+			if expertEnabled || cfg.Expert.Enabled {
+				if expertBulk && bulkAttempted {
+					expertResult = bulkExpertByName[name]
+					if expertResult == nil {
+						fallbackMu.Lock()
+						canFallback := fallbackRemain > 0
+						if canFallback {
+							fallbackRemain--
+						}
+						fallbackMu.Unlock()
+
+						if canFallback {
+							expertResult, expertError = runExpert(ctx, cfg, store, name, expertDepth, expertModel, expertPrompt, !noCache)
+						} else {
+							if bulkFatalErr != nil {
+								expertError = bulkFatalErr
+							} else {
+								expertError = &ailink.SearchError{Code: "AILINK_BULK_MISSING_ITEM", Message: "expert bulk response missing item for name"}
+							}
+						}
+					}
+				} else {
+					expertResult, expertError = runExpert(ctx, cfg, store, name, expertDepth, expertModel, expertPrompt, !noCache)
+				}
+			}
+			if phoneticsEnabled {
+				vars := map[string]string{"name": name}
+				if len(locales) > 0 {
+					vars["locales"] = strings.Join(locales, ", ")
+				}
+				if len(keyboards) > 0 {
+					vars["keyboards"] = strings.Join(keyboards, ", ")
+				}
+				phoneticsResult, phoneticsError = runAnalysis(ctx, cfg, store, "name-phonetics", name, expertDepth, expertModel, vars, !noCache)
+			}
+			if suitabilityEnabled {
+				vars := map[string]string{"name": name}
+				if len(locales) > 0 {
+					vars["locales"] = strings.Join(locales, ", ")
+				}
+				if trimmed := strings.TrimSpace(sensitivity); trimmed != "" {
+					vars["sensitivity_level"] = trimmed
+				}
+				suitabilityRaw, suitabilityErr = runAnalysis(ctx, cfg, store, "name-suitability", name, expertDepth, expertModel, vars, !noCache)
+			}
+
+			batches[job.index] = summarizeResults(name, results, expertResult, expertError, phoneticsResult, phoneticsError, suitabilityRaw, suitabilityErr)
+		}
+	}
+
+	if concurrency > len(names) {
+		concurrency = len(names)
+	}
+	for i := 0; i < concurrency; i++ {
+		wg.Add(1)
+		go worker()
+	}
+
+	for i, name := range names {
+		select {
+		case <-ctx.Done():
+			break
+		case jobs <- checkJob{index: i, name: name}:
+		}
+	}
+	close(jobs)
+	wg.Wait()
+
+	if firstErr != nil {
+		return firstErr
 	}
 
 	format, err := resolveOutputFormat(cmd)
@@ -589,6 +714,128 @@ func runExpert(ctx context.Context, cfg *config.Config, store *store.Store, name
 	}
 
 	return response, nil
+}
+
+func runExpertBulk(ctx context.Context, cfg *config.Config, store *store.Store, names []string, depth, modelOverride, promptOverride string, useCache bool) (map[string]*ailink.SearchResponse, *ailink.SearchError) {
+	if cfg == nil {
+		return nil, &ailink.SearchError{Code: "AILINK_DISABLED", Message: "config not loaded"}
+	}
+
+	promptSlug := strings.TrimSpace(promptOverride)
+	if promptSlug == "" {
+		promptSlug = "name-availability-bulk"
+	}
+
+	depth = strings.ToLower(strings.TrimSpace(depth))
+	if depth == "" {
+		depth = "quick"
+	}
+
+	registry, err := buildPromptRegistry(cfg)
+	if err != nil {
+		return nil, &ailink.SearchError{Code: "AILINK_API_ERROR", Message: "failed to load prompts", Details: err.Error()}
+	}
+	promptDef, err := registry.Get(promptSlug)
+	if err != nil {
+		return nil, &ailink.SearchError{Code: "AILINK_PROMPT_NOT_FOUND", Message: err.Error()}
+	}
+
+	providers := ailink.NewRegistry(cfg.AILink)
+	role := strings.TrimSpace(cfg.Expert.Role)
+	if role == "" {
+		role = promptSlug
+	}
+
+	resolved, err := providers.Resolve(role, promptDef, modelOverride)
+	if err != nil {
+		return nil, &ailink.SearchError{Code: "AILINK_API_ERROR", Message: "failed to resolve provider", Details: err.Error()}
+	}
+	if strings.TrimSpace(resolved.Credential.APIKey) == "" {
+		return nil, &ailink.SearchError{Code: "AILINK_NO_API_KEY", Message: "provider api key not configured", Details: resolved.ProviderID}
+	}
+
+	cacheTTL := cfg.AILink.CacheTTL
+	cacheVars := map[string]string{"names": strings.Join(names, ","), "prompt": promptSlug}
+	cacheSlug := analysisCacheKey(promptSlug, cacheVars)
+	if useCache && store != nil && cacheTTL > 0 {
+		entry, err := store.GetExpertCache(ctx, "__bulk__", cacheSlug, resolved.Model, resolved.BaseURL, depth)
+		if err != nil {
+			observability.CLILogger.Warn("Expert bulk cache lookup failed", zap.Error(err))
+		} else if entry != nil {
+			var cached ailink.BulkSearchResponse
+			jsonErr := json.Unmarshal([]byte(entry.ResponseJSON), &cached)
+			if jsonErr == nil {
+				out := make(map[string]*ailink.SearchResponse, len(cached.Items))
+				for _, item := range cached.Items {
+					resp := &ailink.SearchResponse{
+						Summary:         item.Summary,
+						LikelyAvailable: item.LikelyAvailable,
+						RiskLevel:       item.RiskLevel,
+						Confidence:      item.Confidence,
+						Insights:        item.Insights,
+						Mentions:        item.Mentions,
+						Recommendations: item.Recommendations,
+					}
+					out[item.Name] = resp
+				}
+				return out, nil
+			}
+			observability.CLILogger.Warn("Expert bulk cache decode failed", zap.Error(jsonErr))
+		}
+	}
+
+	catalog, err := buildSchemaCatalog()
+	if err != nil {
+		return nil, &ailink.SearchError{Code: "AILINK_API_ERROR", Message: "failed to load schemas", Details: err.Error()}
+	}
+
+	service := &ailink.Service{Providers: providers, Registry: registry, Catalog: catalog}
+
+	bulk, err := service.SearchBulk(ctx, ailink.BulkSearchRequest{
+		Role:       role,
+		Names:      names,
+		PromptSlug: promptSlug,
+		Depth:      depth,
+		Model:      modelOverride,
+		UseTools:   true,
+	})
+	if err != nil && (bulk == nil || len(bulk.Items) == 0) {
+		return nil, mapExpertError(err)
+	}
+	if err != nil {
+		observability.CLILogger.Warn("Expert bulk response failed schema validation; using partial results", zap.Error(err))
+	}
+
+	out := make(map[string]*ailink.SearchResponse, len(bulk.Items))
+	for _, item := range bulk.Items {
+		resp := &ailink.SearchResponse{
+			Summary:         item.Summary,
+			LikelyAvailable: item.LikelyAvailable,
+			RiskLevel:       item.RiskLevel,
+			Confidence:      item.Confidence,
+			Insights:        item.Insights,
+			Mentions:        item.Mentions,
+			Recommendations: item.Recommendations,
+		}
+		out[strings.ToLower(strings.TrimSpace(item.Name))] = resp
+	}
+
+	if useCache && store != nil && cacheTTL > 0 {
+		raw := strings.TrimSpace(string(bulk.Raw))
+		if raw == "" {
+			payload, err := json.Marshal(bulk)
+			if err == nil {
+				raw = string(payload)
+			}
+		}
+		if raw != "" {
+			if err := store.SetExpertCache(ctx, "__bulk__", cacheSlug, resolved.Model, resolved.BaseURL, depth, raw, cacheTTL); err != nil {
+				observability.CLILogger.Warn("Expert bulk cache write failed", zap.Error(err))
+			}
+		}
+	}
+
+	return out, nil
 }
 
 func runAnalysis(ctx context.Context, cfg *config.Config, store *store.Store, promptSlug, name, depth, modelOverride string, variables map[string]string, useCache bool) (json.RawMessage, *ailink.SearchError) {
