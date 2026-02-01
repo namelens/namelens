@@ -29,7 +29,12 @@ var DefaultPatterns = []string{
 	"pyproject.toml", // Python project metadata
 	"docs/*.md",
 	"doc/*.md",
-	"*.md", // Catch-all for other markdown in root
+	"*.md",   // Catch-all for other markdown in root
+	"*.docx", // Office documents (via docprims)
+	"*.xlsx",
+	"*.pptx",
+	"*.html", // Web documents (via docprims)
+	"*.htm",
 }
 
 // DefaultMaxChars is the default maximum characters to include in context.
@@ -232,6 +237,21 @@ func Gather(dir string, cfg Config) (*GatherResult, error) {
 		if extractMode == ExtractMetadata {
 			text = ExtractMetadataFromFile(content, f.Path)
 			coverage = "metadata"
+		} else if IsDocprimsFormat(f.Path) {
+			// Use docprims for Office/HTML documents
+			extracted, err := ExtractContent(f.Path, content)
+			if err != nil {
+				excluded = append(excluded, FileInfo{
+					Path:     f.Path,
+					Class:    className,
+					Chars:    int(f.Size),
+					Coverage: "skipped",
+					Reason:   fmt.Sprintf("extraction failed: %v", err),
+				})
+				filesSkipped++
+				continue
+			}
+			text = strings.TrimSpace(extracted)
 		} else {
 			text = strings.TrimSpace(string(content))
 		}

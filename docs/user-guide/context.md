@@ -45,15 +45,15 @@ namelens generate "my product" --corpus=corpus.json
 The context command classifies files by type and allocates budget accordingly.
 Matching is case-insensitive (`README.md` and `readme.md` both work).
 
-| Class | Patterns | Budget | Extract Mode |
-|-------|----------|--------|--------------|
-| readme | README.md, README.txt | 25% | Full content |
-| architecture | ARCHITECTURE.md, DESIGN.md, STRUCTURE.md | 20% | Full content |
-| decisions | DECISIONS.md, ADR-*.md | 20% | Full content |
-| planning | BOOTSTRAP.md, PLAN.md, CONCEPT.md, VISION.md | 15% | Full content |
-| project_metadata | package.json, Cargo.toml, go.mod, pyproject.toml | 5% | Metadata only |
-| general_docs | docs/*.md, *.md | 15% | Full content |
-| code | *.go, *.rs, *.py, *.ts, *.js | 0% | Excluded |
+| Class            | Patterns                                         | Budget | Extract Mode  |
+| ---------------- | ------------------------------------------------ | ------ | ------------- |
+| readme           | README.md, README.txt                            | 25%    | Full content  |
+| architecture     | ARCHITECTURE.md, DESIGN.md, STRUCTURE.md         | 20%    | Full content  |
+| decisions        | DECISIONS.md, ADR-\*.md                          | 20%    | Full content  |
+| planning         | BOOTSTRAP.md, PLAN.md, CONCEPT.md, VISION.md     | 15%    | Full content  |
+| project_metadata | package.json, Cargo.toml, go.mod, pyproject.toml | 5%     | Metadata only |
+| general_docs     | docs/_.md, _.md                                  | 15%    | Full content  |
+| code             | _.go, _.rs, _.py, _.ts, \*.js                    | 0%     | Excluded      |
 
 ### Budget Allocation
 
@@ -117,13 +117,13 @@ namelens context ./planning --output=prompt
 
 ## Flags
 
-| Flag | Short | Type | Description |
-|------|-------|------|-------------|
-| `--output` | `-o` | string | Output format: `json` (default), `markdown`, `prompt` |
-| `--budget` | | int | Max characters to include (default: 32000) |
-| `--manifest-only` | | bool | Output manifest without content |
-| `--include` | | strings | Additional glob patterns to include |
-| `--exclude` | | strings | Glob patterns to exclude (planned) |
+| Flag              | Short | Type    | Description                                           |
+| ----------------- | ----- | ------- | ----------------------------------------------------- |
+| `--output`        | `-o`  | string  | Output format: `json` (default), `markdown`, `prompt` |
+| `--budget`        |       | int     | Max characters to include (default: 32000)            |
+| `--manifest-only` |       | bool    | Output manifest without content                       |
+| `--include`       |       | strings | Additional glob patterns to include                   |
+| `--exclude`       |       | strings | Glob patterns to exclude (planned)                    |
 
 ## Integration with Generate
 
@@ -140,6 +140,7 @@ namelens context ./planning | namelens generate "my product" --corpus=-
 ```
 
 Priority for description sources:
+
 1. `--description` (inline)
 2. `--corpus` (pre-generated)
 3. `--description-file` (single file)

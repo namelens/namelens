@@ -2,9 +2,9 @@
 slug: name-alternatives
 name: Name Alternatives Generator
 description: Generate alternative naming candidates for a product based on concept and constraints
-version: 1.1.0
+version: 1.2.0
 author: namelens
-updated: 2026-01-29
+updated: 2026-02-01
 input:
   required_variables:
     - concept
@@ -47,6 +47,14 @@ Guidelines:
 - Consider pronunciation ease and international accessibility
 - Names should work well as: CLI command, GitHub org, package name
 
+**CRITICAL - Schema requirements (responses that violate these will fail):**
+
+- candidates array MUST have at least 1 item
+- Each candidate MUST include "name" field (required)
+- strategy MUST be exactly one of: descriptive, metaphorical, coined, compound, acronym, other
+  - Use "other" for any strategy not in this list (e.g., portmanteau, blend, hybrid → use "other")
+- strength MUST be exactly one of (lowercase): strong, moderate, weak
+
 Respond EXCLUSIVELY in this JSON structure (no markdown, no extra text):
 
 ```json
@@ -59,12 +67,21 @@ Respond EXCLUSIVELY in this JSON structure (no markdown, no extra text):
   "candidates": [
     {
       "name": "proposed-name",
-      "strategy": "descriptive|metaphorical|coined|compound|acronym",
+      "strategy": "descriptive",
       "rationale": "Why this name fits the concept",
       "pronunciation": "How to say it",
-      "potential_conflicts": "None found|Brief description of any existing projects",
-      "cli_command": "Example: proposed-name --help",
-      "strength": "strong|moderate|weak"
+      "potential_conflicts": "None found",
+      "cli_command": "proposed-name --help",
+      "strength": "strong"
+    },
+    {
+      "name": "another-name",
+      "strategy": "other",
+      "rationale": "Portmanteau combining two concepts",
+      "pronunciation": "How to say it",
+      "potential_conflicts": "None found",
+      "cli_command": "another-name --help",
+      "strength": "moderate"
     }
   ],
   "top_recommendations": [

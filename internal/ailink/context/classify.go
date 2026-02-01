@@ -72,6 +72,20 @@ var DefaultClasses = []FileClass{
 		ExtractMode:    ExtractFull,
 	},
 	{
+		Name:           "general_office",
+		Patterns:       []string{"*.docx", "*.xlsx", "*.pptx"},
+		Priority:       7,
+		MaxBudgetShare: 0.15,
+		ExtractMode:    ExtractFull,
+	},
+	{
+		Name:           "general_web",
+		Patterns:       []string{"*.html", "*.htm"},
+		Priority:       8,
+		MaxBudgetShare: 0.10,
+		ExtractMode:    ExtractFull,
+	},
+	{
 		Name:           "code",
 		Patterns:       []string{"*.go", "*.rs", "*.py", "*.ts", "*.js"},
 		Priority:       10,

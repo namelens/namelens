@@ -39,6 +39,14 @@ func TestClassifyFile(t *testing.T) {
 		{"go.mod", "project_metadata"},
 		{"Go.mod", "project_metadata"},
 		{"pyproject.toml", "project_metadata"},
+		// Office documents
+		{"report.docx", "general_office"},
+		{"Report.DOCX", "general_office"},
+		{"data.xlsx", "general_office"},
+		{"slides.pptx", "general_office"},
+		// Web documents
+		{"page.html", "general_web"},
+		{"index.htm", "general_web"},
 		// Code
 		{"main.go", "code"},
 		{"Main.Go", "code"},
