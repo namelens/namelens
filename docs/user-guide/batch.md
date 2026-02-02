@@ -290,17 +290,51 @@ Open in spreadsheet for visual comparison and filtering.
 6. **Batch expert sparingly** — Expert analysis is slower; use on 3-5 finalists,
    not 20 candidates
 
+## Concurrent Checks
+
+Speed up batch operations with parallel domain checking (v0.2.0+):
+
+```bash
+# Check with 5 concurrent workers (default: 3)
+namelens batch candidates.txt --profile=startup --concurrency 5
+
+# Conservative for rate-limited TLDs
+namelens batch candidates.txt --tlds=io,sh,co --concurrency 1
+```
+
+**Recommendations:**
+
+- RDAP TLDs (.com, .org, .net): `--concurrency 3-5`
+- WHOIS TLDs (.io, .sh, .co): `--concurrency 1-2` (rate limits)
+
+## Bulk Expert Mode
+
+Screen multiple names with a single AI call (v0.2.0+):
+
+```bash
+# Bulk expert for faster screening
+namelens check name1 name2 name3 name4 name5 \
+  --expert --expert-bulk --expert-depth=quick
+```
+
+See [Expert Search](expert-search.md#bulk-expert-mode) for details.
+
 ## Performance
 
-| Scenario                        | Estimated Time |
-| ------------------------------- | -------------- |
-| 10 candidates, minimal profile  | 5-10 seconds   |
-| 10 candidates, startup profile  | 15-30 seconds  |
-| 5 candidates, startup + expert  | 60-120 seconds |
-| 20 candidates, startup + expert | 4-8 minutes    |
+| Scenario                       | v0.1.3          | v0.2.0        |
+| ------------------------------ | --------------- | ------------- |
+| 10 candidates, minimal profile | 15-30 seconds   | 5-10 seconds  |
+| 10 candidates, startup profile | 30-60 seconds   | 10-20 seconds |
+| 5 candidates, startup + expert | 150-300 seconds | 30-60 seconds |
+| 10 names, bulk expert          | N/A             | ~60 seconds   |
+
+v0.2.0 improvements:
+
+- **Concurrent checks**: 3-5x faster domain/registry checking
+- **Bulk expert**: 90% fewer API calls for multi-name screening
 
 Expert analysis is slower due to AI search queries. Batch large lists without
-`--expert` first to filter.
+`--expert` first to filter, then use bulk expert on finalists.
 
 ## Need Help?
 

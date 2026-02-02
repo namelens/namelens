@@ -89,9 +89,9 @@ $ namelens check namelens --profile=startup --expert
 │ npm    │ namelens     │ available      │                                                                       │
 │ pypi   │ namelens     │ available      │                                                                       │
 │ github │ @namelens    │ taken          │ url: https://github.com/namelens                                      │
-│ expert │ ailink       │ risk: low      │ No direct mentions as existing brand; highly available with low risks │
+│ expert │ namelens     │ risk: low      │ No direct mentions as existing brand; highly available with low risks │
 ├────────┼──────────────┼────────────────┼───────────────────────────────────────────────────────────────────────┤
-│        │              │ 4/8 AVAILABLE │                                                                       │
+│        │              │ 4/8 AVAILABLE  │                                                                       │
 ╰────────┴──────────────┴────────────────┴───────────────────────────────────────────────────────────────────────╯
 ```
 
@@ -104,9 +104,27 @@ namelens check <name> --profile=startup
 namelens check <name> --tlds=com,io,dev
 namelens check <name> --expert
 
+# Generate name alternatives from a concept
+namelens generate "static analyzer for shell scripts"
+namelens generate "my product" --scan-dir ./docs
+
+# Compare candidates side-by-side
+namelens compare name1 name2 name3
+namelens compare name1 name2 --mode=quick
+
+# Deep review with AI analysis
+namelens review myproject --depth=deep
+
+# Generate brand marks/logos
+namelens mark "myproject" --out-dir ./marks --color brand
+namelens image thumb --in-dir ./marks
+
 # Batch check from file
 namelens batch names.txt
 namelens batch names.txt --output-format=json
+
+# Generate context corpus for AI workflows
+namelens context ./my-project --output=json
 
 # Profile management
 namelens profile list
@@ -123,20 +141,31 @@ namelens serve --port 9000
 namelens version
 namelens health
 namelens doctor
-namelens doctor ailink name-availability
-namelens doctor ailink connectivity name-availability
-namelens doctor ailink connectivity name-availability --output-format=json
+namelens doctor ailink connectivity
 ```
+
+### Recommended Workflow
+
+```
+generate → compare → review → mark → thumb
+```
+
+1. **Generate** candidates from your product concept
+2. **Compare** 3-10 finalists with phonetics and suitability scores
+3. **Review** top picks with deep brand analysis
+4. **Mark** your chosen name with logo concepts
+5. **Thumb** for sharing and AI agent workflows
 
 ## Profiles
 
 Profiles define what to check for a given name:
 
-| Profile   | Domains               | Registries | Handles |
-| --------- | --------------------- | ---------- | ------- |
-| `startup` | .com, .io, .dev, .app | npm, pypi  | github  |
-| `minimal` | .com                  | -          | -       |
-| `web3`    | .xyz, .io, .gg        | npm        | github  |
+| Profile     | Domains               | Registries       | Handles |
+| ----------- | --------------------- | ---------------- | ------- |
+| `startup`   | .com, .io, .dev, .app | npm, pypi        | github  |
+| `developer` | .com, .io, .dev       | npm, pypi, cargo | github  |
+| `minimal`   | .com                  | -                | -       |
+| `web3`      | .xyz, .io, .gg        | npm              | github  |
 
 ## Configuration
 
@@ -168,9 +197,15 @@ NAMELENS_DB_PATH=$XDG_DATA_HOME/namelens/namelens.db
 # NAMELENS_EXPERT_ENABLED=true
 # NAMELENS_EXPERT_ROLE=name-availability
 # NAMELENS_EXPERT_DEFAULT_PROMPT=name-availability
+#
+# Brand mark image generation (optional, for namelens mark)
+# NAMELENS_AILINK_ROUTING_BRAND_MARK_IMAGE=namelens-openai-image
 ```
 
 Copy `.env.example` to `.env` for local development.
+
+See [docs/user-guide/configuration.md](docs/user-guide/configuration.md) for
+full configuration reference.
 
 ## Why Namelens?
 

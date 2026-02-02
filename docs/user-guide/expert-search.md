@@ -242,14 +242,14 @@ namelens check myproject --expert --output-format=json
 ### Text Output
 
 ```
-│ expert │ ailink │ risk: low │ No direct conflicts found; name appears available │
+│ expert │ myproject │ risk: low │ No direct conflicts found; name appears available │
 ```
 
 ### JSON Output
 
 ```json
 {
-  "ailink": {
+  "myproject": {
     "summary": "No direct conflicts found",
     "likely_available": true,
     "risk_level": "low",
@@ -370,11 +370,64 @@ Output includes:
 namelens check myproject --phonetics --suitability --locales=en-US,es-ES,zh-CN
 ```
 
+## Bulk Expert Mode
+
+Check multiple names with a single AI call for faster screening (v0.2.0+):
+
+```bash
+# Screen 5-10 names with one AI request
+namelens check name1 name2 name3 name4 name5 \
+  --expert --expert-bulk --expert-depth=quick
+
+# Custom batch size
+namelens check name1 name2 name3 name4 name5 name6 name7 \
+  --expert --expert-bulk --expert-bulk-limit 7
+```
+
+**Benefits:**
+
+- **90% cost reduction** — 1 API call instead of 10
+- **60-80% faster** — Single request vs serial calls
+- **Same output** — Per-name results automatically distributed
+
+**When to use:**
+
+- Shortlist triage (5-10 candidates)
+- Quick screening before deep analysis
+- Cost-sensitive workflows
+
+**Limitations:**
+
+- Maximum 10 names per bulk request (provider token limits)
+- Less detailed than individual `--expert-depth=deep` calls
+
+## AILink Tracing
+
+Debug provider issues with full request/response capture:
+
+```bash
+# Trace all AILink interactions to NDJSON file
+namelens check myname --expert --trace /tmp/debug.ndjson
+
+# Analyze trace data
+jq 'select(.error)' /tmp/debug.ndjson                    # Find errors
+jq '.duration_ms' /tmp/debug.ndjson | jq -s 'add/length' # Avg latency
+jq '.request.messages' /tmp/debug.ndjson                 # See prompts
+```
+
+Trace files capture:
+
+- Full request body (prompts, tools, parameters)
+- Complete responses (content, tool calls, errors)
+- Timing data (request start, completion, duration)
+- Token usage and cost information
+
 ## Rate Limiting and Costs
 
 - x.ai Agent Tools API is currently free (as of Dec 2025)
 - Live Search costs $25 per 1,000 sources
 - Results are cached for 24 hours by default
+- Bulk expert mode reduces costs by 90% for multi-name screening
 
 ## Troubleshooting
 

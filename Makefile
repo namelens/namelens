@@ -3,6 +3,7 @@
 
 .PHONY: all help bootstrap check fmt fmt-check lint check-prompts test test-cov build build-all clean run version install
 .PHONY: precommit prepush dependencies licenses
+.PHONY: version-set version-bump version-bump-major version-bump-minor version-bump-patch
 .PHONY: release-clean release-download release-checksums release-verify-checksums
 .PHONY: release-sign release-export-keys release-verify-keys release-verify-signatures release-notes
 .PHONY: release-upload release-upload-provenance release-upload-all release-build
@@ -167,6 +168,36 @@ run: ## Run server in development mode
 
 version: ## Print current version
 	@echo "$(VERSION)"
+
+version-bump: ## Bump version (usage: make version-bump TYPE=patch|minor|major)
+	@if [ -z "$(TYPE)" ]; then \
+		echo "❌ TYPE not specified. Usage: make version-bump TYPE=patch|minor|major"; \
+		exit 1; \
+	fi
+	@echo "Bumping version ($(TYPE))..."
+	@if ! command -v goneat >/dev/null 2>&1; then \
+		echo "[!!] goneat not found (run 'make bootstrap')"; \
+		exit 1; \
+	fi
+	@goneat version bump $(TYPE)
+	@echo "✅ Version bumped to $$(cat VERSION)"
+
+version-set: ## Set version (usage: make version-set V=x.y.z)
+	@if [ -z "$(V)" ]; then \
+		echo "❌ V not specified. Usage: make version-set V=x.y.z"; \
+		exit 1; \
+	fi
+	@echo "$(V)" > VERSION
+	@echo "✅ Version set to $(V)"
+
+version-bump-major: ## Bump major version (x.0.0)
+	@$(MAKE) version-bump TYPE=major
+
+version-bump-minor: ## Bump minor version (0.x.0)
+	@$(MAKE) version-bump TYPE=minor
+
+version-bump-patch: ## Bump patch version (0.0.x)
+	@$(MAKE) version-bump TYPE=patch
 
 clean: ## Clean build artifacts
 	@echo "Cleaning..."

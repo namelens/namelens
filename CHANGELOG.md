@@ -7,7 +7,70 @@ Versioning.
 
 ## [Unreleased]
 
-## [0.1.4] - 2026-01-24
+## [0.2.0] - 2026-02-01
+
+### Added
+
+- **Brand mark generation** for visual identity exploration
+  - `namelens mark` command generates logo/mark directions and images
+  - Routes text generation (mark directions) and image generation separately
+  - Supports `--color` flag with modes: `monochrome`, `brand`, `vibrant`
+  - Supports `--description` and `--audience` for better context
+  - Supports `--background transparent` for compositing-ready output
+  - Outputs WebP, PNG, or JPEG in configurable sizes
+- **Thumbnail utility** for agent-friendly image sharing
+  - `namelens image thumb` produces JPEG/PNG thumbnails from mark images
+  - Supports WebP, PNG, and JPEG input formats
+  - Configurable max size (64-1024px) and output format
+- **Bulk expert analysis** for efficient multi-name screening
+  - `namelens check <names> --expert --expert-bulk` analyzes up to 10 names in a
+    single AI call
+  - `--expert-bulk-limit` flag to control batch size (default: 10)
+  - Significantly reduces API costs and latency for shortlist triage
+- **Concurrent domain checks** for faster batch operations
+  - `--concurrency` flag enables parallel domain/registry checks (default: 3)
+  - Reduces total check time for multiple names
+  - Configurable concurrency level based on rate limit tolerance
+- **Context command** for corpus generation and prompt preparation
+  - `namelens context <dir>` scans directories and generates structured corpus
+  - Supports JSON, markdown, and prompt output formats
+  - File classification by type (readme, architecture, decisions, planning)
+  - Budget-aware content allocation for AI prompt optimization
+  - Pipeline-friendly: pipe output directly to `namelens generate --corpus=-`
+- **AILink request/response tracing** for debugging and transparency
+  - `--trace <file>` flag captures full provider interactions to NDJSON
+  - Includes request body, response, timing, and token usage
+  - Essential for debugging provider issues and auditing AI calls
+- **AI backend status check** in doctor command
+  - `namelens doctor` now validates AI provider configuration
+  - Reports provider health, model availability, and credential status
+  - Clear guidance when AI backend is not configured
+- **Expert mode guidance** in check and compare commands
+  - Helpful hints when running without `--expert` flag
+  - Explains benefits of comprehensive analysis vs basic availability
+- OpenAI GPT Image model support for image generation
+  - Recommended backend for brand mark generation
+  - Better instruction following and cleaner output than legacy models
+- xAI image generation support (experimental)
+  - grok-2-image model available but limited (no size/aspect control)
+  - Documented as experimental in known-issues.md
+- Separate image provider routing via `brand-mark-image` role
+  - Allows different providers for text vs image generation
+- Brand mark prompt with color mode support and text-free enforcement
+
+### Changed
+
+- Domain prompts updated with improved context extraction support
+- xAI driver updated to use Responses API with enhanced tracing support
+- AILink now supports image-only provider configurations
+  - Providers no longer require `models.default` for image-only routing
+- Updated `.env.example` with GPT Image and image provider routing examples
+
+### Fixed
+
+- Effective break statement in concurrent check enqueue loop (context
+  cancellation now properly stops all workers)
+- Schema validation error messages now include `--trace` hint for debugging
 
 ### Security
 
@@ -21,34 +84,6 @@ Versioning.
 - Updated github.com/alecthomas/units to latest (removes yaml.v2 transitive)
 - Added SDR-001 documenting scanner false positives from openrdap's declared
   requirements
-
-### Added
-
-- `namelens mark` command for generating brand mark/logo directions and images
-  - Routes text generation (mark directions) and image generation separately
-  - Supports `--color` flag with modes: `monochrome`, `brand`, `vibrant`
-  - Supports `--description` and `--audience` for better context
-  - Supports `--background transparent` for compositing-ready output
-  - Outputs WebP, PNG, or JPEG in configurable sizes
-- `namelens image thumb` command for generating thumbnails
-  - Produces agent-friendly JPEG/PNG thumbnails from mark images
-  - Supports WebP, PNG, and JPEG input formats
-  - Configurable max size (64-1024px) and output format
-- OpenAI GPT Image model support for image generation
-  - Recommended backend for brand mark generation
-  - Better instruction following and cleaner output than legacy models
-- xAI image generation support (experimental)
-  - grok-2-image model available but limited (no size/aspect control)
-  - Documented as experimental in known-issues.md
-- Separate image provider routing via `brand-mark-image` role
-  - Allows different providers for text vs image generation
-- Brand mark prompt with color mode support and text-free enforcement
-
-### Changed
-
-- AILink now supports image-only provider configurations
-  - Providers no longer require `models.default` for image-only routing
-- Updated `.env.example` with GPT Image and image provider routing examples
 
 ## [0.1.3] - 2026-01-14
 

@@ -289,7 +289,7 @@ Flags:
 - Generated marks are **directional concepts**, not final artwork
 - Results vary between runs (AI generation is non-deterministic)
 - Some providers may occasionally include unwanted text despite instructions
-- Vector/SVG output not yet supported (coming in v0.1.5)
+- Vector/SVG output not yet supported (planned)
 
 ---
 
