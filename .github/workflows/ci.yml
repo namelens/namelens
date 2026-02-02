@@ -14,7 +14,7 @@ jobs:
   format-check:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/fulmenhq/goneat-tools-runner-glibc:latest
+      image: ghcr.io/fulmenhq/goneat-tools-runner-glibc:v0.3.1
       # goneat-tools-runner-glibc is a full CI runner image.
       # Use UID 1001 to match GitHub-hosted runner workspace ownership.
       options: --user 1001
@@ -46,7 +46,7 @@ jobs:
     needs: [format-check]
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/fulmenhq/goneat-tools-runner-glibc:latest
+      image: ghcr.io/fulmenhq/goneat-tools-runner-glibc:v0.3.1
       # goneat-tools-runner-glibc is a full CI runner image.
       # Use UID 1001 to match GitHub-hosted runner workspace ownership.
       options: --user 1001
