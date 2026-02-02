@@ -51,4 +51,7 @@ fi
 echo "→ Uploading ${#final_assets[@]} provenance asset(s) to ${TAG} (clobber)"
 gh release upload "${TAG}" "${final_assets[@]}" --clobber
 
-echo "✅ Upload complete"
+echo "→ Publishing release (removing draft status)..."
+gh release edit "${TAG}" --draft=false
+
+echo "✅ Upload complete and release published"

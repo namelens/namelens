@@ -65,12 +65,12 @@ When you push a tag, CI automatically:
 
 1. Validates VERSION matches tag
 2. Builds CGO-enabled binaries on native runners:
-   - `ubuntu-latest` for linux-amd64
-   - `ubuntu-24.04-arm` for linux-arm64
-   - `macos-13` for darwin-amd64
+   - `ubuntu-latest-x64-s` for linux-amd64
+   - `ubuntu-latest-arm64-s` for linux-arm64
    - `macos-latest` for darwin-arm64
-3. Creates macOS universal binary via `lipo`
-4. Uploads binaries to GitHub Release
+3. Creates a **draft** GitHub Release with binaries
+
+Note: The release remains in draft until `make release-upload` publishes it.
 
 ### Release Artifacts & Signing (Manual)
 
@@ -130,8 +130,9 @@ export NAMELENS_NAMELENS_GPG_HOMEDIR=/path/to/gnupg-3leaps         # required if
 - [ ] Export public keys into `dist/release/`: `make release-export-keys`
 - [ ] Verify exported keys are public-only: `make release-verify-keys`
 - [ ] Copy release notes into `dist/release/`: `make release-notes`
-- [ ] Upload provenance assets (manifests + signatures + public keys + notes):
-      `make release-upload`
+- [ ] Upload provenance assets and publish release: `make release-upload`
+  - This uploads manifests + signatures + public keys + notes
+  - Automatically publishes the release (removes draft status)
   - If you are doing a fully manual release build (no CI artifacts), use:
     `make release-upload-all`
 
