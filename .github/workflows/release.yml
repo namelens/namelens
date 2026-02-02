@@ -30,7 +30,7 @@ env:
 jobs:
   # Validate VERSION matches tag
   validate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-x64-s
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
@@ -61,9 +61,9 @@ jobs:
       matrix:
         include:
           - arch: amd64
-            runner: ubuntu-latest
+            runner: ubuntu-latest-x64-s
           - arch: arm64
-            runner: ubuntu-24.04-arm
+            runner: ubuntu-latest-arm64-s
     runs-on: ${{ matrix.runner }}
     env:
       VERSION: ${{ needs.validate.outputs.version }}
@@ -138,7 +138,7 @@ jobs:
   publish:
     name: Publish Release
     needs: [validate, build-linux, build-darwin]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-x64-s
     permissions:
       contents: write
     steps:

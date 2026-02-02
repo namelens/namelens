@@ -12,7 +12,7 @@ jobs:
   # Uses goneat-tools-runner-glibc which has foundation tools pre-installed.
   # glibc base ensures CGO-compatible environments.
   format-check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-x64-s
     container:
       image: ghcr.io/fulmenhq/goneat-tools-runner-glibc:v0.3.1
       # goneat-tools-runner-glibc is a full CI runner image.
@@ -44,7 +44,7 @@ jobs:
   # Runner provides foundation tools + goneat/sfetch; Go is set up separately.
   build-test:
     needs: [format-check]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-x64-s
     container:
       image: ghcr.io/fulmenhq/goneat-tools-runner-glibc:v0.3.1
       # goneat-tools-runner-glibc is a full CI runner image.
