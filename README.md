@@ -65,7 +65,7 @@ make build
 # Deep analysis with AI-powered brand research
 ./bin/namelens check acmecorp --expert --phonetics --suitability
 
-# Start server (for MCP mode)
+# Start server (HTTP API for agents/automation)
 ./bin/namelens serve
 ```
 
@@ -133,9 +133,9 @@ namelens profile show startup
 # Expert prompts
 namelens ailink list
 
-# Server mode (for MCP)
+# Server mode (HTTP API for agents/automation)
 namelens serve
-namelens serve --port 9000
+namelens serve --bind=0.0.0.0:9000
 
 # Diagnostics
 namelens version
@@ -239,8 +239,8 @@ full configuration reference.
   critical conflict our codename had
 - **CLI-native for developers** — Integrates into your workflow, not a web
   dashboard you need to visit
-- **Works with AI assistants** — MCP server enables Claude, OpenCode, and other
-  tools to check names directly
+- **Works with AI agents** — HTTP API enables any agent or automation tool to
+  check names directly via REST endpoints
 
 [Read how we named ourselves →](docs/examples/namelens-origin-story.md)
 
@@ -274,7 +274,7 @@ internal/
     checker/            # Availability checkers (domain, npm, github, etc.)
     engine/             # Orchestration, rate limiting, profiles
     store/              # Database (libsql/Turso)
-  server/               # HTTP server for MCP mode
+  server/               # HTTP server and Control Plane API
   config/               # Configuration management
 config/namelens/       # Default configuration
 ```

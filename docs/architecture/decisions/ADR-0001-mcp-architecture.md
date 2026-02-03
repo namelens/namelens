@@ -1,8 +1,13 @@
 # ADR-0001: MCP Server Architecture
 
-**Status**: Accepted  
+**Status**: Superseded by [ADR-0002](ADR-0002-control-plane-api.md)  
 **Date**: 2024-12-27  
+**Superseded Date**: 2026-02-02  
 **Deciders**: @3leapsdave
+
+> **Note**: This ADR was superseded before implementation. NameLens uses a
+> Control Plane HTTP API instead of MCP. See [ADR-0002](ADR-0002-control-plane-api.md)
+> for the current architecture.
 
 ## Context
 

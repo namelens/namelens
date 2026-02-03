@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/namelens/namelens/internal/ailink/driver"
+	"github.com/namelens/namelens/internal/ailink/driver/anthropic"
 	"github.com/namelens/namelens/internal/ailink/driver/openai"
 	"github.com/namelens/namelens/internal/ailink/driver/xai"
 	"github.com/namelens/namelens/internal/ailink/prompt"
@@ -60,7 +61,12 @@ func (r *Registry) ResolveWithDepth(role string, promptDef *prompt.Prompt, model
 	}
 
 	baseURL := strings.TrimSpace(providerCfg.BaseURL)
-	if client, ok := drv.(*xai.Client); ok {
+	switch client := drv.(type) {
+	case *xai.Client:
+		baseURL = strings.TrimSpace(client.BaseURL)
+	case *openai.Client:
+		baseURL = strings.TrimSpace(client.BaseURL)
+	case *anthropic.Client:
 		baseURL = strings.TrimSpace(client.BaseURL)
 	}
 
@@ -240,6 +246,11 @@ func (r *Registry) driverFor(providerID string, providerCfg ProviderInstanceConf
 		return client, nil
 	case "openai":
 		client := openai.NewClient(providerCfg.BaseURL, cred.APIKey)
+		client.Timeout = r.cfg.DefaultTimeout
+		r.drivers[driverKey] = client
+		return client, nil
+	case "anthropic":
+		client := anthropic.NewClient(providerCfg.BaseURL, cred.APIKey)
 		client.Timeout = r.cfg.DefaultTimeout
 		r.drivers[driverKey] = client
 		return client, nil

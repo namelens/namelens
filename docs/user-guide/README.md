@@ -167,7 +167,7 @@ Using Namelens for competitive research and brand gap analysis.
 
 ### Integration & Automation
 
-MCP server, API, and CI/CD integration.
+HTTP API, CLI scripting, and CI/CD integration.
 
 [Read the Integration Guide →](integration.md)
 

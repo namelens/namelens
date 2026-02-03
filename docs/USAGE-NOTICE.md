@@ -123,4 +123,4 @@ notice and agree to use the tool in accordance with these terms.
 ---
 
 _This notice applies to all versions of this software and all interfaces (CLI,
-API, MCP)._
+HTTP API)._

@@ -33,7 +33,7 @@ You can override the base directory with `XDG_CONFIG_HOME`.
 # ~/.config/namelens/config.yaml (Linux/macOS default)
 # $XDG_CONFIG_HOME/namelens/config.yaml (override)
 
-# Server settings (for MCP mode)
+# Server settings (for HTTP API)
 server:
   host: localhost
   port: 8080
