@@ -108,12 +108,24 @@ func (t *Tracer) Write(entry TraceEntry) {
 	_, _ = t.file.Write([]byte("\n"))
 }
 
-// Close closes the trace file.
+// Sync flushes any buffered data to the trace file.
+func (t *Tracer) Sync() error {
+	if t == nil || t.file == nil {
+		return nil
+	}
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.file.Sync()
+}
+
+// Close syncs and closes the trace file.
 func (t *Tracer) Close() error {
 	if t == nil || t.file == nil {
 		return nil
 	}
 	t.mu.Lock()
 	defer t.mu.Unlock()
+	// Sync before close to ensure all data is written
+	_ = t.file.Sync()
 	return t.file.Close()
 }

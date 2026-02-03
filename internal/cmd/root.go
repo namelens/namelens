@@ -62,6 +62,8 @@ Use the subcommands to perform specific operations.`,
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() error {
+	// Ensure tracing is properly closed when command completes
+	defer driver.DisableTracing()
 	return rootCmd.Execute()
 }
 
@@ -126,14 +128,12 @@ func initConfig() {
 
 	// Enable AILink tracing if requested
 	if traceFile != "" {
-		cleanup, err := driver.EnableTracing(traceFile)
+		_, err := driver.EnableTracing(traceFile)
 		if err != nil {
 			observability.CLILogger.Warn("Failed to enable tracing", zap.Error(err))
 		} else {
 			observability.CLILogger.Debug("AILink tracing enabled", zap.String("file", traceFile))
-			// Note: cleanup is not called here since we want tracing for the entire session
-			// The file will be closed when the process exits
-			_ = cleanup
+			// Cleanup is handled by DisableTracing() in Execute()
 		}
 	}
 
