@@ -123,6 +123,21 @@ Committer-of-Record: @3leapsdave
 | `internal/server/` | HTTP server and handlers         |
 | `config/namelens/` | Default configuration            |
 
+## Agent Dogfooding Guide
+
+When using NameLens for naming work (projects, features, repos):
+
+1. **Start with practical guidance**: Read [Workflows & Best Practices](docs/user-guide/workflows.md) for provider selection, command combinations, and common pitfalls.
+
+2. **Understand provider strengths**:
+   - **xAI**: Use for `check --expert` (real-time web search finds recent conflicts)
+   - **Anthropic**: Use for `generate` when you need technical accuracy and conflict awareness
+   - **OpenAI**: Use for `generate` when you need speed and brandable suggestions
+
+3. **Essential workflow**: Generate → Check → Validate. Never skip `check --expert` for serious projects.
+
+4. **See real examples**: The [Tesla Trademark Lesson](docs/examples/tesla-trademark-lesson.md) demonstrates why domain availability ≠ trademark safety.
+
 ## Role Catalog
 
 Standard role identifiers for 3leaps ecosystem. Use in `Role:` commit trailer.
