@@ -10,6 +10,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"go.uber.org/zap"
 
+	"github.com/namelens/namelens/internal/api"
 	apperrors "github.com/namelens/namelens/internal/errors"
 	"github.com/namelens/namelens/internal/observability"
 	"github.com/namelens/namelens/internal/server/handlers"
@@ -18,14 +19,20 @@ import (
 
 // Server represents the HTTP server
 type Server struct {
-	router *chi.Mux
-	server *http.Server
-	host   string
-	port   int
+	router    *chi.Mux
+	server    *http.Server
+	host      string
+	port      int
+	apiServer *api.Server
 }
 
-// New creates a new HTTP server instance
+// New creates a new HTTP server instance (without control plane API)
 func New(host string, port int) *Server {
+	return NewWithAPI(host, port, "", api.AuthConfig{})
+}
+
+// NewWithAPI creates a new HTTP server instance with control plane API
+func NewWithAPI(host string, port int, version string, authConfig api.AuthConfig) *Server {
 	r := chi.NewRouter()
 
 	// Standard chi middleware
@@ -52,17 +59,22 @@ func New(host string, port int) *Server {
 		HandleError(w, req, err)
 	})
 
+	// Create API server (orchestrator will be nil for now - can be set later)
+	apiServer := api.NewServer(nil, version)
+
 	s := &Server{
-		router: r,
-		host:   host,
-		port:   port,
+		router:    r,
+		host:      host,
+		port:      port,
+		apiServer: apiServer,
 	}
 
 	// Ensure handlers use the centralized error responder
 	handlers.SetHTTPErrorResponder(HandleError)
 
-	// Register routes
+	// Register routes (including control plane API)
 	s.registerRoutes()
+	s.registerAPIRoutes(authConfig)
 
 	return s
 }

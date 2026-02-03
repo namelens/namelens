@@ -2,7 +2,10 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/fulmenhq/gofulmen/signals"
@@ -10,6 +13,7 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
+	"github.com/namelens/namelens/internal/api"
 	errwrap "github.com/namelens/namelens/internal/errors"
 	"github.com/namelens/namelens/internal/observability"
 	"github.com/namelens/namelens/internal/server"
@@ -17,8 +21,11 @@ import (
 )
 
 var (
-	serverPort int
-	serverHost string
+	serverPort  int
+	serverHost  string
+	serverBind  string
+	generateKey bool
+	apiKeyFlag  string
 )
 
 // signalHealthChecker implements HealthChecker for signal system
@@ -64,20 +71,68 @@ var serveCmd = &cobra.Command{
 	Short: "Start the HTTP server",
 	Long: `Start the HTTP server with graceful shutdown support.
 
+The server exposes:
+  • Control Plane API at /v1/* for name availability checking
+  • Health endpoints at /health, /health/live, /health/ready
+  • Metrics at /metrics (Prometheus format)
+
 Signal Handling:
   • Ctrl+C (SIGINT) or SIGTERM: Graceful shutdown
   • Ctrl+C twice within 2s: Force quit
   • SIGHUP: Config reload (placeholder - restart recommended)
 
-The server will cleanly shut down the HTTP server and flush logs on shutdown.`,
+Authentication:
+  API key required for non-localhost requests when configured.
+  Generate a key with: namelens serve --generate-key
+  Set via: NAMELENS_CONTROL_PLANE_API_KEY environment variable`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// Handle --generate-key flag
+		if generateKey {
+			key, err := api.GenerateAPIKey()
+			if err != nil {
+				return errwrap.WrapInternal(cmd.Context(), err, "failed to generate API key")
+			}
+			fmt.Printf("Generated API key: %s\n", key)
+			fmt.Println("\nSet this key via environment variable:")
+			fmt.Println("  export NAMELENS_CONTROL_PLANE_API_KEY=" + key)
+			return nil
+		}
+
 		// Get app identity for telemetry namespace
 		identity := GetAppIdentity()
 		namespace := identity.TelemetryNamespace()
 
+		// Parse bind address if provided
+		if serverBind != "" {
+			parts := strings.Split(serverBind, ":")
+			if len(parts) == 2 {
+				serverHost = parts[0]
+				if _, err := fmt.Sscanf(parts[1], "%d", &serverPort); err != nil {
+					return errwrap.NewConfigInvalidError("invalid port in --bind address: " + parts[1])
+				}
+			} else {
+				return errwrap.NewConfigInvalidError("invalid --bind format, use host:port")
+			}
+		}
+
 		// Initialize server logger with namespace
 		logLevel := viper.GetString("logging.level")
 		observability.InitServerLogger(identity.BinaryName, logLevel, namespace)
+
+		// Warn if binding to non-localhost
+		if serverHost != "localhost" && serverHost != "127.0.0.1" && serverHost != "::1" {
+			observability.ServerLogger.Warn("Server bound to network interface - exposed to network",
+				zap.String("host", serverHost),
+				zap.Int("port", serverPort))
+			fmt.Fprintf(os.Stderr, "\nWARNING: Server bound to %s:%d - exposed to network\n", serverHost, serverPort)
+			fmt.Fprintln(os.Stderr, "         Use a reverse proxy (nginx, caddy, cloudflared) for production")
+		}
+
+		// Load API key from environment or flag
+		controlPlaneAPIKey := apiKeyFlag
+		if controlPlaneAPIKey == "" {
+			controlPlaneAPIKey = os.Getenv("NAMELENS_CONTROL_PLANE_API_KEY")
+		}
 
 		metricsPort := viper.GetInt("metrics.port")
 		if metricsPort == 0 {
@@ -97,7 +152,8 @@ The server will cleanly shut down the HTTP server and flush logs on shutdown.`,
 			zap.String("version", versionInfo.Version),
 			zap.String("host", serverHost),
 			zap.Int("port", serverPort),
-			zap.Int("metrics_port", metricsPort))
+			zap.Int("metrics_port", metricsPort),
+			zap.Bool("api_key_configured", controlPlaneAPIKey != ""))
 
 		// Initialize health manager
 		handlers.InitHealthManager(versionInfo.Version)
@@ -110,8 +166,12 @@ The server will cleanly shut down the HTTP server and flush logs on shutdown.`,
 			configName: identity.ConfigName,
 		})
 
-		// Create server
-		srv := server.New(serverHost, serverPort)
+		// Create server with control plane API configuration
+		apiConfig := api.AuthConfig{
+			APIKey:         controlPlaneAPIKey,
+			AllowLocalhost: true,
+		}
+		srv := server.NewWithAPI(serverHost, serverPort, versionInfo.Version, apiConfig)
 
 		// Set app identity for handlers
 		handlers.SetAppIdentity(identity)
@@ -217,6 +277,9 @@ func init() {
 
 	serveCmd.Flags().StringVar(&serverHost, "host", "localhost", "server host")
 	serveCmd.Flags().IntVarP(&serverPort, "port", "p", 8080, "server port")
+	serveCmd.Flags().StringVar(&serverBind, "bind", "", "bind address (host:port, overrides --host and --port)")
+	serveCmd.Flags().BoolVar(&generateKey, "generate-key", false, "generate a new API key and exit")
+	serveCmd.Flags().StringVar(&apiKeyFlag, "api-key", "", "API key for control plane authentication")
 
 	_ = viper.BindPFlag("server.host", serveCmd.Flags().Lookup("host"))
 	_ = viper.BindPFlag("server.port", serveCmd.Flags().Lookup("port"))

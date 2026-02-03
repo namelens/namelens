@@ -1,0 +1,551 @@
+openapi: 3.1.0
+info:
+  title: NameLens Control Plane API
+  version: 1.0.0
+  description: |
+    HTTP API for name availability checking and brand analysis.
+
+    NameLens checks name availability across domains, package registries,
+    and social handles, with optional AI-powered brand safety analysis.
+  contact:
+    name: NameLens
+    url: https://github.com/namelens/namelens
+  license:
+    name: Apache-2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+
+servers:
+  - url: http://localhost:8080
+    description: Local development
+
+tags:
+  - name: health
+    description: Health and status endpoints
+  - name: check
+    description: Name availability checking
+  - name: profiles
+    description: Check profile management
+
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      summary: Health check
+      description: Returns server health status for Kubernetes probes
+      tags: [health]
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: Server is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /v1/status:
+    get:
+      operationId: getStatus
+      summary: Get server status
+      description: Returns rate limit headroom and provider status
+      tags: [health]
+      security:
+        - apiKey: []
+      responses:
+        '200':
+          description: Status information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/check:
+    post:
+      operationId: checkName
+      summary: Check name availability
+      description: |
+        Check availability of a name across configured domains, registries, and handles.
+
+        The check can use a predefined profile (startup, developer, minimal, etc.)
+        or custom TLD/registry/handle lists.
+      tags: [check]
+      security:
+        - apiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckRequest'
+            examples:
+              simple:
+                summary: Simple check with default profile
+                value:
+                  name: acmecorp
+              withProfile:
+                summary: Check with developer profile
+                value:
+                  name: acmecorp
+                  profile: developer
+              withExpert:
+                summary: Check with AI expert analysis
+                value:
+                  name: acmecorp
+                  profile: startup
+                  expert: true
+              customTLDs:
+                summary: Check with custom TLDs
+                value:
+                  name: acmecorp
+                  tlds: [com, io, dev]
+                  registries: [npm]
+      responses:
+        '200':
+          description: Check results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /v1/compare:
+    post:
+      operationId: compareCandidates
+      summary: Compare multiple name candidates
+      description: |
+        Compare multiple name candidates side-by-side, showing availability
+        and optional AI analysis for each.
+      tags: [check]
+      security:
+        - apiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompareRequest'
+            examples:
+              simple:
+                summary: Compare three candidates
+                value:
+                  names: [acmecorp, acmeio, acmehq]
+                  profile: startup
+      responses:
+        '200':
+          description: Comparison results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompareResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /v1/profiles:
+    get:
+      operationId: listProfiles
+      summary: List available profiles
+      description: Returns all built-in and custom check profiles
+      tags: [profiles]
+      security:
+        - apiKey: []
+      responses:
+        '200':
+          description: List of profiles
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: |
+        API key for authentication. Required for non-localhost requests.
+        Generate with `namelens serve --generate-key`.
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: bad_request
+              message: "name is required"
+
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: unauthorized
+              message: "API key required for non-localhost requests"
+
+    RateLimited:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: rate_limited
+              message: "rate limit exceeded, retry after 60 seconds"
+              retry_after: 60
+
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+          description: Overall health status
+        version:
+          type: string
+          description: Server version
+        checks:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/HealthCheck'
+          description: Individual component health checks
+
+    HealthCheck:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [pass, fail, warn]
+        message:
+          type: string
+
+    StatusResponse:
+      type: object
+      required: [providers]
+      properties:
+        providers:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ProviderStatus'
+          description: Status of each check provider
+        rate_limits:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/RateLimitStatus'
+          description: Current rate limit headroom
+
+    ProviderStatus:
+      type: object
+      required: [available]
+      properties:
+        available:
+          type: boolean
+          description: Whether the provider is available
+        message:
+          type: string
+          description: Status message or error
+
+    RateLimitStatus:
+      type: object
+      properties:
+        remaining:
+          type: integer
+          description: Remaining requests in current window
+        reset_at:
+          type: string
+          format: date-time
+          description: When the rate limit window resets
+
+    CheckRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 63
+          description: The name to check
+          example: acmecorp
+        profile:
+          type: string
+          enum: [startup, developer, minimal, website, web3]
+          description: Predefined check profile to use
+        expert:
+          type: boolean
+          default: false
+          description: Include AI-powered brand safety analysis
+        tlds:
+          type: array
+          items:
+            type: string
+          description: Custom TLDs to check (overrides profile)
+          example: [com, io, dev]
+        registries:
+          type: array
+          items:
+            type: string
+            enum: [npm, pypi, cargo]
+          description: Package registries to check (overrides profile)
+        handles:
+          type: array
+          items:
+            type: string
+            enum: [github]
+          description: Social handles to check (overrides profile)
+
+    CheckResponse:
+      type: object
+      required: [name, results, summary]
+      properties:
+        name:
+          type: string
+          description: The name that was checked
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CheckResult'
+          description: Individual check results
+        summary:
+          $ref: '#/components/schemas/CheckSummary'
+        expert:
+          $ref: '#/components/schemas/ExpertAnalysis'
+          description: AI-powered analysis (if expert=true)
+
+    CheckResult:
+      type: object
+      required: [name, check_type, available]
+      properties:
+        name:
+          type: string
+          description: Full name checked (e.g., acmecorp.com)
+        check_type:
+          type: string
+          enum: [domain, npm, pypi, cargo, github]
+          description: Type of check performed
+        tld:
+          type: string
+          description: TLD for domain checks
+        available:
+          type: string
+          enum: [available, taken, unknown, error, rate_limited, unsupported]
+          description: Availability status
+        message:
+          type: string
+          description: Additional information or error message
+        provenance:
+          $ref: '#/components/schemas/Provenance'
+
+    Provenance:
+      type: object
+      properties:
+        requested_at:
+          type: string
+          format: date-time
+        resolved_at:
+          type: string
+          format: date-time
+        source:
+          type: string
+          description: How the result was determined
+        server:
+          type: string
+          description: Server that provided the result
+        from_cache:
+          type: boolean
+          description: Whether result came from cache
+        cache_expires_at:
+          type: string
+          format: date-time
+
+    CheckSummary:
+      type: object
+      required: [total, available, taken, unknown]
+      properties:
+        total:
+          type: integer
+          description: Total checks performed
+        available:
+          type: integer
+          description: Number of available results
+        taken:
+          type: integer
+          description: Number of taken results
+        unknown:
+          type: integer
+          description: Number of unknown/error results
+        risk_level:
+          type: string
+          enum: [low, medium, high]
+          description: Overall risk assessment
+
+    ExpertAnalysis:
+      type: object
+      properties:
+        risk_level:
+          type: string
+          enum: [low, medium, high]
+          description: AI-assessed risk level
+        summary:
+          type: string
+          description: Brief risk summary
+        details:
+          type: string
+          description: Detailed analysis
+        provider:
+          type: string
+          description: AI provider used (e.g., xai, openai)
+
+    CompareRequest:
+      type: object
+      required: [names]
+      properties:
+        names:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 63
+          minItems: 2
+          maxItems: 10
+          description: Names to compare
+        profile:
+          type: string
+          enum: [startup, developer, minimal, website, web3]
+          description: Check profile to use
+        expert:
+          type: boolean
+          default: false
+          description: Include AI analysis for each candidate
+        tlds:
+          type: array
+          items:
+            type: string
+          description: Custom TLDs (overrides profile)
+        registries:
+          type: array
+          items:
+            type: string
+            enum: [npm, pypi, cargo]
+        handles:
+          type: array
+          items:
+            type: string
+            enum: [github]
+
+    CompareResponse:
+      type: object
+      required: [candidates]
+      properties:
+        candidates:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompareCandidate'
+        recommendation:
+          type: string
+          description: AI recommendation (if expert=true)
+
+    CompareCandidate:
+      type: object
+      required: [name, results, summary]
+      properties:
+        name:
+          type: string
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CheckResult'
+        summary:
+          $ref: '#/components/schemas/CheckSummary'
+        expert:
+          $ref: '#/components/schemas/ExpertAnalysis'
+
+    ProfileListResponse:
+      type: object
+      required: [profiles]
+      properties:
+        profiles:
+          type: array
+          items:
+            $ref: '#/components/schemas/Profile'
+
+    Profile:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          description: Profile identifier
+        description:
+          type: string
+          description: Human-readable description
+        tlds:
+          type: array
+          items:
+            type: string
+          description: TLDs this profile checks
+        registries:
+          type: array
+          items:
+            type: string
+          description: Package registries this profile checks
+        handles:
+          type: array
+          items:
+            type: string
+          description: Social handles this profile checks
+        is_builtin:
+          type: boolean
+          description: Whether this is a built-in profile
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          $ref: '#/components/schemas/Error'
+
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: Error code
+          example: bad_request
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          additionalProperties: true
+          description: Additional error details
+        retry_after:
+          type: integer
+          description: Seconds to wait before retrying (for rate limits)

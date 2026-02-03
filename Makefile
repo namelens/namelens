@@ -8,6 +8,7 @@
 .PHONY: release-sign release-export-keys release-verify-keys release-verify-signatures release-notes
 .PHONY: release-upload release-upload-provenance release-upload-all release-build
 .PHONY: release-guard-tag-version
+.PHONY: api-lint api-generate check-api
 
 # Binary and version information
 BINARY_NAME := namelens
@@ -106,7 +107,7 @@ bootstrap: ## Install dependencies and tools
 	@echo ""
 	@echo "[ok] Bootstrap complete"
 
-check: fmt-check lint test ## Run all quality checks
+check: fmt-check lint check-api test ## Run all quality checks
 
 fmt: ## Format code
 	@echo "Formatting code with goneat..."
@@ -393,3 +394,36 @@ release-build: release-clean ## Build release artifacts locally (for manual rele
 	@$(MAKE) release-checksums
 	@echo "✅ Release build complete (current platform only)"
 	@echo "   For multi-platform builds, use CI (push a tag)"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# API code generation (OpenAPI spec → Go code)
+# ─────────────────────────────────────────────────────────────────────────────
+
+api-lint: ## Lint OpenAPI spec
+	@echo "Linting OpenAPI spec..."
+	@if ! command -v vacuum >/dev/null 2>&1; then \
+		echo "[..] Installing vacuum..."; \
+		$(GOCMD) install github.com/daveshanley/vacuum@latest; \
+	fi
+	@vacuum lint openapi.yaml --no-style
+	@echo "OpenAPI lint complete"
+
+api-generate: ## Generate Go code from OpenAPI spec
+	@echo "Generating API code from OpenAPI spec..."
+	@if ! command -v oapi-codegen >/dev/null 2>&1; then \
+		echo "[..] Installing oapi-codegen..."; \
+		$(GOCMD) install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest; \
+	fi
+	@mkdir -p internal/api
+	@oapi-codegen -generate types,chi-server -package api \
+		-o internal/api/openapi.gen.go openapi.yaml
+	@echo "Generated internal/api/openapi.gen.go"
+
+check-api: api-lint api-generate ## Check API spec and generated code are in sync
+	@echo "Checking API spec and generated code are in sync..."
+	@if ! git diff --exit-code internal/api/openapi.gen.go >/dev/null 2>&1; then \
+		echo "❌ API spec and generated code are out of sync"; \
+		echo "   Run 'make api-generate' and commit the changes"; \
+		exit 1; \
+	fi
+	@echo "✅ API spec and generated code are in sync"

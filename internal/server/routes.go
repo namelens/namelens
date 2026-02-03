@@ -5,7 +5,9 @@ import (
 	"os"
 
 	"github.com/fulmenhq/gofulmen/signals"
+	"github.com/go-chi/chi/v5"
 
+	"github.com/namelens/namelens/internal/api"
 	"github.com/namelens/namelens/internal/appid"
 	"go.uber.org/zap"
 
@@ -29,6 +31,34 @@ func (s *Server) registerRoutes() {
 
 	// Admin signal endpoint (optional, requires NAMELENS_ADMIN_TOKEN)
 	s.registerAdminEndpoint()
+}
+
+// registerAPIRoutes registers the control plane API routes
+func (s *Server) registerAPIRoutes(authConfig api.AuthConfig) {
+	if s.apiServer == nil {
+		return
+	}
+
+	// Mount API routes with authentication middleware
+	s.router.Group(func(r chi.Router) {
+		// Apply auth middleware to API routes
+		r.Use(api.AuthMiddleware(authConfig))
+
+		// Mount the generated API handlers
+		// Note: /health is already handled by existing health handlers
+		// So we only mount /v1/* endpoints here
+		r.Post("/v1/check", s.apiServer.CheckName)
+		r.Post("/v1/compare", s.apiServer.CompareCandidates)
+		r.Get("/v1/profiles", s.apiServer.ListProfiles)
+		r.Get("/v1/status", s.apiServer.GetStatus)
+	})
+
+	logger := observability.ServerLogger
+	if logger != nil {
+		logger.Info("Control plane API routes registered",
+			zap.Bool("auth_required", authConfig.APIKey != ""),
+			zap.Bool("localhost_allowed", authConfig.AllowLocalhost))
+	}
 }
 
 // registerAdminEndpoint optionally registers the admin signal endpoint
