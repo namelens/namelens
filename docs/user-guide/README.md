@@ -9,14 +9,16 @@
 
 ## Get Started Quickly
 
-| Your Situation                              | Where to start                             |
-| ------------------------------------------- | ------------------------------------------ |
-| "I have a name, is it available?"           | [Quick Availability Check](quick-start.md) |
-| "I need name ideas, not just checks"        | [Name Generation](generate.md)             |
-| "I'm serious about this name—deep research" | [Expert Analysis](expert-search.md)        |
-| "I want logo/mark directions for my name"   | [Brand Mark Generation](mark.md)           |
-| "I run a startup, need the full picture"    | [Startup Naming Guide](startup-guide.md)   |
-| "I'm integrating into my workflow"          | [Configuration](configuration.md)          |
+| Your Situation                               | Where to start                                 |
+| -------------------------------------------- | ---------------------------------------------- |
+| "I have a name, is it available?"            | [Quick Availability Check](quick-start.md)     |
+| "I need name ideas, not just checks"         | [Name Generation](generate.md)                 |
+| "I'm serious about this name—deep research"  | [Expert Analysis](expert-search.md)            |
+| "I want logo/mark directions for my name"    | [Brand Mark Generation](mark.md)               |
+| "I run a startup, need the full picture"     | [Startup Naming Guide](startup-guide.md)       |
+| "Which AI provider should I use?"            | [Workflows & Best Practices](workflows.md)       |
+| "I need the HTTP API for my CI/CD"           | [HTTP API Reference](http-api.md)                |
+| "I'm integrating into my workflow"           | [Configuration](configuration.md)              |
 
 ---
 
@@ -153,6 +155,14 @@ See: [Batch Processing](batch.md)
 
 ## Specialized Guides
 
+### Workflows & Best Practices
+
+Practical guidance on provider selection, cost optimization, and common pitfalls.
+
+**Essential reading** for understanding when to use xAI vs Anthropic vs OpenAI.
+
+[Read the Workflows Guide →](workflows.md)
+
 ### Startup Naming Guide
 
 End-to-end guidance for new ventures.
@@ -165,9 +175,17 @@ Using Namelens for competitive research and brand gap analysis.
 
 [Read the Brand Guide →](brand-guide.md)
 
+### HTTP API Reference
+
+Complete API documentation for integrating NameLens into CI/CD pipelines.
+
+Includes daemon management, authentication, and common automation patterns.
+
+[Read the HTTP API Guide →](http-api.md)
+
 ### Integration & Automation
 
-HTTP API, CLI scripting, and CI/CD integration.
+CLI scripting, environment setup, and workflow integration.
 
 [Read the Integration Guide →](integration.md)
 
@@ -182,6 +200,8 @@ HTTP API, CLI scripting, and CI/CD integration.
 | [Configuration](configuration.md)     | Profiles, env vars, customization |
 | [Domain Fallback](domain-fallback.md) | WHOIS and DNS fallback for TLDs   |
 | [Expert Prompts](expert-prompts.md)   | Available AI analysis prompts     |
+| [HTTP API](http-api.md)                 | REST API for programmatic access  |
+| [Workflows](workflows.md)               | Provider selection & best practices |
 
 ---
 
