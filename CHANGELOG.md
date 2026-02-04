@@ -7,6 +7,37 @@ Versioning.
 
 ## [Unreleased]
 
+### Added
+
+- **Server daemon mode** for background operation
+  - `namelens serve --daemon` starts server in background
+  - `namelens serve stop` gracefully stops running server
+  - `namelens serve status` checks server status and uptime
+  - `namelens serve cleanup` kills orphaned processes on port
+  - PID files stored in XDG data directory (`~/.local/share/namelens/run/`)
+- **Environment file support** for server configuration
+  - `--env-file` flag to load custom .env file
+  - Auto-loads `$XDG_CONFIG_HOME/namelens/.env` if present
+  - Auto-loads `./.env` from current directory (overrides XDG)
+- **Control Plane HTTP API** for remote access
+  - REST API at `/v1/*` for name availability checking
+  - `POST /v1/check` - Check name availability
+  - `POST /v1/compare` - Compare multiple candidates
+  - `GET /v1/status` - Provider and rate limit status
+  - `GET /v1/profiles` - List available profiles
+  - API key authentication for non-localhost requests
+  - `namelens serve --generate-key` creates secure API keys
+
+### Changed
+
+- Build system now uses `-tags sysprims_shared` for CGO compatibility
+- PID files moved from `~/.namelens/` to XDG-compliant `~/.local/share/namelens/run/`
+
+### Dependencies
+
+- Added `github.com/3leaps/sysprims` v0.1.10 for cross-platform process management
+- Added `github.com/joho/godotenv` v1.5.1 for .env file loading
+
 ## [0.2.0] - 2026-02-01
 
 ### Added

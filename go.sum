@@ -6,6 +6,12 @@ github.com/3leaps/docprims/bindings/go/docprims v0.1.2 h1:kNV5uf5erXHL7sGhFEsid1
 github.com/3leaps/docprims/bindings/go/docprims v0.1.2/go.mod h1:WvtK+kDlOjQx4i+Eznf7DQZw7iuJX2Z90G4BLPc5/Mw=
 github.com/3leaps/docprims/bindings/go/docprims v0.1.3 h1:r01PbgkNB6kfSmkEQzc0YVxLc/Nh6zHaCQnOn4e2SXo=
 github.com/3leaps/docprims/bindings/go/docprims v0.1.3/go.mod h1:WvtK+kDlOjQx4i+Eznf7DQZw7iuJX2Z90G4BLPc5/Mw=
+github.com/3leaps/sysprims/bindings/go/sysprims v0.1.8 h1:ns/nMfu2uaNZ21swoBfuyLdXWrEVuIbQtdW2I6f/NZg=
+github.com/3leaps/sysprims/bindings/go/sysprims v0.1.8/go.mod h1:wRQL5NA9dNNA/n8Wqwq62U9xq4Agkt++EMbGuYW7VCA=
+github.com/3leaps/sysprims/bindings/go/sysprims v0.1.9 h1:K5Y7iprU7EQy/KrCVwd0fmLYV0AK1OVZUdbeaUND10Y=
+github.com/3leaps/sysprims/bindings/go/sysprims v0.1.9/go.mod h1:wRQL5NA9dNNA/n8Wqwq62U9xq4Agkt++EMbGuYW7VCA=
+github.com/3leaps/sysprims/bindings/go/sysprims v0.1.10 h1:ogqcvE5h1hF7LIUsjCOz9qqZDUQpX0bFaokMfRpNz0w=
+github.com/3leaps/sysprims/bindings/go/sysprims v0.1.10/go.mod h1:wRQL5NA9dNNA/n8Wqwq62U9xq4Agkt++EMbGuYW7VCA=
 github.com/alecthomas/kingpin/v2 v2.3.2 h1:H0aULhgmSzN8xQ3nX1uxtdlTHYoPLu5AhHxWrKI6ocU=
 github.com/alecthomas/kingpin/v2 v2.3.2/go.mod h1:0gyi0zQnjuFk8xrkNKamJoyUo382HRL7ATRpFZCw6tE=
 github.com/alecthomas/units v0.0.0-20240927000941-0f3dac36c52b h1:mimo19zliBX/vSQ6PWWSL9lK8qwHozUj03+zLoEB8O0=
@@ -43,6 +49,8 @@ github.com/jarcoal/httpmock v1.3.0 h1:2RJ8GP0IIaWwcC9Fp2BmVi8Kog3v2Hn7VXM3fTd+nu
 github.com/jarcoal/httpmock v1.3.0/go.mod h1:3yb8rc4BI7TCBhFY8ng0gjuLKJNquuDNiPaZjnENuYg=
 github.com/jedib0t/go-pretty/v6 v6.7.8 h1:BVYrDy5DPBA3Qn9ICT+PokP9cvCv1KaHv2i+Hc8sr5o=
 github.com/jedib0t/go-pretty/v6 v6.7.8/go.mod h1:YwC5CE4fJ1HFUDeivSV1r//AmANFHyqczZk+U6BDALU=
+github.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=
+github.com/joho/godotenv v1.5.1/go.mod h1:f4LDr5Voq0i2e/R5DDNOoa2zzDfwtkZa6DnEwAbqwq4=
 github.com/klauspost/cpuid/v2 v2.0.9 h1:lgaqFMSdTdQYdZ04uHyN2d/eKdOMyi2YLSvlQIBFYa4=
 github.com/klauspost/cpuid/v2 v2.0.9/go.mod h1:FInQzS24/EEf25PyTYn52gqo7WaD8xa0213Md/qVLRg=
 github.com/kr/pretty v0.2.1/go.mod h1:ipq/a2n7PKx3OHsz4KJII5eveXtPO4qwEXGdVfWzfnI=

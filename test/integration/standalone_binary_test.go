@@ -26,7 +26,7 @@ func TestStandaloneBinaryVersionAndHelpWorkOutsideRepo(t *testing.T) {
 	buildDir := t.TempDir()
 	binaryPath := filepath.Join(buildDir, "namelens")
 
-	build := exec.Command("go", "build", "-o", binaryPath, "./cmd/namelens")
+	build := exec.Command("go", "build", "-tags", "sysprims_shared", "-o", binaryPath, "./cmd/namelens")
 	build.Dir = repoRoot
 	build.Env = os.Environ()
 	if out, err := build.CombinedOutput(); err != nil {

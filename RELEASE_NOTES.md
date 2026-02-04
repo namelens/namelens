@@ -5,6 +5,109 @@ order.
 
 ## Unreleased
 
+Server management and Control Plane API for remote integration.
+
+Highlights:
+
+- **Daemon mode**: Run server in background with `--daemon` flag
+- **Server management**: New `stop`, `status`, `cleanup` subcommands
+- **Control Plane API**: REST API for remote name checking and comparison
+- **Environment files**: Auto-load `.env` from XDG config or specify with `--env-file`
+
+### Daemon Mode
+
+Run the server as a background process:
+
+```bash
+# Start server in background
+namelens serve --daemon --port 8080
+
+# Check server status
+namelens serve status --port 8080
+
+# Stop server gracefully
+namelens serve stop --port 8080
+
+# Force stop if needed
+namelens serve stop --port 8080 --force
+
+# Clean up orphaned processes
+namelens serve cleanup --port 8080
+```
+
+PID files are stored in `~/.local/share/namelens/run/` following XDG conventions.
+
+### Control Plane HTTP API
+
+Remote access to NameLens via REST API:
+
+```bash
+# Generate an API key
+namelens serve --generate-key
+# Output: nlcp_a1b2c3d4e5f6...
+
+# Start server with authentication
+export NAMELENS_CONTROL_PLANE_API_KEY=nlcp_a1b2c3d4e5f6...
+namelens serve --daemon
+
+# Check name availability
+curl -X POST http://localhost:8080/v1/check \
+  -H "Content-Type: application/json" \
+  -d '{"name": "myproject", "tlds": ["com", "io"]}'
+
+# Compare candidates
+curl -X POST http://localhost:8080/v1/compare \
+  -H "Content-Type: application/json" \
+  -d '{"names": ["alpha", "beta", "gamma"]}'
+```
+
+API endpoints:
+- `GET /health` - Health check (no auth required)
+- `GET /v1/status` - Provider and rate limit status
+- `POST /v1/check` - Check name availability
+- `POST /v1/compare` - Compare multiple candidates
+- `GET /v1/profiles` - List available profiles
+
+Authentication:
+- Localhost requests bypass authentication
+- Remote requests require `X-API-Key` header
+- Keys are generated with `namelens serve --generate-key`
+
+### Environment Files
+
+The server automatically loads environment variables from `.env` files:
+
+```bash
+# Auto-loading (in order of precedence):
+# 1. $XDG_CONFIG_HOME/namelens/.env (~/.config/namelens/.env)
+# 2. ./.env (current directory)
+
+# Or specify explicitly:
+namelens serve --env-file /path/to/custom.env
+```
+
+Example `.env` for server:
+```bash
+NAMELENS_CONTROL_PLANE_API_KEY=nlcp_your_key_here
+NAMELENS_AILINK_PROVIDERS_NAMELENS_XAI_CREDENTIALS_0_API_KEY=xai-xxx
+```
+
+### Configuration
+
+New flags for `namelens serve`:
+- `--daemon` / `-d`: Run in background
+- `--env-file` / `-e`: Load environment from file
+
+New subcommands:
+- `namelens serve stop [--port] [--force]`
+- `namelens serve status [--port] [--all]`
+- `namelens serve cleanup [--port] [--force]`
+
+### Upgrade Notes
+
+- PID files moved from `~/.namelens/` to `~/.local/share/namelens/run/`
+- Old `~/.namelens/` directory can be safely removed
+
 ## v0.2.0 (2026-02-01)
 
 End-to-end naming workflow: from idea generation through brand mark

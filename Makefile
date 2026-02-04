@@ -148,24 +148,24 @@ check-prompts: ## Validate AILink prompt formatting and structure
 
 test: ## Run tests
 	@echo "Running tests..."
-	@$(GOTEST) ./... -v
+	@$(GOTEST) -tags sysprims_shared ./... -v
 	@echo "Tests complete"
 
 build: ## Build binary
 	@echo "Building $(BINARY_NAME) v$(VERSION)..."
 	@mkdir -p bin
-	@CGO_ENABLED=1 $(GOCMD) build -ldflags="$(LDFLAGS)" -o bin/$(BINARY_NAME)$(EXT) ./cmd/$(BINARY_NAME)
+	@CGO_ENABLED=1 $(GOCMD) build -tags sysprims_shared -ldflags="$(LDFLAGS)" -o bin/$(BINARY_NAME)$(EXT) ./cmd/$(BINARY_NAME)
 	@echo "Built: bin/$(BINARY_NAME)$(EXT)"
 
 build-all: ## Build for current OS (CGO required, no cross-compile)
 	@echo "Building for current OS (CGO required)..."
 	@echo "Note: Cross-compilation not supported due to CGO dependency (go-libsql)"
 	@mkdir -p bin
-	@CGO_ENABLED=1 $(GOCMD) build -ldflags="$(LDFLAGS) -s -w" -trimpath -o bin/$(BINARY_NAME) ./cmd/$(BINARY_NAME)
+	@CGO_ENABLED=1 $(GOCMD) build -tags sysprims_shared -ldflags="$(LDFLAGS) -s -w" -trimpath -o bin/$(BINARY_NAME) ./cmd/$(BINARY_NAME)
 	@echo "Build complete: bin/$(BINARY_NAME)"
 
 run: ## Run server in development mode
-	@$(GOCMD) run ./cmd/$(BINARY_NAME) serve
+	@$(GOCMD) run -tags sysprims_shared ./cmd/$(BINARY_NAME) serve
 
 version: ## Print current version
 	@echo "$(VERSION)"
@@ -221,7 +221,7 @@ endif
 
 # Development helpers
 test-cov: ## Run tests with coverage
-	@$(GOTEST) ./... -coverprofile=coverage.out
+	@$(GOTEST) -tags sysprims_shared ./... -coverprofile=coverage.out
 	@$(GOCMD) tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report: coverage.html"
 
@@ -388,7 +388,7 @@ release-build: release-clean ## Build release artifacts locally (for manual rele
 	@echo "→ Building release artifacts for $(BINARY_NAME) v$(VERSION)..."
 	@mkdir -p "$(DIST_RELEASE)"
 	@# Note: CGO required - only current platform supported
-	@CGO_ENABLED=1 $(GOCMD) build -ldflags="$(LDFLAGS) -s -w" -trimpath \
+	@CGO_ENABLED=1 $(GOCMD) build -tags sysprims_shared -ldflags="$(LDFLAGS) -s -w" -trimpath \
 		-o "$(DIST_RELEASE)/$(BINARY_NAME)-$(shell go env GOOS)-$(shell go env GOARCH)" \
 		./cmd/$(BINARY_NAME)
 	@$(MAKE) release-checksums

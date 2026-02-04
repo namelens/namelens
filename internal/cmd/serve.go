@@ -5,15 +5,19 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/fulmenhq/gofulmen/signals"
+	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
 	"github.com/namelens/namelens/internal/api"
+	"github.com/namelens/namelens/internal/config"
+	"github.com/namelens/namelens/internal/daemon"
 	errwrap "github.com/namelens/namelens/internal/errors"
 	"github.com/namelens/namelens/internal/observability"
 	"github.com/namelens/namelens/internal/server"
@@ -26,6 +30,8 @@ var (
 	serverBind  string
 	generateKey bool
 	apiKeyFlag  string
+	daemonMode  bool
+	envFile     string
 )
 
 // signalHealthChecker implements HealthChecker for signal system
@@ -81,6 +87,12 @@ Signal Handling:
   • Ctrl+C twice within 2s: Force quit
   • SIGHUP: Config reload (placeholder - restart recommended)
 
+Environment Files:
+  The server automatically loads .env files in this order:
+  1. $XDG_CONFIG_HOME/namelens/.env (if exists)
+  2. ./.env in current directory (if exists, can override XDG)
+  Use --env-file to specify a custom path (disables auto-loading).
+
 Authentication:
   API key required for non-localhost requests when configured.
   Generate a key with: namelens serve --generate-key
@@ -98,11 +110,16 @@ Authentication:
 			return nil
 		}
 
-		// Get app identity for telemetry namespace
-		identity := GetAppIdentity()
-		namespace := identity.TelemetryNamespace()
+		// Load environment variables from .env file
+		// Priority: --env-file flag > XDG config dir .env > cwd .env
+		envFilesLoaded := loadEnvFiles(envFile)
+		if len(envFilesLoaded) > 0 && verbose {
+			for _, f := range envFilesLoaded {
+				fmt.Fprintf(os.Stderr, "Loaded env file: %s\n", f)
+			}
+		}
 
-		// Parse bind address if provided
+		// Parse bind address early if provided (needed for daemon mode)
 		if serverBind != "" {
 			parts := strings.Split(serverBind, ":")
 			if len(parts) == 2 {
@@ -114,6 +131,38 @@ Authentication:
 				return errwrap.NewConfigInvalidError("invalid --bind format, use host:port")
 			}
 		}
+
+		// Handle --daemon flag: spawn as background process
+		if daemonMode && !daemon.IsDaemon() {
+			executable, err := os.Executable()
+			if err != nil {
+				return errwrap.WrapInternal(cmd.Context(), err, "failed to get executable path")
+			}
+
+			// Build args for daemon (exclude --daemon flag)
+			daemonArgs := []string{"serve", "--host", serverHost, "--port", fmt.Sprintf("%d", serverPort)}
+			if apiKeyFlag != "" {
+				daemonArgs = append(daemonArgs, "--api-key", apiKeyFlag)
+			}
+			if envFile != "" {
+				daemonArgs = append(daemonArgs, "--env-file", envFile)
+			}
+
+			pid, err := daemon.StartDaemon(executable, daemonArgs, serverPort)
+			if err != nil {
+				return errwrap.WrapInternal(cmd.Context(), err, "failed to start daemon")
+			}
+
+			fmt.Printf("Server started in background (PID %d)\n", pid)
+			fmt.Printf("  Port: %d\n", serverPort)
+			fmt.Printf("  Stop: namelens serve stop --port %d\n", serverPort)
+			fmt.Printf("  Status: namelens serve status --port %d\n", serverPort)
+			return nil
+		}
+
+		// Get app identity for telemetry namespace
+		identity := GetAppIdentity()
+		namespace := identity.TelemetryNamespace()
 
 		// Initialize server logger with namespace
 		logLevel := viper.GetString("logging.level")
@@ -272,6 +321,43 @@ Authentication:
 	},
 }
 
+// loadEnvFiles loads environment variables from .env files.
+// If envFileFlag is set, only that file is loaded.
+// Otherwise, loads from XDG config dir and current working directory.
+// Returns the list of files that were successfully loaded.
+func loadEnvFiles(envFileFlag string) []string {
+	var loaded []string
+
+	if envFileFlag != "" {
+		// Explicit file specified - load only that
+		if err := godotenv.Load(envFileFlag); err == nil {
+			loaded = append(loaded, envFileFlag)
+		}
+		return loaded
+	}
+
+	// Try XDG config dir first: ~/.config/namelens/.env
+	configDir := filepath.Dir(config.DefaultConfigPath())
+	if configDir != "" {
+		xdgEnv := filepath.Join(configDir, ".env")
+		if _, err := os.Stat(xdgEnv); err == nil {
+			if err := godotenv.Load(xdgEnv); err == nil {
+				loaded = append(loaded, xdgEnv)
+			}
+		}
+	}
+
+	// Then try current working directory (can override XDG)
+	cwdEnv := ".env"
+	if _, err := os.Stat(cwdEnv); err == nil {
+		if err := godotenv.Load(cwdEnv); err == nil {
+			loaded = append(loaded, cwdEnv)
+		}
+	}
+
+	return loaded
+}
+
 func init() {
 	rootCmd.AddCommand(serveCmd)
 
@@ -280,6 +366,8 @@ func init() {
 	serveCmd.Flags().StringVar(&serverBind, "bind", "", "bind address (host:port, overrides --host and --port)")
 	serveCmd.Flags().BoolVar(&generateKey, "generate-key", false, "generate a new API key and exit")
 	serveCmd.Flags().StringVar(&apiKeyFlag, "api-key", "", "API key for control plane authentication")
+	serveCmd.Flags().BoolVarP(&daemonMode, "daemon", "d", false, "run server in background (daemon mode)")
+	serveCmd.Flags().StringVarP(&envFile, "env-file", "e", "", "load environment variables from file")
 
 	_ = viper.BindPFlag("server.host", serveCmd.Flags().Lookup("host"))
 	_ = viper.BindPFlag("server.port", serveCmd.Flags().Lookup("port"))

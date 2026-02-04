@@ -20,6 +20,7 @@ require (
 
 require (
 	github.com/3leaps/docprims/bindings/go/docprims v0.1.3 // indirect
+	github.com/3leaps/sysprims/bindings/go/sysprims v0.1.10 // indirect
 	github.com/alecthomas/kingpin/v2 v2.3.2 // indirect
 	github.com/alecthomas/units v0.0.0-20240927000941-0f3dac36c52b // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
@@ -30,6 +31,7 @@ require (
 	github.com/fulmenhq/crucible v0.4.2 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/libsql/sqlite-antlr4-parser v0.0.0-20240327125255-dbf53b6cbf06 // indirect
 	github.com/mattn/go-runewidth v0.0.19 // indirect

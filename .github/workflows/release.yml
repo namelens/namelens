@@ -85,7 +85,7 @@ jobs:
 
           mkdir -p dist
           CGO_ENABLED=1 GOOS=linux GOARCH=${{ matrix.arch }} \
-            go build -ldflags="${LDFLAGS}" -trimpath \
+            go build -tags sysprims_shared -ldflags="${LDFLAGS}" -trimpath \
             -o "dist/${BINARY_NAME}-linux-${{ matrix.arch }}" \
             "./cmd/${BINARY_NAME}"
 
@@ -122,7 +122,7 @@ jobs:
 
           mkdir -p dist
           CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 \
-            go build -ldflags="${LDFLAGS}" -trimpath \
+            go build -tags sysprims_shared -ldflags="${LDFLAGS}" -trimpath \
             -o "dist/${BINARY_NAME}-darwin-arm64" \
             "./cmd/${BINARY_NAME}"
 

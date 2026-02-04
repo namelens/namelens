@@ -115,7 +115,7 @@ jobs:
       - name: Generate export data for linter
         run: |
           set -euo pipefail
-          go list -deps -export -tags=cgo ./... > /dev/null
+          go list -deps -export -tags=cgo,sysprims_shared ./... > /dev/null
         shell: bash
       - name: Lint
         run: |
