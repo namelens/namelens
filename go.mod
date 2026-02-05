@@ -1,13 +1,16 @@
 module github.com/namelens/namelens
 
-go 1.25.1
+go 1.25.5
 
 require (
-	github.com/fulmenhq/gofulmen v0.3.0
+	github.com/3leaps/docprims/bindings/go/docprims v0.1.3
+	github.com/3leaps/sysprims/bindings/go/sysprims v0.1.11
+	github.com/fulmenhq/gofulmen v0.3.3
 	github.com/go-chi/chi/v5 v5.2.3
 	github.com/go-viper/mapstructure/v2 v2.4.0
 	github.com/google/uuid v1.6.0
 	github.com/jedib0t/go-pretty/v6 v6.7.8
+	github.com/joho/godotenv v1.5.1
 	github.com/openrdap/rdap v0.9.1
 	github.com/spf13/cobra v1.10.1
 	github.com/spf13/viper v1.21.0
@@ -19,8 +22,6 @@ require (
 )
 
 require (
-	github.com/3leaps/docprims/bindings/go/docprims v0.1.3 // indirect
-	github.com/3leaps/sysprims/bindings/go/sysprims v0.1.10 // indirect
 	github.com/alecthomas/kingpin/v2 v2.3.2 // indirect
 	github.com/alecthomas/units v0.0.0-20240927000941-0f3dac36c52b // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
@@ -28,10 +29,9 @@ require (
 	github.com/clipperhouse/uax29/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
-	github.com/fulmenhq/crucible v0.4.2 // indirect
+	github.com/fulmenhq/crucible v0.4.9 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/libsql/sqlite-antlr4-parser v0.0.0-20240327125255-dbf53b6cbf06 // indirect
 	github.com/mattn/go-runewidth v0.0.19 // indirect
