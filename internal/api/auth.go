@@ -20,6 +20,7 @@ type AuthConfig struct {
 
 // AuthMiddleware creates middleware that validates API keys.
 // Authentication is required for non-localhost requests when an API key is configured.
+// If a key is provided in the request, it is always validated (even from localhost).
 func AuthMiddleware(cfg AuthConfig) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -29,26 +30,28 @@ func AuthMiddleware(cfg AuthConfig) func(http.Handler) http.Handler {
 				return
 			}
 
-			// Check if request is from localhost
+			// Check for provided API key
+			providedKey := r.Header.Get("X-API-Key")
+
+			// If a key is provided, always validate it (even from localhost)
+			// This helps catch configuration errors during local development
+			if providedKey != "" {
+				if subtle.ConstantTimeCompare([]byte(providedKey), []byte(cfg.APIKey)) != 1 {
+					writeErrorResponse(w, http.StatusUnauthorized, "unauthorized", "invalid API key")
+					return
+				}
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			// No key provided - allow localhost if configured
 			if cfg.AllowLocalhost && isLocalhost(r) {
 				next.ServeHTTP(w, r)
 				return
 			}
 
-			// Validate API key
-			providedKey := r.Header.Get("X-API-Key")
-			if providedKey == "" {
-				writeErrorResponse(w, http.StatusUnauthorized, "unauthorized", "API key required for non-localhost requests")
-				return
-			}
-
-			// Constant-time comparison to prevent timing attacks
-			if subtle.ConstantTimeCompare([]byte(providedKey), []byte(cfg.APIKey)) != 1 {
-				writeErrorResponse(w, http.StatusUnauthorized, "unauthorized", "invalid API key")
-				return
-			}
-
-			next.ServeHTTP(w, r)
+			// Non-localhost without key
+			writeErrorResponse(w, http.StatusUnauthorized, "unauthorized", "API key required for non-localhost requests")
 		})
 	}
 }

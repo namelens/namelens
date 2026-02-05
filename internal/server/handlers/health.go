@@ -10,11 +10,18 @@ import (
 )
 
 // HealthResponse represents the aggregate health check response
+// Conforms to OpenAPI HealthResponse schema
 type HealthResponse struct {
-	Status    string            `json:"status"`
-	Version   string            `json:"version"`
-	Timestamp string            `json:"timestamp"`
-	Checks    map[string]string `json:"checks,omitempty"`
+	Status  string                  `json:"status"`
+	Version string                  `json:"version,omitempty"`
+	Checks  map[string]*HealthCheck `json:"checks,omitempty"`
+}
+
+// HealthCheck represents individual component health status
+// Conforms to OpenAPI HealthCheck schema with status enum: pass, fail, warn
+type HealthCheck struct {
+	Status  string `json:"status"`            // pass, fail, or warn
+	Message string `json:"message,omitempty"` // optional detail message
 }
 
 // ProbeResponse represents individual probe response
@@ -48,19 +55,20 @@ func (hm *HealthManager) RegisterChecker(name string, checker HealthChecker) {
 }
 
 // runHealthChecks executes all registered health checks
-func (hm *HealthManager) runHealthChecks(ctx context.Context) map[string]string {
-	checks := make(map[string]string)
+// Returns checks with OpenAPI-conformant status values: pass, fail, warn
+func (hm *HealthManager) runHealthChecks(ctx context.Context) map[string]*HealthCheck {
+	checks := make(map[string]*HealthCheck)
 
 	for name, checker := range hm.checkers {
 		select {
 		case <-ctx.Done():
-			checks[name] = "timeout"
+			checks[name] = &HealthCheck{Status: "warn", Message: "timeout"}
 			return checks
 		default:
 			if err := checker.CheckHealth(ctx); err != nil {
-				checks[name] = "unhealthy"
+				checks[name] = &HealthCheck{Status: "fail", Message: err.Error()}
 			} else {
-				checks[name] = "healthy"
+				checks[name] = &HealthCheck{Status: "pass"}
 			}
 		}
 	}
@@ -69,18 +77,22 @@ func (hm *HealthManager) runHealthChecks(ctx context.Context) map[string]string 
 }
 
 // determineOverallStatus determines overall health status
-func (hm *HealthManager) determineOverallStatus(checks map[string]string) string {
+// Maps from check statuses (pass/fail/warn) to aggregate status (healthy/degraded/unhealthy)
+func (hm *HealthManager) determineOverallStatus(checks map[string]*HealthCheck) string {
 	degraded := false
-	for _, status := range checks {
-		if status == "unhealthy" {
+	for _, check := range checks {
+		if check == nil {
+			continue
+		}
+		if check.Status == "fail" {
 			return "unhealthy"
 		}
-		if status == "degraded" || status == "timeout" {
+		if check.Status == "warn" {
 			degraded = true
 		}
 	}
 
-	// If we recorded any degraded/timeout checks, reflect that in aggregate status
+	// If we recorded any warn checks, reflect that in aggregate status
 	if degraded {
 		return "degraded"
 	}
@@ -100,17 +112,16 @@ func (hm *HealthManager) HealthHandler(w http.ResponseWriter, r *http.Request) {
 	status := hm.determineOverallStatus(checks)
 
 	if status == "unhealthy" {
-		envelope := errors.NewErrorEnvelope("SERVICE_UNAVAILABLE", "aggregate health check failed")
+		envelope := errors.NewErrorEnvelope("service_unavailable", "aggregate health check failed")
 		envelope = enrichHealthEnvelope(envelope, "", status, checks)
 		respondWithError(w, r, envelope)
 		return
 	}
 
 	response := HealthResponse{
-		Status:    status,
-		Version:   hm.version,
-		Timestamp: time.Now().UTC().Format(time.RFC3339),
-		Checks:    checks,
+		Status:  status,
+		Version: hm.version,
+		Checks:  checks,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -131,7 +142,7 @@ func (hm *HealthManager) LivenessHandler(w http.ResponseWriter, r *http.Request)
 	status := hm.determineOverallStatus(checks)
 
 	if status == "unhealthy" {
-		envelope := errors.NewErrorEnvelope("SERVICE_UNAVAILABLE", "liveness probe failed")
+		envelope := errors.NewErrorEnvelope("service_unavailable", "liveness probe failed")
 		envelope = enrichHealthEnvelope(envelope, "live", status, checks)
 		respondWithError(w, r, envelope)
 		return
@@ -160,7 +171,7 @@ func (hm *HealthManager) ReadinessHandler(w http.ResponseWriter, r *http.Request
 	status := hm.determineOverallStatus(checks)
 
 	if status == "unhealthy" {
-		envelope := errors.NewErrorEnvelope("SERVICE_UNAVAILABLE", "readiness probe failed")
+		envelope := errors.NewErrorEnvelope("service_unavailable", "readiness probe failed")
 		envelope = enrichHealthEnvelope(envelope, "ready", status, checks)
 		respondWithError(w, r, envelope)
 		return
@@ -189,7 +200,7 @@ func (hm *HealthManager) StartupHandler(w http.ResponseWriter, r *http.Request) 
 	status := hm.determineOverallStatus(checks)
 
 	if status == "unhealthy" {
-		envelope := errors.NewErrorEnvelope("SERVICE_UNAVAILABLE", "startup probe failed")
+		envelope := errors.NewErrorEnvelope("service_unavailable", "startup probe failed")
 		envelope = enrichHealthEnvelope(envelope, "startup", status, checks)
 		respondWithError(w, r, envelope)
 		return
@@ -205,7 +216,7 @@ func (hm *HealthManager) StartupHandler(w http.ResponseWriter, r *http.Request) 
 	_ = json.NewEncoder(w).Encode(response)
 }
 
-func enrichHealthEnvelope(envelope *errors.ErrorEnvelope, probe, status string, checks map[string]string) *errors.ErrorEnvelope {
+func enrichHealthEnvelope(envelope *errors.ErrorEnvelope, probe, status string, checks map[string]*HealthCheck) *errors.ErrorEnvelope {
 	if envelope == nil {
 		return nil
 	}
@@ -229,8 +240,8 @@ func enrichHealthEnvelope(envelope *errors.ErrorEnvelope, probe, status string, 
 	}
 
 	var unhealthy []string
-	for name, result := range checks {
-		if result != "healthy" {
+	for name, check := range checks {
+		if check != nil && check.Status != "pass" {
 			unhealthy = append(unhealthy, name)
 		}
 	}
@@ -262,7 +273,7 @@ func LivenessHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	envelope := errors.NewErrorEnvelope("SERVICE_UNAVAILABLE", "health manager not initialized")
+	envelope := errors.NewErrorEnvelope("service_unavailable", "health manager not initialized")
 	envelope = enrichHealthEnvelope(envelope, "live", "unknown", nil)
 	respondWithError(w, r, envelope)
 }
@@ -274,7 +285,7 @@ func ReadinessHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	envelope := errors.NewErrorEnvelope("SERVICE_UNAVAILABLE", "health manager not initialized")
+	envelope := errors.NewErrorEnvelope("service_unavailable", "health manager not initialized")
 	envelope = enrichHealthEnvelope(envelope, "ready", "unknown", nil)
 	respondWithError(w, r, envelope)
 }
@@ -286,7 +297,7 @@ func StartupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	envelope := errors.NewErrorEnvelope("SERVICE_UNAVAILABLE", "health manager not initialized")
+	envelope := errors.NewErrorEnvelope("service_unavailable", "health manager not initialized")
 	envelope = enrichHealthEnvelope(envelope, "startup", "unknown", nil)
 	respondWithError(w, r, envelope)
 }
@@ -298,7 +309,7 @@ func HealthHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	envelope := errors.NewErrorEnvelope("SERVICE_UNAVAILABLE", "health manager not initialized")
+	envelope := errors.NewErrorEnvelope("service_unavailable", "health manager not initialized")
 	envelope = enrichHealthEnvelope(envelope, "aggregate", "unknown", nil)
 	respondWithError(w, r, envelope)
 }

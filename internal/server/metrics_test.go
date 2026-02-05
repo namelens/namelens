@@ -84,7 +84,7 @@ func TestMetricsHandlerReturnsServiceUnavailableWithoutExporter(t *testing.T) {
 		t.Fatalf("failed to decode response: %v", err)
 	}
 
-	if resp.Error.Code != "SERVICE_UNAVAILABLE" {
+	if resp.Error.Code != "service_unavailable" {
 		t.Fatalf("expected error code SERVICE_UNAVAILABLE, got %s", resp.Error.Code)
 	}
 }

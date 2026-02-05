@@ -17,64 +17,64 @@ import (
 
 // User Errors (400-level)
 func NewInvalidInputError(message string) *errors.ErrorEnvelope {
-	return errors.NewErrorEnvelope("INVALID_INPUT", message)
+	return errors.NewErrorEnvelope("bad_request", message)
 }
 
 func NewNotFoundError(message string) *errors.ErrorEnvelope {
-	return errors.NewErrorEnvelope("NOT_FOUND", message)
+	return errors.NewErrorEnvelope("not_found", message)
 }
 
 func NewUnauthorizedError(message string) *errors.ErrorEnvelope {
-	return errors.NewErrorEnvelope("UNAUTHORIZED", message)
+	return errors.NewErrorEnvelope("unauthorized", message)
 }
 
 func NewForbiddenError(message string) *errors.ErrorEnvelope {
-	return errors.NewErrorEnvelope("FORBIDDEN", message)
+	return errors.NewErrorEnvelope("forbidden", message)
 }
 
 func NewMethodNotAllowedError(message string) *errors.ErrorEnvelope {
-	return errors.NewErrorEnvelope("METHOD_NOT_ALLOWED", message)
+	return errors.NewErrorEnvelope("method_not_allowed", message)
 }
 
 func NewConflictError(message string) *errors.ErrorEnvelope {
-	return errors.NewErrorEnvelope("CONFLICT", message)
+	return errors.NewErrorEnvelope("conflict", message)
 }
 
 func NewValidationError(message string) *errors.ErrorEnvelope {
-	return errors.NewErrorEnvelope("VALIDATION_FAILED", message)
+	return errors.NewErrorEnvelope("validation_error", message)
 }
 
 // Server Errors (500-level)
 func NewInternalError(message string) *errors.ErrorEnvelope {
-	return errors.NewErrorEnvelope("INTERNAL_ERROR", message)
+	return errors.NewErrorEnvelope("internal_error", message)
 }
 
 func NewDatabaseError(message string) *errors.ErrorEnvelope {
-	return errors.NewErrorEnvelope("DATABASE_ERROR", message)
+	return errors.NewErrorEnvelope("database_error", message)
 }
 
 func NewExternalServiceError(message string) *errors.ErrorEnvelope {
-	return errors.NewErrorEnvelope("EXTERNAL_SERVICE_ERROR", message)
+	return errors.NewErrorEnvelope("external_service_error", message)
 }
 
 func NewTimeoutError(message string) *errors.ErrorEnvelope {
-	return errors.NewErrorEnvelope("TIMEOUT", message)
+	return errors.NewErrorEnvelope("timeout", message)
 }
 
 // Application-Specific Errors
 func NewDataProcessingError(message string) *errors.ErrorEnvelope {
-	return errors.NewErrorEnvelope("DATA_PROCESSING_ERROR", message)
+	return errors.NewErrorEnvelope("data_processing_error", message)
 }
 
 func NewConfigInvalidError(message string) *errors.ErrorEnvelope {
-	return errors.NewErrorEnvelope("CONFIG_INVALID", message)
+	return errors.NewErrorEnvelope("config_invalid", message)
 }
 
 // Wrap functions for existing errors
 // These functions accept a context to extract correlation/trace IDs from the request context
 
 func WrapInvalidInput(ctx context.Context, err error, message string) *errors.ErrorEnvelope {
-	envelope := errors.NewErrorEnvelope("INVALID_INPUT", message)
+	envelope := errors.NewErrorEnvelope("bad_request", message)
 	envelope = envelope.WithCorrelationID(extractCorrelationID(ctx))
 	envelope = envelope.WithTraceID(extractTraceID(ctx))
 	envelope = withWrappedError(envelope, err)
@@ -82,7 +82,7 @@ func WrapInvalidInput(ctx context.Context, err error, message string) *errors.Er
 }
 
 func WrapNotFound(ctx context.Context, err error, message string) *errors.ErrorEnvelope {
-	envelope := errors.NewErrorEnvelope("NOT_FOUND", message)
+	envelope := errors.NewErrorEnvelope("not_found", message)
 	envelope = envelope.WithCorrelationID(extractCorrelationID(ctx))
 	envelope = envelope.WithTraceID(extractTraceID(ctx))
 	envelope = withWrappedError(envelope, err)
@@ -90,7 +90,7 @@ func WrapNotFound(ctx context.Context, err error, message string) *errors.ErrorE
 }
 
 func WrapUnauthorized(ctx context.Context, err error, message string) *errors.ErrorEnvelope {
-	envelope := errors.NewErrorEnvelope("UNAUTHORIZED", message)
+	envelope := errors.NewErrorEnvelope("unauthorized", message)
 	envelope = envelope.WithCorrelationID(extractCorrelationID(ctx))
 	envelope = envelope.WithTraceID(extractTraceID(ctx))
 	envelope = withWrappedError(envelope, err)
@@ -98,7 +98,7 @@ func WrapUnauthorized(ctx context.Context, err error, message string) *errors.Er
 }
 
 func WrapForbidden(ctx context.Context, err error, message string) *errors.ErrorEnvelope {
-	envelope := errors.NewErrorEnvelope("FORBIDDEN", message)
+	envelope := errors.NewErrorEnvelope("forbidden", message)
 	envelope = envelope.WithCorrelationID(extractCorrelationID(ctx))
 	envelope = envelope.WithTraceID(extractTraceID(ctx))
 	envelope = withWrappedError(envelope, err)
@@ -106,7 +106,7 @@ func WrapForbidden(ctx context.Context, err error, message string) *errors.Error
 }
 
 func WrapConflict(ctx context.Context, err error, message string) *errors.ErrorEnvelope {
-	envelope := errors.NewErrorEnvelope("CONFLICT", message)
+	envelope := errors.NewErrorEnvelope("conflict", message)
 	envelope = envelope.WithCorrelationID(extractCorrelationID(ctx))
 	envelope = envelope.WithTraceID(extractTraceID(ctx))
 	envelope = withWrappedError(envelope, err)
@@ -114,7 +114,7 @@ func WrapConflict(ctx context.Context, err error, message string) *errors.ErrorE
 }
 
 func WrapValidationError(ctx context.Context, err error, message string) *errors.ErrorEnvelope {
-	envelope := errors.NewErrorEnvelope("VALIDATION_FAILED", message)
+	envelope := errors.NewErrorEnvelope("validation_error", message)
 	envelope = envelope.WithCorrelationID(extractCorrelationID(ctx))
 	envelope = envelope.WithTraceID(extractTraceID(ctx))
 	envelope = withWrappedError(envelope, err)
@@ -122,7 +122,7 @@ func WrapValidationError(ctx context.Context, err error, message string) *errors
 }
 
 func WrapInternal(ctx context.Context, err error, message string) *errors.ErrorEnvelope {
-	envelope := errors.NewErrorEnvelope("INTERNAL_ERROR", message)
+	envelope := errors.NewErrorEnvelope("internal_error", message)
 	envelope = envelope.WithCorrelationID(extractCorrelationID(ctx))
 	envelope = envelope.WithTraceID(extractTraceID(ctx))
 	envelope = withWrappedError(envelope, err)
@@ -130,7 +130,7 @@ func WrapInternal(ctx context.Context, err error, message string) *errors.ErrorE
 }
 
 func WrapDatabaseError(ctx context.Context, err error, message string) *errors.ErrorEnvelope {
-	envelope := errors.NewErrorEnvelope("DATABASE_ERROR", message)
+	envelope := errors.NewErrorEnvelope("database_error", message)
 	envelope = envelope.WithCorrelationID(extractCorrelationID(ctx))
 	envelope = envelope.WithTraceID(extractTraceID(ctx))
 	envelope = withWrappedError(envelope, err)
@@ -138,7 +138,7 @@ func WrapDatabaseError(ctx context.Context, err error, message string) *errors.E
 }
 
 func WrapExternalService(ctx context.Context, err error, message string) *errors.ErrorEnvelope {
-	envelope := errors.NewErrorEnvelope("EXTERNAL_SERVICE_ERROR", message)
+	envelope := errors.NewErrorEnvelope("external_service_error", message)
 	envelope = envelope.WithCorrelationID(extractCorrelationID(ctx))
 	envelope = envelope.WithTraceID(extractTraceID(ctx))
 	envelope = withWrappedError(envelope, err)
@@ -146,7 +146,7 @@ func WrapExternalService(ctx context.Context, err error, message string) *errors
 }
 
 func WrapTimeout(ctx context.Context, err error, message string) *errors.ErrorEnvelope {
-	envelope := errors.NewErrorEnvelope("TIMEOUT", message)
+	envelope := errors.NewErrorEnvelope("timeout", message)
 	envelope = envelope.WithCorrelationID(extractCorrelationID(ctx))
 	envelope = envelope.WithTraceID(extractTraceID(ctx))
 	envelope = withWrappedError(envelope, err)
@@ -154,7 +154,7 @@ func WrapTimeout(ctx context.Context, err error, message string) *errors.ErrorEn
 }
 
 func WrapDataProcessing(ctx context.Context, err error, message string) *errors.ErrorEnvelope {
-	envelope := errors.NewErrorEnvelope("DATA_PROCESSING_ERROR", message)
+	envelope := errors.NewErrorEnvelope("data_processing_error", message)
 	envelope = envelope.WithCorrelationID(extractCorrelationID(ctx))
 	envelope = envelope.WithTraceID(extractTraceID(ctx))
 	envelope = withWrappedError(envelope, err)
@@ -162,7 +162,7 @@ func WrapDataProcessing(ctx context.Context, err error, message string) *errors.
 }
 
 func WrapConfigInvalid(ctx context.Context, err error, message string) *errors.ErrorEnvelope {
-	envelope := errors.NewErrorEnvelope("CONFIG_INVALID", message)
+	envelope := errors.NewErrorEnvelope("config_invalid", message)
 	envelope = envelope.WithCorrelationID(extractCorrelationID(ctx))
 	envelope = envelope.WithTraceID(extractTraceID(ctx))
 	envelope = withWrappedError(envelope, err)
@@ -192,7 +192,7 @@ func extractTraceID(ctx context.Context) string {
 // EnsureEnvelope normalizes any error into a gofulmen ErrorEnvelope.
 func EnsureEnvelope(err error) *errors.ErrorEnvelope {
 	if err == nil {
-		env := errors.NewErrorEnvelope("INTERNAL_ERROR", "unexpected nil error")
+		env := errors.NewErrorEnvelope("internal_error", "unexpected nil error")
 		env, _ = env.WithSeverity(errors.SeverityCritical)
 		return env
 	}
@@ -201,7 +201,7 @@ func EnsureEnvelope(err error) *errors.ErrorEnvelope {
 		return envelope
 	}
 
-	env := errors.NewErrorEnvelope("INTERNAL_ERROR", "unexpected error")
+	env := errors.NewErrorEnvelope("internal_error", "unexpected error")
 	env, _ = env.WithContext(map[string]interface{}{
 		"wrapped_error": err.Error(),
 	})
@@ -240,25 +240,26 @@ func HTTPStatusFromEnvelope(envelope *errors.ErrorEnvelope) int {
 }
 
 // HTTPStatusFromCode resolves the HTTP status code corresponding to an error code.
+// Supports both lowercase snake_case (preferred) and legacy SCREAMING_CASE codes.
 func HTTPStatusFromCode(code string) int {
 	switch code {
-	case "INVALID_INPUT", "VALIDATION_FAILED":
+	case "bad_request", "validation_error":
 		return http.StatusBadRequest
-	case "NOT_FOUND":
+	case "not_found":
 		return http.StatusNotFound
-	case "UNAUTHORIZED":
+	case "unauthorized":
 		return http.StatusUnauthorized
-	case "FORBIDDEN":
+	case "forbidden":
 		return http.StatusForbidden
-	case "METHOD_NOT_ALLOWED":
+	case "method_not_allowed":
 		return http.StatusMethodNotAllowed
-	case "CONFLICT":
+	case "conflict":
 		return http.StatusConflict
-	case "TIMEOUT":
+	case "timeout":
 		return http.StatusGatewayTimeout
-	case "EXTERNAL_SERVICE_ERROR":
+	case "external_service_error":
 		return http.StatusBadGateway
-	case "SERVICE_UNAVAILABLE":
+	case "service_unavailable":
 		return http.StatusServiceUnavailable
 	default:
 		return http.StatusInternalServerError

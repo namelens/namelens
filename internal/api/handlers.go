@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -87,7 +88,11 @@ func (s *Server) CheckName(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Build profile from request
-	profile := s.buildProfile(req.Profile, req.Tlds, req.Registries, req.Handles)
+	profile, err := s.buildProfile(req.Profile, req.Tlds, req.Registries, req.Handles)
+	if err != nil {
+		writeErrorJSON(w, http.StatusBadRequest, "bad_request", err.Error())
+		return
+	}
 
 	// Run checks
 	results, err := s.orchestrator.Check(r.Context(), name, profile)
@@ -136,7 +141,11 @@ func (s *Server) CompareCandidates(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Build profile
-	profile := s.buildCompareProfile(req.Profile, req.Tlds, req.Registries, req.Handles)
+	profile, err := s.buildCompareProfile(req.Profile, req.Tlds, req.Registries, req.Handles)
+	if err != nil {
+		writeErrorJSON(w, http.StatusBadRequest, "bad_request", err.Error())
+		return
+	}
 
 	candidates := make([]CompareCandidate, 0, len(req.Names))
 
@@ -197,18 +206,21 @@ func (s *Server) ListProfiles(w http.ResponseWriter, r *http.Request) {
 }
 
 // buildProfile constructs a core.Profile from API request parameters.
+// Returns an error if an invalid profile name is specified.
 func (s *Server) buildProfile(
 	profileName *CheckRequestProfile,
 	tlds *[]string,
 	registries *[]CheckRequestRegistries,
 	handles *[]CheckRequestHandles,
-) core.Profile {
+) (core.Profile, error) {
 	// Start with a named profile if specified
 	var profile core.Profile
 	if profileName != nil {
-		if p, ok := core.FindBuiltInProfile(string(*profileName)); ok {
-			profile = *p
+		p, ok := core.FindBuiltInProfile(string(*profileName))
+		if !ok {
+			return core.Profile{}, fmt.Errorf("invalid profile: %s", string(*profileName))
 		}
+		profile = *p
 	}
 
 	// Override with custom values if provided
@@ -237,21 +249,24 @@ func (s *Server) buildProfile(
 		}
 	}
 
-	return profile
+	return profile, nil
 }
 
 // buildCompareProfile is like buildProfile but for CompareRequest types.
+// Returns an error if an invalid profile name is specified.
 func (s *Server) buildCompareProfile(
 	profileName *CompareRequestProfile,
 	tlds *[]string,
 	registries *[]CompareRequestRegistries,
 	handles *[]CompareRequestHandles,
-) core.Profile {
+) (core.Profile, error) {
 	var profile core.Profile
 	if profileName != nil {
-		if p, ok := core.FindBuiltInProfile(string(*profileName)); ok {
-			profile = *p
+		p, ok := core.FindBuiltInProfile(string(*profileName))
+		if !ok {
+			return core.Profile{}, fmt.Errorf("invalid profile: %s", string(*profileName))
 		}
+		profile = *p
 	}
 
 	if tlds != nil {
@@ -278,7 +293,7 @@ func (s *Server) buildCompareProfile(
 		}
 	}
 
-	return profile
+	return profile, nil
 }
 
 // toAPICheckResult converts a core.CheckResult to an API CheckResult.

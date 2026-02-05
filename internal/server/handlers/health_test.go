@@ -43,8 +43,8 @@ func TestHealthHandlerReturnsHealthyStatus(t *testing.T) {
 		t.Fatalf("expected version 1.2.3, got %s", resp.Version)
 	}
 
-	if resp.Checks["ok"] != "healthy" {
-		t.Fatalf("expected ok check to be healthy, got %s", resp.Checks["ok"])
+	if resp.Checks["ok"] == nil || resp.Checks["ok"].Status != "pass" {
+		t.Fatalf("expected ok check to have status 'pass', got %+v", resp.Checks["ok"])
 	}
 }
 
@@ -72,7 +72,7 @@ func TestHealthHandlerReturnsServiceUnavailableWhenUnhealthy(t *testing.T) {
 		t.Fatalf("failed to decode response: %v", err)
 	}
 
-	if resp.Error.Code != "SERVICE_UNAVAILABLE" {
+	if resp.Error.Code != "service_unavailable" {
 		t.Fatalf("expected SERVICE_UNAVAILABLE error code, got %s", resp.Error.Code)
 	}
 
@@ -86,16 +86,20 @@ func TestHealthHandlerReturnsServiceUnavailableWhenUnhealthy(t *testing.T) {
 		t.Fatalf("expected checks in error details")
 	}
 
-	if status, ok := tests["db"].(string); !ok || status != "unhealthy" {
-		t.Fatalf("expected db check to be unhealthy, got %v", tests["db"])
+	dbCheck, ok := tests["db"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected db check to be an object, got %v", tests["db"])
+	}
+	if dbCheck["status"] != "fail" {
+		t.Fatalf("expected db check status to be 'fail', got %v", dbCheck["status"])
 	}
 }
 
 func TestDetermineOverallStatusTreatsTimeoutAsDegraded(t *testing.T) {
 	manager := NewHealthManager("dev")
 
-	status := manager.determineOverallStatus(map[string]string{
-		"db": "timeout",
+	status := manager.determineOverallStatus(map[string]*HealthCheck{
+		"db": {Status: "warn", Message: "timeout"},
 	})
 
 	if status != "degraded" {

@@ -26,7 +26,7 @@ func TestServerUsesStandardErrorHandlers(t *testing.T) {
 		t.Fatalf("failed to decode error response: %v", err)
 	}
 
-	if body.Error.Code != "NOT_FOUND" {
-		t.Fatalf("expected error code NOT_FOUND, got %s", body.Error.Code)
+	if body.Error.Code != "not_found" {
+		t.Fatalf("expected error code not_found, got %s", body.Error.Code)
 	}
 }

@@ -22,7 +22,7 @@ var metricsProxyClient = &http.Client{
 func MetricsHandler(w http.ResponseWriter, r *http.Request) {
 	exporter := observability.PrometheusExporter
 	if exporter == nil {
-		err := errors.NewErrorEnvelope("SERVICE_UNAVAILABLE", "Metrics exporter not initialized")
+		err := errors.NewErrorEnvelope("service_unavailable", "Metrics exporter not initialized")
 		HandleError(w, r, err)
 		return
 	}
