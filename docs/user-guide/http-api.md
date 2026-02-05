@@ -6,7 +6,9 @@ description: HTTP API reference for programmatic name checking and generation
 
 **Base URL**: `http://localhost:8080` (default, configurable)
 
-NameLens exposes a REST API for programmatic access to name checking and generation. Useful for CI/CD pipelines, automated naming workflows, and integration with other tools.
+NameLens exposes a REST API for programmatic access to name checking and
+generation. Useful for CI/CD pipelines, automated naming workflows, and
+integration with other tools.
 
 ## Starting the Server
 
@@ -64,6 +66,7 @@ GET /health
 ```
 
 **Response**:
+
 ```json
 {
   "status": "healthy",
@@ -88,6 +91,7 @@ Content-Type: application/json
 ```
 
 **Response**:
+
 ```json
 {
   "name": "myproject",
@@ -132,6 +136,7 @@ Content-Type: application/json
 ```
 
 **Response**:
+
 ```json
 {
   "concept_analysis": {
@@ -223,14 +228,14 @@ curl -s -X POST http://localhost:8080/api/v1/check/bulk \
 
 ### Common HTTP Status Codes
 
-| Code | Meaning | Action |
-|------|---------|--------|
-| 200 | Success | Process response |
-| 400 | Bad Request | Check request JSON format |
-| 404 | Not Found | Endpoint doesn't exist |
-| 429 | Rate Limited | Slow down requests |
-| 500 | Server Error | Check server logs |
-| 503 | Service Unavailable | Server may be starting up |
+| Code | Meaning             | Action                    |
+| ---- | ------------------- | ------------------------- |
+| 200  | Success             | Process response          |
+| 400  | Bad Request         | Check request JSON format |
+| 404  | Not Found           | Endpoint doesn't exist    |
+| 429  | Rate Limited        | Slow down requests        |
+| 500  | Server Error        | Check server logs         |
+| 503  | Service Unavailable | Server may be starting up |
 
 ### Error Response Format
 
@@ -312,10 +317,12 @@ curl -v http://localhost:8080/health
 
 ## Further Reading
 
-- [Workflows & Best Practices](workflows.md) - Choosing providers and optimizing costs
+- [Workflows & Best Practices](workflows.md) - Choosing providers and optimizing
+  costs
 - [Configuration Guide](configuration.md) - Server settings and provider routing
 - [Quick Start Guide](quick-start.md) - CLI usage and basic commands
 
 ---
 
-*API documentation for namelens v0.2.1. Server must be running for API calls to succeed.*
+_API documentation for namelens v0.2.1. Server must be running for API calls to
+succeed._

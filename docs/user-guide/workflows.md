@@ -6,38 +6,45 @@ description: Practical workflows and provider selection guidance for effective n
 
 **A practical guide to getting the most out of NameLens**
 
-NameLens supports multiple AI providers, each with different strengths. This guide helps you choose the right tool for your naming workflow and avoid common pitfalls.
+NameLens supports multiple AI providers, each with different strengths. This
+guide helps you choose the right tool for your naming workflow and avoid common
+pitfalls.
 
 ## Understanding the Providers
 
 NameLens integrates with three AI providers, each optimized for different tasks:
 
-| Provider | Model (Default) | Best For | Key Strength |
-|----------|-----------------|----------|--------------|
-| **xAI** | grok-4-1-fast-reasoning | `check --expert`, real-time validation | Live web/X search for current conflicts |
-| **Anthropic** | claude-sonnet-4-5-20250929 | `generate`, deep analysis | Technical accuracy, conflict awareness |
-| **OpenAI** | gpt-4o | `generate`, quick iteration | Speed, brandable suggestions |
+| Provider      | Model (Default)            | Best For                               | Key Strength                            |
+| ------------- | -------------------------- | -------------------------------------- | --------------------------------------- |
+| **xAI**       | grok-4-1-fast-reasoning    | `check --expert`, real-time validation | Live web/X search for current conflicts |
+| **Anthropic** | claude-sonnet-4-5-20250929 | `generate`, deep analysis              | Technical accuracy, conflict awareness  |
+| **OpenAI**    | gpt-4o                     | `generate`, quick iteration            | Speed, brandable suggestions            |
 
 ### Why the Differences Matter
 
-**xAI** has exclusive access to real-time web and X (Twitter) search. When you run `check --expert`, it can discover:
+**xAI** has exclusive access to real-time web and X (Twitter) search. When you
+run `check --expert`, it can discover:
+
 - Companies that launched last month
-- Active GitHub repos without SEO presence  
+- Active GitHub repos without SEO presence
 - X handles and recent brand mentions
 - Domain parking pages that look available but aren't
 
 **Anthropic** excels at structured reasoning. For `generate`, it provides:
+
 - Deep technical analysis of your concept
 - Awareness of existing tools in the space
 - Conservative naming that avoids conflicts
 - Thorough explanations of why names work
 
 **OpenAI** prioritizes speed and creativity:
+
 - Fastest response times (often 10-15s vs 30-40s)
 - Creative, brandable compound words
 - Good for initial brainstorming when you need many options quickly
 
-**Important**: All three can suggest names that have conflicts. The difference is in *how* they catch them and *what kind* of conflicts they prioritize.
+**Important**: All three can suggest names that have conflicts. The difference
+is in _how_ they catch them and _what kind_ of conflicts they prioritize.
 
 ## Recommended Workflows
 
@@ -53,7 +60,9 @@ namelens check myproject --profile=startup
 namelens check myproject --profile=startup --expert
 ```
 
-**Why this works**: The basic check uses RDAP (fast, no AI). Only if domains are available do you spend AI credits on expert analysis. This is efficient for quick triage.
+**Why this works**: The basic check uses RDAP (fast, no AI). Only if domains are
+available do you spend AI credits on expert analysis. This is efficient for
+quick triage.
 
 ### Workflow B: Full Discovery (15-30 minutes)
 
@@ -66,7 +75,7 @@ Use this when starting from scratch with just a concept.
 # Fast iteration with OpenAI
 namelens generate "API gateway for microservices" --depth quick
 
-# Technical depth with Anthropic  
+# Technical depth with Anthropic
 namelens generate "API gateway for microservices" --depth quick
 
 # Step 2: Check top 3-5 picks with xAI expert mode
@@ -84,7 +93,8 @@ ailink:
 
 ### Workflow C: Context-Driven Naming (20-40 minutes)
 
-Use this when you have existing documentation, design docs, or a project directory.
+Use this when you have existing documentation, design docs, or a project
+directory.
 
 ```bash
 # Step 1: Gather context from your project
@@ -100,7 +110,9 @@ namelens check cand1 cand2 cand3 cand4 cand5 \
   --tlds com,io,dev --expert --expert-bulk
 ```
 
-**Why context matters**: The more NameLens knows about your project, the better the suggestions. A tool for "local development" vs "production-grade orchestration" should have very different names.
+**Why context matters**: The more NameLens knows about your project, the better
+the suggestions. A tool for "local development" vs "production-grade
+orchestration" should have very different names.
 
 ### Workflow D: Multi-Pass Refinement (ongoing)
 
@@ -126,9 +138,11 @@ namelens check pick1 pick2 pick3 --expert-bulk
 
 **The Mistake**: "The .com is available, so I'm good to go!"
 
-**Reality Check**: See our [Tesla Trademark Lesson](tesla-trademark-lesson.md) for a humorous but real example of why this fails.
+**Reality Check**: See our [Tesla Trademark Lesson](tesla-trademark-lesson.md)
+for a humorous but real example of why this fails.
 
 **The Fix**: Always use `--expert` for serious projects. The AI will check:
+
 - Trademark databases (USPTO, EUIPO)
 - Social media handles
 - GitHub/npm/PyPI registry presence
@@ -140,20 +154,22 @@ namelens check pick1 pick2 pick3 --expert-bulk
 
 **Better Approach**: Consider your audience:
 
-| Audience | Priority TLDs |
-|----------|--------------|
-| General consumers | .com, .app |
-| Developers/tech | .io, .dev, .sh |
-| Web3/crypto | .xyz, .gg |
-| Enterprise | .com + relevant ccTLD |
+| Audience          | Priority TLDs         |
+| ----------------- | --------------------- |
+| General consumers | .com, .app            |
+| Developers/tech   | .io, .dev, .sh        |
+| Web3/crypto       | .xyz, .gg             |
+| Enterprise        | .com + relevant ccTLD |
 
-**Example**: `myproject.io` being taken is more concerning for a dev tool than `myproject.com` being taken by a parked domain.
+**Example**: `myproject.io` being taken is more concerning for a dev tool than
+`myproject.com` being taken by a parked domain.
 
 ### Pitfall 3: Not Checking Registries
 
 **The Mistake**: "The domain is available, so the npm package name must be too."
 
-**Reality**: Domain availability and package registry availability are independent. Many great .com domains have squatters on npm.
+**Reality**: Domain availability and package registry availability are
+independent. Many great .com domains have squatters on npm.
 
 **The Fix**: Use profiles that include registries:
 
@@ -169,7 +185,8 @@ namelens check myproject --registries=npm,pypi
 
 **The Mistake**: Running `generate` once and picking the first suggestion.
 
-**The Risk**: AI models can hallucinate availability. A name that sounds great might be taken by a company that launched last week.
+**The Risk**: AI models can hallucinate availability. A name that sounds great
+might be taken by a company that launched last week.
 
 **The Fix**: The `generate` → `check` loop is essential. Never skip validation.
 
@@ -180,15 +197,18 @@ namelens check myproject --registries=npm,pypi
 **When to use**: Any `check --expert` operation
 
 **Strengths**:
+
 - Real-time web search finds companies that launched yesterday
 - X search finds active projects without websites
 - Fast (usually under 30s for single names)
 
 **Limitations**:
+
 - Suggestions can be less creative than Anthropic/OpenAI
 - No deep reasoning about metaphor quality
 
-**Pro tip**: For bulk checks, use `--expert-bulk` to check multiple names in one AI call:
+**Pro tip**: For bulk checks, use `--expert-bulk` to check multiple names in one
+AI call:
 
 ```bash
 # One AI call, 5 names (much cheaper than 5 separate calls)
@@ -200,11 +220,13 @@ namelens check name1 name2 name3 name4 name5 --expert --expert-bulk
 **When to use**: When you need technical accuracy or conflict avoidance
 
 **Strengths**:
+
 - Notices when your concept overlaps with existing tools
 - Suggests conservative, defensible names
 - Excellent at analyzing why names work (or don't)
 
 **Limitations**:
+
 - Slower than OpenAI (20-40s vs 10-15s)
 - Can be overly conservative (may reject good names due to distant conflicts)
 
@@ -220,11 +242,13 @@ namelens generate "developer tool" \
 **When to use**: Initial brainstorming when you need many options fast
 
 **Strengths**:
+
 - Fastest generation (often under 15s)
 - Creative compound words and metaphors
 - Good at brandable, memorable suggestions
 
 **Limitations**:
+
 - Less thorough conflict checking during generation
 - Can suggest names that sound good but have hidden conflicts
 
@@ -243,6 +267,7 @@ namelens check best1 best2 best3 --expert
 ### Reducing AI Calls
 
 **The expensive operations** (in order):
+
 1. `check --expert` per name (1 AI call per name)
 2. `generate --depth deep` (1 AI call)
 3. `check --expert-bulk` (1 AI call for N names - most efficient)
@@ -251,16 +276,19 @@ namelens check best1 best2 best3 --expert
 **Optimization strategies**:
 
 1. **Use bulk expert**: Check multiple names in one call
+
    ```bash
    # 1 call for 5 names (80% savings)
    namelens check a b c d e --expert --expert-bulk
    ```
 
-2. **Filter with basic checks first**: Don't waste AI credits on names with no available domains
+2. **Filter with basic checks first**: Don't waste AI credits on names with no
+   available domains
+
    ```bash
    # Check domains first (no AI cost)
    namelens check myname --tlds com,io
-  
+
    # Only if domains available, run expert
    namelens check myname --expert
    ```
@@ -273,14 +301,15 @@ namelens check best1 best2 best3 --expert
 
 ### Understanding Speed vs Quality
 
-| Command | Typical Time | Quality |
-|---------|-------------|---------|
-| `check` (no expert) | 1-5s | Basic (domains only) |
-| `check --expert` | 20-40s | High (web search + analysis) |
-| `generate --quick` | 10-20s | Good (fast brainstorming) |
-| `generate --deep` | 30-60s | Excellent (thorough analysis) |
+| Command             | Typical Time | Quality                       |
+| ------------------- | ------------ | ----------------------------- |
+| `check` (no expert) | 1-5s         | Basic (domains only)          |
+| `check --expert`    | 20-40s       | High (web search + analysis)  |
+| `generate --quick`  | 10-20s       | Good (fast brainstorming)     |
+| `generate --deep`   | 30-60s       | Excellent (thorough analysis) |
 
-**Rule of thumb**: Start fast (`--quick`, no expert), then invest time in validation for your top 3-5 picks.
+**Rule of thumb**: Start fast (`--quick`, no expert), then invest time in
+validation for your top 3-5 picks.
 
 ## Examples by Use Case
 
@@ -335,14 +364,16 @@ namelens check deploybot shipit launchpad \
 
 ## When to Escalate to Legal
 
-NameLens provides **risk indicators**, not legal advice. Consult an attorney when:
+NameLens provides **risk indicators**, not legal advice. Consult an attorney
+when:
 
 - Expert analysis shows **critical risk** for a name you want to use
 - The name is similar to a trademark in your **industry/category**
 - You plan to **trademark** the name yourself (clearance search required)
 - The project has **significant investment** or revenue potential
 
-**Remember**: NameLens flags risks; it doesn't certify safety. A "low risk" result from expert analysis is an indicator, not a guarantee.
+**Remember**: NameLens flags risks; it doesn't certify safety. A "low risk"
+result from expert analysis is an indicator, not a guarantee.
 
 ## Summary Checklist
 
@@ -360,10 +391,12 @@ Before finalizing a name:
 
 - [Quick Start Guide](quick-start.md) - First-time setup
 - [Expert Search Guide](expert-search.md) - Deep dive on AI validation
-- [Tesla Trademark Lesson](tesla-trademark-lesson.md) - Real-world conflict example
+- [Tesla Trademark Lesson](tesla-trademark-lesson.md) - Real-world conflict
+  example
 - [Configuration Guide](configuration.md) - Provider setup and routing
 - [Generate Command](generate.md) - Detailed generation options
 
 ---
 
-*This guide reflects testing with namelens v0.2.1. Provider capabilities and response times may evolve as underlying models improve.*
+_This guide reflects testing with namelens v0.2.1. Provider capabilities and
+response times may evolve as underlying models improve._

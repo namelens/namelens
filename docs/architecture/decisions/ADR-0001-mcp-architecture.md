@@ -6,8 +6,8 @@
 **Deciders**: @3leapsdave
 
 > **Note**: This ADR was superseded before implementation. NameLens uses a
-> Control Plane HTTP API instead of MCP. See [ADR-0002](ADR-0002-control-plane-api.md)
-> for the current architecture.
+> Control Plane HTTP API instead of MCP. See
+> [ADR-0002](ADR-0002-control-plane-api.md) for the current architecture.
 
 ## Context
 

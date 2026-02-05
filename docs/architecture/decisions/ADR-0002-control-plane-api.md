@@ -7,16 +7,24 @@
 
 ## Context
 
-NameLens needs a programmatic interface for AI agents and automation. The original plan (ADR-0001) proposed MCP (Model Context Protocol) for AI assistant integration.
+NameLens needs a programmatic interface for AI agents and automation. The
+original plan (ADR-0001) proposed MCP (Model Context Protocol) for AI assistant
+integration.
 
 After evaluating real-world usage patterns, we've determined that:
 
-1. **Agents are the primary consumers** - AI agents increasingly drive namelens workflows, not humans in Claude Desktop
-2. **HTTP is universal** - Every agent framework speaks HTTP; MCP is Anthropic-specific
-3. **Remote deployment is required** - Containerized/cloud deployment needs network API, not stdio
-4. **OpenAPI enables tooling** - Auto-generated clients, documentation, validation, mocks
+1. **Agents are the primary consumers** - AI agents increasingly drive namelens
+   workflows, not humans in Claude Desktop
+2. **HTTP is universal** - Every agent framework speaks HTTP; MCP is
+   Anthropic-specific
+3. **Remote deployment is required** - Containerized/cloud deployment needs
+   network API, not stdio
+4. **OpenAPI enables tooling** - Auto-generated clients, documentation,
+   validation, mocks
 
-MCP adds complexity (two transports, stdio purity issues, SDK dependency) without proportional benefit when a well-designed HTTP API serves all use cases better.
+MCP adds complexity (two transports, stdio purity issues, SDK dependency)
+without proportional benefit when a well-designed HTTP API serves all use cases
+better.
 
 ## Decision
 
@@ -25,6 +33,7 @@ MCP adds complexity (two transports, stdio purity issues, SDK dependency) withou
 **Chosen**: Schema-first REST API with OpenAPI 3.1 specification
 
 **Rationale**:
+
 - Universal compatibility (any HTTP client, any language)
 - OpenAPI spec enables client generation, documentation, validation
 - Simpler implementation (one transport, standard HTTP semantics)
@@ -36,18 +45,19 @@ MCP adds complexity (two transports, stdio purity issues, SDK dependency) withou
 **Chosen**: OpenAPI spec is source of truth, enforced at compile and runtime
 
 The spec lives at repository root for visibility:
+
 ```
 /openapi.yaml          # Source of truth
 ```
 
 #### Enforcement Toolchain
 
-| Stage | Tool | Purpose |
-|-------|------|---------|
-| Spec validation | `vacuum` | Lint OpenAPI spec for errors and style |
-| Code generation | `oapi-codegen` | Generate Go types and server interface |
-| Runtime validation | `kin-openapi` | Validate requests/responses against spec |
-| CI gate | `make check-api` | Block merge if spec/code diverge |
+| Stage              | Tool             | Purpose                                  |
+| ------------------ | ---------------- | ---------------------------------------- |
+| Spec validation    | `vacuum`         | Lint OpenAPI spec for errors and style   |
+| Code generation    | `oapi-codegen`   | Generate Go types and server interface   |
+| Runtime validation | `kin-openapi`    | Validate requests/responses against spec |
+| CI gate            | `make check-api` | Block merge if spec/code diverge         |
 
 #### Enforcement Method
 
@@ -68,7 +78,8 @@ The spec lives at repository root for visibility:
    git diff --exit-code internal/api/openapi.gen.go
    ```
 
-This ensures the spec cannot drift from implementation - any schema change requires regenerating code, and any code change without spec update fails CI.
+This ensures the spec cannot drift from implementation - any schema change
+requires regenerating code, and any code change without spec update fails CI.
 
 #### Makefile Targets
 
@@ -100,6 +111,7 @@ namelens serve --bind=0.0.0.0:8080
 ```
 
 Network binding emits warning:
+
 ```
 WARNING: Server bound to 0.0.0.0:8080 - exposed to network
          Use a reverse proxy (nginx, caddy, cloudflared) for production
@@ -127,18 +139,18 @@ export NAMELENS_NAMELENS_CONTROL_PLANE_API_KEY=nlcp_xxxxxxxxxxxx
 
 Control plane runs on the same server as health/metrics endpoints:
 
-| Endpoint | Auth | Purpose |
-|----------|------|---------|
-| `GET /health` | No | Kubernetes probes |
-| `GET /metrics` | No | Prometheus metrics |
-| `GET /version` | No | Version info |
-| `POST /v1/check` | Yes* | Name availability check |
-| `POST /v1/compare` | Yes* | Compare candidates |
-| `POST /v1/generate` | Yes* | Generate alternatives |
-| `GET /v1/profiles` | Yes* | List profiles |
-| `GET /v1/status` | Yes* | Rate limit status |
+| Endpoint            | Auth  | Purpose                 |
+| ------------------- | ----- | ----------------------- |
+| `GET /health`       | No    | Kubernetes probes       |
+| `GET /metrics`      | No    | Prometheus metrics      |
+| `GET /version`      | No    | Version info            |
+| `POST /v1/check`    | Yes\* | Name availability check |
+| `POST /v1/compare`  | Yes\* | Compare candidates      |
+| `POST /v1/generate` | Yes\* | Generate alternatives   |
+| `GET /v1/profiles`  | Yes\* | List profiles           |
+| `GET /v1/status`    | Yes\* | Rate limit status       |
 
-*Auth required for non-localhost requests when API key configured
+\*Auth required for non-localhost requests when API key configured
 
 ## Consequences
 
@@ -162,14 +174,16 @@ Control plane runs on the same server as health/metrics endpoints:
 
 ## Migration
 
-ADR-0001 planned MCP but no code was implemented. No migration required - this ADR establishes the path forward.
+ADR-0001 planned MCP but no code was implemented. No migration required - this
+ADR establishes the path forward.
 
 Documentation referencing MCP will be updated to describe the Control Plane API.
 
 ## References
 
 - [OpenAPI 3.1 Specification](https://spec.openapis.org/oas/v3.1.0)
-- [oapi-codegen](https://github.com/oapi-codegen/oapi-codegen) - Go code generator
+- [oapi-codegen](https://github.com/oapi-codegen/oapi-codegen) - Go code
+  generator
 - [kin-openapi](https://github.com/getkin/kin-openapi) - Runtime validation
 - [vacuum](https://quobix.com/vacuum/) - OpenAPI linter
 - ADR-0001: MCP Server Architecture (superseded)

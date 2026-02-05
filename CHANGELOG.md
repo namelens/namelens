@@ -31,12 +31,17 @@ Versioning.
 ### Changed
 
 - Build system now uses `-tags sysprims_shared` for CGO compatibility
-- PID files moved from `~/.namelens/` to XDG-compliant `~/.local/share/namelens/run/`
+- PID files moved from `~/.namelens/` to XDG-compliant
+  `~/.local/share/namelens/run/`
 
 ### Dependencies
 
-- Added `github.com/3leaps/sysprims` v0.1.10 for cross-platform process management
+- Updated `github.com/fulmenhq/gofulmen` v0.3.0 → v0.3.3 (fixes version
+  reporting in `--extended` output)
+- Updated `github.com/fulmenhq/crucible` v0.4.2 → v0.4.9
+- Updated `github.com/3leaps/sysprims` v0.1.10 → v0.1.11 (dynamic library fix)
 - Added `github.com/joho/godotenv` v1.5.1 for .env file loading
+- Go directive updated 1.25.1 → 1.25.5
 
 ## [0.2.0] - 2026-02-01
 

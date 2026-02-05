@@ -9,16 +9,16 @@
 
 ## Get Started Quickly
 
-| Your Situation                               | Where to start                                 |
-| -------------------------------------------- | ---------------------------------------------- |
-| "I have a name, is it available?"            | [Quick Availability Check](quick-start.md)     |
-| "I need name ideas, not just checks"         | [Name Generation](generate.md)                 |
-| "I'm serious about this name—deep research"  | [Expert Analysis](expert-search.md)            |
-| "I want logo/mark directions for my name"    | [Brand Mark Generation](mark.md)               |
-| "I run a startup, need the full picture"     | [Startup Naming Guide](startup-guide.md)       |
-| "Which AI provider should I use?"            | [Workflows & Best Practices](workflows.md)       |
-| "I need the HTTP API for my CI/CD"           | [HTTP API Reference](http-api.md)                |
-| "I'm integrating into my workflow"           | [Configuration](configuration.md)              |
+| Your Situation                              | Where to start                             |
+| ------------------------------------------- | ------------------------------------------ |
+| "I have a name, is it available?"           | [Quick Availability Check](quick-start.md) |
+| "I need name ideas, not just checks"        | [Name Generation](generate.md)             |
+| "I'm serious about this name—deep research" | [Expert Analysis](expert-search.md)        |
+| "I want logo/mark directions for my name"   | [Brand Mark Generation](mark.md)           |
+| "I run a startup, need the full picture"    | [Startup Naming Guide](startup-guide.md)   |
+| "Which AI provider should I use?"           | [Workflows & Best Practices](workflows.md) |
+| "I need the HTTP API for my CI/CD"          | [HTTP API Reference](http-api.md)          |
+| "I'm integrating into my workflow"          | [Configuration](configuration.md)          |
 
 ---
 
@@ -157,7 +157,8 @@ See: [Batch Processing](batch.md)
 
 ### Workflows & Best Practices
 
-Practical guidance on provider selection, cost optimization, and common pitfalls.
+Practical guidance on provider selection, cost optimization, and common
+pitfalls.
 
 **Essential reading** for understanding when to use xAI vs Anthropic vs OpenAI.
 
@@ -193,15 +194,15 @@ CLI scripting, environment setup, and workflow integration.
 
 ## Reference
 
-| Document                              | Description                       |
-| ------------------------------------- | --------------------------------- |
-| [Brand Mark Generation](mark.md)      | Logo/mark directions and images   |
-| [Compare Command](compare.md)         | Side-by-side finalist comparison  |
-| [Configuration](configuration.md)     | Profiles, env vars, customization |
-| [Domain Fallback](domain-fallback.md) | WHOIS and DNS fallback for TLDs   |
-| [Expert Prompts](expert-prompts.md)   | Available AI analysis prompts     |
-| [HTTP API](http-api.md)                 | REST API for programmatic access  |
-| [Workflows](workflows.md)               | Provider selection & best practices |
+| Document                              | Description                         |
+| ------------------------------------- | ----------------------------------- |
+| [Brand Mark Generation](mark.md)      | Logo/mark directions and images     |
+| [Compare Command](compare.md)         | Side-by-side finalist comparison    |
+| [Configuration](configuration.md)     | Profiles, env vars, customization   |
+| [Domain Fallback](domain-fallback.md) | WHOIS and DNS fallback for TLDs     |
+| [Expert Prompts](expert-prompts.md)   | Available AI analysis prompts       |
+| [HTTP API](http-api.md)               | REST API for programmatic access    |
+| [Workflows](workflows.md)             | Provider selection & best practices |
 
 ---
 

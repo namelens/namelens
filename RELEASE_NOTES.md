@@ -12,7 +12,8 @@ Highlights:
 - **Daemon mode**: Run server in background with `--daemon` flag
 - **Server management**: New `stop`, `status`, `cleanup` subcommands
 - **Control Plane API**: REST API for remote name checking and comparison
-- **Environment files**: Auto-load `.env` from XDG config or specify with `--env-file`
+- **Environment files**: Auto-load `.env` from XDG config or specify with
+  `--env-file`
 
 ### Daemon Mode
 
@@ -35,7 +36,8 @@ namelens serve stop --port 8080 --force
 namelens serve cleanup --port 8080
 ```
 
-PID files are stored in `~/.local/share/namelens/run/` following XDG conventions.
+PID files are stored in `~/.local/share/namelens/run/` following XDG
+conventions.
 
 ### Control Plane HTTP API
 
@@ -62,6 +64,7 @@ curl -X POST http://localhost:8080/v1/compare \
 ```
 
 API endpoints:
+
 - `GET /health` - Health check (no auth required)
 - `GET /v1/status` - Provider and rate limit status
 - `POST /v1/check` - Check name availability
@@ -69,6 +72,7 @@ API endpoints:
 - `GET /v1/profiles` - List available profiles
 
 Authentication:
+
 - Localhost requests bypass authentication
 - Remote requests require `X-API-Key` header
 - Keys are generated with `namelens serve --generate-key`
@@ -87,6 +91,7 @@ namelens serve --env-file /path/to/custom.env
 ```
 
 Example `.env` for server:
+
 ```bash
 NAMELENS_CONTROL_PLANE_API_KEY=nlcp_your_key_here
 NAMELENS_AILINK_PROVIDERS_NAMELENS_XAI_CREDENTIALS_0_API_KEY=xai-xxx
@@ -95,13 +100,21 @@ NAMELENS_AILINK_PROVIDERS_NAMELENS_XAI_CREDENTIALS_0_API_KEY=xai-xxx
 ### Configuration
 
 New flags for `namelens serve`:
+
 - `--daemon` / `-d`: Run in background
 - `--env-file` / `-e`: Load environment from file
 
 New subcommands:
+
 - `namelens serve stop [--port] [--force]`
 - `namelens serve status [--port] [--all]`
 - `namelens serve cleanup [--port] [--force]`
+
+### Dependencies
+
+- gofulmen v0.3.0 → v0.3.3 (fixes `namelens version --extended` reporting)
+- crucible v0.4.2 → v0.4.9
+- sysprims v0.1.10 → v0.1.11 (dynamic library compatibility)
 
 ### Upgrade Notes
 

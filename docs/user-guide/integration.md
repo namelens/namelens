@@ -17,8 +17,8 @@ namelens serve
 namelens serve --bind=127.0.0.1:9000
 ```
 
-The server starts on `http://localhost:8080` by default with API endpoints
-under `/v1/`.
+The server starts on `http://localhost:8080` by default with API endpoints under
+`/v1/`.
 
 ### Security
 
@@ -52,15 +52,15 @@ production deployments.
 
 ### API Endpoints
 
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| `GET` | `/health` | Health check (no auth required) |
-| `POST` | `/v1/check` | Check a single name |
-| `POST` | `/v1/compare` | Compare multiple candidates |
-| `POST` | `/v1/generate` | Generate name alternatives |
-| `POST` | `/v1/review` | Deep brand review |
-| `GET` | `/v1/profiles` | List available profiles |
-| `GET` | `/v1/status` | Rate limit and provider status |
+| Method | Endpoint       | Purpose                         |
+| ------ | -------------- | ------------------------------- |
+| `GET`  | `/health`      | Health check (no auth required) |
+| `POST` | `/v1/check`    | Check a single name             |
+| `POST` | `/v1/compare`  | Compare multiple candidates     |
+| `POST` | `/v1/generate` | Generate name alternatives      |
+| `POST` | `/v1/review`   | Deep brand review               |
+| `GET`  | `/v1/profiles` | List available profiles         |
+| `GET`  | `/v1/status`   | Rate limit and provider status  |
 
 ### OpenAPI Specification
 
@@ -71,6 +71,7 @@ The API is defined by an OpenAPI 3.1 spec at the repository root:
 ```
 
 Use this spec to:
+
 - Generate clients in any language
 - Import into Postman, Insomnia, or similar tools
 - Validate requests/responses programmatically
