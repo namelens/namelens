@@ -150,7 +150,8 @@ Authentication:
 
 			pid, err := daemon.StartDaemon(executable, daemonArgs, serverPort)
 			if err != nil {
-				return errwrap.WrapInternal(cmd.Context(), err, "failed to start daemon")
+				// Return daemon errors directly - they already have user-friendly messages
+				return fmt.Errorf("failed to start daemon: %w", err)
 			}
 
 			fmt.Printf("Server started in background (PID %d)\n", pid)

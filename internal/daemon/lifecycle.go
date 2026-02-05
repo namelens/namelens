@@ -14,7 +14,14 @@ var (
 	ErrServerAlreadyRunning = errors.New("server is already running on this port")
 	ErrStopTimeout          = errors.New("server did not stop within timeout")
 	ErrPortInUse            = errors.New("port is in use by another process")
+	ErrDaemonStartupFailed  = errors.New("daemon process exited during startup")
 )
+
+// StartupVerifyDelay is the time to wait before checking if daemon is still running.
+const StartupVerifyDelay = 500 * time.Millisecond
+
+// StartupVerifyTimeout is the maximum time to wait for daemon startup verification.
+const StartupVerifyTimeout = 3 * time.Second
 
 // ServerStatus represents the status of a server instance.
 type ServerStatus struct {
@@ -26,6 +33,7 @@ type ServerStatus struct {
 	StartTime time.Time
 	Uptime    time.Duration
 	Stale     bool // True if PID file exists but process is not running
+	Managed   bool // True if this is a namelens server (has PID file)
 }
 
 // DaemonEnvVar is the environment variable set when running as a daemon.
@@ -85,6 +93,7 @@ func Status(port int) (*ServerStatus, error) {
 	}
 
 	status.Running = true
+	status.Managed = true // Has PID file, so it's a managed namelens server
 	status.Name = proc.Name
 	status.Cmdline = proc.Cmdline
 	status.StartTime = proc.StartTime
@@ -97,6 +106,8 @@ func Status(port int) (*ServerStatus, error) {
 
 // StartDaemon spawns the server as a background daemon process.
 // It returns the PID of the spawned process.
+// The function verifies the daemon starts successfully by checking it's still
+// running after a brief delay.
 func StartDaemon(executable string, args []string, port int) (int, error) {
 	// Check if server is already running
 	status, err := Status(port)
@@ -105,7 +116,14 @@ func StartDaemon(executable string, args []string, port int) (int, error) {
 	}
 
 	if status.Running {
-		return 0, fmt.Errorf("%w: PID %d", ErrServerAlreadyRunning, status.PID)
+		if status.Managed {
+			// A namelens server (with PID file) is running
+			return 0, fmt.Errorf("%w (PID %d) - use 'namelens serve stop --port %d' first",
+				ErrServerAlreadyRunning, status.PID, port)
+		}
+		// Some other process is using the port
+		return 0, fmt.Errorf("%w: port %d is in use by %s (PID %d)",
+			ErrPortInUse, port, status.Name, status.PID)
 	}
 
 	// Clean up stale PID file if present
@@ -130,20 +148,70 @@ func StartDaemon(executable string, args []string, port int) (int, error) {
 
 	pid := cmd.Process.Pid
 
-	// Write PID file
+	// Write PID file early so we can track the process
 	pidFile, err := NewPIDFile(port, "")
 	if err != nil {
-		return pid, fmt.Errorf("daemon started (PID %d) but failed to create PID file: %w", pid, err)
+		// Try to kill the orphaned process
+		_ = cmd.Process.Kill()
+		return 0, fmt.Errorf("failed to create PID file: %w", err)
 	}
 
 	if err := pidFile.Write(pid); err != nil {
-		return pid, fmt.Errorf("daemon started (PID %d) but failed to write PID file: %w", pid, err)
+		_ = cmd.Process.Kill()
+		return 0, fmt.Errorf("failed to write PID file: %w", err)
 	}
 
 	// Detach from the process so we don't wait for it
 	_ = cmd.Process.Release()
 
+	// Verify the daemon starts successfully by checking it's still running
+	// after a brief delay. This catches immediate startup failures.
+	if err := verifyDaemonStartup(uint32(pid), port, pidFile); err != nil {
+		return 0, err
+	}
+
 	return pid, nil
+}
+
+// verifyDaemonStartup waits briefly and verifies the daemon is still running.
+// If the process exits during startup, it cleans up and returns an error.
+func verifyDaemonStartup(pid uint32, port int, pidFile *PIDFile) error {
+	// Wait a moment for initial startup
+	time.Sleep(StartupVerifyDelay)
+
+	// Check if process is still running
+	if !IsProcessRunning(pid) {
+		// Process died during startup - clean up PID file
+		_ = pidFile.Remove()
+		return fmt.Errorf("%w - check server logs or run without --daemon for details", ErrDaemonStartupFailed)
+	}
+
+	// Wait a bit longer and check again to catch slower startup failures
+	deadline := time.Now().Add(StartupVerifyTimeout - StartupVerifyDelay)
+	for time.Now().Before(deadline) {
+		time.Sleep(200 * time.Millisecond)
+
+		if !IsProcessRunning(pid) {
+			_ = pidFile.Remove()
+			return fmt.Errorf("%w - check server logs or run without --daemon for details", ErrDaemonStartupFailed)
+		}
+
+		// Try to verify the server is actually listening on the port
+		proc, _ := FindProcessOnPort(port)
+		if proc != nil && proc.PID == pid {
+			// Server is running and listening - success!
+			return nil
+		}
+	}
+
+	// Process is still running but may not be listening yet
+	// This is acceptable - the server might just be slow to start
+	if IsProcessRunning(pid) {
+		return nil
+	}
+
+	_ = pidFile.Remove()
+	return fmt.Errorf("%w - check server logs or run without --daemon for details", ErrDaemonStartupFailed)
 }
 
 // Stop gracefully stops a running server.
@@ -236,42 +304,61 @@ func ForceStop(port int) error {
 	return nil
 }
 
-// Cleanup kills any process on the given port (regardless of PID file).
-// This is useful for cleaning up orphaned processes.
-func Cleanup(port int, force bool) error {
+// CleanupResult contains information about what was cleaned up.
+type CleanupResult struct {
+	ProcessKilled  bool
+	PIDFileRemoved bool
+	PID            uint32
+}
+
+// Cleanup kills any process on the given port and removes stale PID files.
+// This is useful for cleaning up orphaned processes and stale state.
+// Returns a CleanupResult indicating what actions were taken.
+func Cleanup(port int, force bool) (*CleanupResult, error) {
+	result := &CleanupResult{}
+
+	// Check for stale PID file first
+	pidFile, err := NewPIDFile(port, "")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create PID file handle: %w", err)
+	}
+
+	// Check if there's a process on the port
 	proc, err := FindProcessOnPort(port)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	if proc == nil {
-		return nil // Nothing to clean up
-	}
-
-	if force {
-		if err := ForceKillProcess(proc.PID); err != nil {
-			return fmt.Errorf("failed to force kill process: %w", err)
-		}
-	} else {
-		if err := TerminateProcess(proc.PID); err != nil {
-			return fmt.Errorf("failed to terminate process: %w", err)
-		}
-
-		// Wait for termination
-		exited, _ := WaitForProcessExit(proc.PID, DefaultGracePeriod)
-		if !exited {
-			// Force kill if graceful failed
+	if proc != nil {
+		result.PID = proc.PID
+		if force {
 			if err := ForceKillProcess(proc.PID); err != nil {
-				return fmt.Errorf("failed to force kill process: %w", err)
+				return nil, fmt.Errorf("failed to force kill process: %w", err)
+			}
+		} else {
+			if err := TerminateProcess(proc.PID); err != nil {
+				return nil, fmt.Errorf("failed to terminate process: %w", err)
+			}
+
+			// Wait for termination
+			exited, _ := WaitForProcessExit(proc.PID, DefaultGracePeriod)
+			if !exited {
+				// Force kill if graceful failed
+				if err := ForceKillProcess(proc.PID); err != nil {
+					return nil, fmt.Errorf("failed to force kill process: %w", err)
+				}
 			}
 		}
+		result.ProcessKilled = true
 	}
 
-	// Clean up any PID file for this port
-	pidFile, _ := NewPIDFile(port, "")
-	_ = pidFile.Remove()
+	// Always clean up any PID file for this port (handles stale files)
+	if pidFile.Exists() {
+		_ = pidFile.Remove()
+		result.PIDFileRemoved = true
+	}
 
-	return nil
+	return result, nil
 }
 
 // IsDaemon returns true if this process was started as a daemon.

@@ -103,36 +103,41 @@ Examples:
 
 var serveCleanupCmd = &cobra.Command{
 	Use:   "cleanup",
-	Short: "Kill process on port",
-	Long: `Kill any process listening on the specified port.
+	Short: "Kill process on port and remove stale PID files",
+	Long: `Kill any process listening on the specified port and clean up stale PID files.
 
 This is useful for cleaning up orphaned processes that weren't
-properly stopped. By default, attempts graceful termination first.
+properly stopped, or removing stale PID files from crashed servers.
+By default, attempts graceful termination first.
 
 Examples:
   namelens serve cleanup                 # Cleanup default port (8080)
   namelens serve cleanup --port 9000     # Cleanup port 9000
   namelens serve cleanup --force         # Force kill without grace period`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		proc, err := daemon.FindProcessOnPort(serverPort)
+		// Show what we're about to clean up
+		proc, _ := daemon.FindProcessOnPort(serverPort)
+		if proc != nil {
+			fmt.Printf("Found process on port %d:\n", serverPort)
+			fmt.Printf("  PID:  %d\n", proc.PID)
+			fmt.Printf("  Name: %s\n", proc.Name)
+		}
+
+		result, err := daemon.Cleanup(serverPort, cleanupForce)
 		if err != nil {
-			return errwrap.WrapInternal(cmd.Context(), err, "failed to check port")
+			return errwrap.WrapInternal(cmd.Context(), err, "failed to cleanup")
 		}
 
-		if proc == nil {
-			fmt.Printf("No process found on port %d\n", serverPort)
-			return nil
+		if result.ProcessKilled {
+			fmt.Printf("Process terminated (PID %d)\n", result.PID)
+		}
+		if result.PIDFileRemoved {
+			fmt.Printf("Stale PID file removed\n")
+		}
+		if !result.ProcessKilled && !result.PIDFileRemoved {
+			fmt.Printf("Nothing to clean up on port %d\n", serverPort)
 		}
 
-		fmt.Printf("Found process on port %d:\n", serverPort)
-		fmt.Printf("  PID:  %d\n", proc.PID)
-		fmt.Printf("  Name: %s\n", proc.Name)
-
-		if err := daemon.Cleanup(serverPort, cleanupForce); err != nil {
-			return errwrap.WrapInternal(cmd.Context(), err, "failed to cleanup process")
-		}
-
-		fmt.Printf("Process terminated\n")
 		return nil
 	},
 }
