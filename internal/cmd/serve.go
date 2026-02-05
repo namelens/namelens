@@ -216,12 +216,25 @@ Authentication:
 			configName: identity.ConfigName,
 		})
 
+		// Initialize store for the orchestrator
+		dataStore, err := openStore(cmd.Context())
+		if err != nil {
+			return errwrap.WrapDatabaseError(cmd.Context(), err, "failed to open store")
+		}
+		defer dataStore.Close() // nolint:errcheck // best-effort cleanup; errors logged internally
+
+		// Get config for orchestrator
+		cfg := config.GetConfig()
+
+		// Build orchestrator for control plane API
+		orchestrator := buildOrchestrator(cfg, dataStore, true)
+
 		// Create server with control plane API configuration
 		apiConfig := api.AuthConfig{
 			APIKey:         controlPlaneAPIKey,
 			AllowLocalhost: true,
 		}
-		srv := server.NewWithAPI(serverHost, serverPort, versionInfo.Version, apiConfig)
+		srv := server.NewWithAPI(serverHost, serverPort, versionInfo.Version, apiConfig, orchestrator)
 
 		// Set app identity for handlers
 		handlers.SetAppIdentity(identity)

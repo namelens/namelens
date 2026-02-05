@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/namelens/namelens/internal/api"
+	"github.com/namelens/namelens/internal/core/engine"
 	apperrors "github.com/namelens/namelens/internal/errors"
 	"github.com/namelens/namelens/internal/observability"
 	"github.com/namelens/namelens/internal/server/handlers"
@@ -28,11 +29,11 @@ type Server struct {
 
 // New creates a new HTTP server instance (without control plane API)
 func New(host string, port int) *Server {
-	return NewWithAPI(host, port, "", api.AuthConfig{})
+	return NewWithAPI(host, port, "", api.AuthConfig{}, nil)
 }
 
 // NewWithAPI creates a new HTTP server instance with control plane API
-func NewWithAPI(host string, port int, version string, authConfig api.AuthConfig) *Server {
+func NewWithAPI(host string, port int, version string, authConfig api.AuthConfig, orchestrator *engine.Orchestrator) *Server {
 	r := chi.NewRouter()
 
 	// Standard chi middleware
@@ -59,8 +60,8 @@ func NewWithAPI(host string, port int, version string, authConfig api.AuthConfig
 		HandleError(w, req, err)
 	})
 
-	// Create API server (orchestrator will be nil for now - can be set later)
-	apiServer := api.NewServer(nil, version)
+	// Create API server with orchestrator for control plane operations
+	apiServer := api.NewServer(orchestrator, version)
 
 	s := &Server{
 		router:    r,
