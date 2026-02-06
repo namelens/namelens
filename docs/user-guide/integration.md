@@ -23,9 +23,16 @@ The server starts on `http://localhost:8080` by default with API endpoints under
 ### Security
 
 **Localhost-only by default**: The server binds to `127.0.0.1` unless you
-explicitly specify a different address.
+explicitly specify a different address. For local development and single-machine
+use, this is the recommended configuration — no API key is needed.
 
-**API key authentication**: For non-localhost access, configure an API key:
+> **Current auth model**: v0.2.1 provides API key authentication suitable for
+> localhost and trusted-network deployments. It does not yet support OAuth, mTLS,
+> or token rotation. Do not expose the API to the public internet without a
+> reverse proxy that provides its own authentication layer.
+
+**API key authentication**: When deploying beyond localhost, configure an API
+key:
 
 ```bash
 # Generate a key
@@ -33,13 +40,17 @@ namelens serve --generate-key
 # Output: Generated API key: nlcp_xxxxxxxxxxxx
 
 # Set via environment
-export NAMELENS_NAMELENS_CONTROL_PLANE_API_KEY=nlcp_xxxxxxxxxxxx
+export NAMELENS_CONTROL_PLANE_API_KEY=nlcp_xxxxxxxxxxxx
+
+# Or via .env file (see Configuration guide)
+namelens serve --daemon --env-file ~/.config/namelens/.env
 
 # Include in requests
 curl -H "X-API-Key: nlcp_xxxxxxxxxxxx" http://localhost:8080/v1/check ...
 ```
 
-**Network exposure**: If you need to expose the API to the network:
+**Network exposure**: If you need to expose the API beyond localhost, always use
+a reverse proxy:
 
 ```bash
 namelens serve --bind=0.0.0.0:8080
@@ -47,8 +58,9 @@ namelens serve --bind=0.0.0.0:8080
 #          Use a reverse proxy (nginx, caddy, cloudflared) for production
 ```
 
-Use a reverse proxy for TLS termination and additional authentication in
-production deployments.
+Use a reverse proxy (nginx, Caddy, or cloudflared) for TLS termination and
+additional authentication in production deployments. The API key alone is not
+sufficient for public-facing deployments.
 
 ### API Endpoints
 
@@ -143,7 +155,7 @@ interface to AI providers. This means:
 - **No SDK mediation** - Requests go directly from Namelens to AI providers
 - **Full auditability** - Enable debug logging to see complete request/response:
   ```bash
-  NAMELENS_NAMELENS_LOG_LEVEL=debug namelens serve
+  NAMELENS_LOG_LEVEL=debug namelens serve
   ```
 - **Controlled pipeline** - You define prompts, timeouts, and caching behavior
 - **No hidden telemetry** - No data sent without your explicit configuration
@@ -298,9 +310,9 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - NAMELENS_NAMELENS_LOG_LEVEL=info
-      - NAMELENS_NAMELENS_CONTROL_PLANE_API_KEY=${NAMELENS_API_KEY}
-      - NAMELENS_NAMELENS_DB_PATH=/data/namelens.db
+      - NAMELENS_LOG_LEVEL=info
+      - NAMELENS_CONTROL_PLANE_API_KEY=${NAMELENS_API_KEY}
+      - NAMELENS_DB_PATH=/data/namelens.db
     volumes:
       - namelens-data:/data
 
@@ -326,25 +338,35 @@ curl -X POST http://localhost:8080/v1/check \
 ### Development
 
 ```bash
-export NAMELENS_NAMELENS_LOG_LEVEL=debug
-export NAMELENS_NAMELENS_DB_PATH=./dev.db
+export NAMELENS_LOG_LEVEL=debug
+export NAMELENS_DB_PATH=./dev.db
 
 namelens serve
+```
+
+Or use a `.env` file (see [Configuration Guide](configuration.md)):
+
+```bash
+namelens serve --env-file .env
 ```
 
 ### Production
 
 ```bash
-export NAMELENS_NAMELENS_LOG_LEVEL=info
-export NAMELENS_NAMELENS_DB_PATH=/var/lib/namelens/namelens.db
-export NAMELENS_NAMELENS_CONTROL_PLANE_API_KEY=nlcp_your_secret_key
+export NAMELENS_LOG_LEVEL=info
+export NAMELENS_DB_PATH=/var/lib/namelens/namelens.db
+export NAMELENS_CONTROL_PLANE_API_KEY=nlcp_your_secret_key
 
 # Use Turso for shared state
-export NAMELENS_NAMELENS_DB_URL=libsql://your-db.turso.io
-export NAMELENS_NAMELENS_DB_AUTH_TOKEN=your-auth-token
+export NAMELENS_DB_URL=libsql://your-db.turso.io
+export NAMELENS_DB_AUTH_TOKEN=your-auth-token
 
 namelens serve --bind=0.0.0.0:8080
 ```
+
+> **Reminder**: The API key provides basic access control. For production
+> deployments exposed to the network, place namelens behind a reverse proxy with
+> TLS and its own authentication. See the [Security](#security) section above.
 
 ---
 

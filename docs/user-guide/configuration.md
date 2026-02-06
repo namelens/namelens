@@ -11,9 +11,12 @@ Configuration is merged in order of precedence (lowest to highest):
 | ----- | ----------- | ----------------------------------------------- |
 | 1     | Defaults    | `config/namelens/v0/namelens-defaults.yaml`     |
 | 2     | User Config | Platform-specific config file (see paths below) |
-| 3     | Environment | `NAMELENS_*` environment variables              |
+| 3     | `.env` File | Auto-loaded or specified with `--env-file`      |
+| 4     | Environment | `NAMELENS_*` environment variables              |
+| 5     | CLI Flags   | Command-line flags (`--port`, `--verbose`, etc.) |
 
-Higher layers override lower layers. Environment variables always win.
+Higher layers override lower layers. CLI flags and explicit environment
+variables always win.
 
 ## Configuration File Paths
 
@@ -26,6 +29,45 @@ NameLens uses XDG paths for user configuration. By default:
 | Windows  | `%USERPROFILE%\\.config\\namelens\\config.yaml` |
 
 You can override the base directory with `XDG_CONFIG_HOME`.
+
+## `.env` File Support
+
+NameLens supports `.env` files for environment variable configuration. This is
+convenient for local development and avoids polluting your shell profile.
+
+### Auto-Loading
+
+When running `namelens serve`, `.env` files are loaded automatically in this
+order:
+
+1. `$XDG_CONFIG_HOME/namelens/.env` (usually `~/.config/namelens/.env`)
+2. `./.env` in the current working directory (overrides XDG values)
+
+### Explicit File
+
+Use `--env-file` to load a specific file (disables auto-loading):
+
+```bash
+namelens serve --env-file /path/to/my.env
+```
+
+### Getting Started with `.env`
+
+The repository includes a `.env.example` with all available settings:
+
+```bash
+# Copy the example and customize
+cp .env.example .env
+
+# Or place in your XDG config directory
+cp .env.example ~/.config/namelens/.env
+```
+
+Edit the file and uncomment the variables you need. The `.env` file is
+gitignored and will not be committed.
+
+> **Note**: `.env` files are loaded by `namelens serve` only. For CLI commands
+> like `namelens check`, use exported environment variables or the config file.
 
 ## Example Configuration
 
@@ -89,6 +131,18 @@ ailink:
           priority: 0
           api_key: "" # Use NAMELENS_AILINK_PROVIDERS_NAMELENS_OPENAI_CREDENTIALS_0_API_KEY env var
 
+    # Anthropic provider - deep analysis and conflict-aware generation
+    namelens-anthropic:
+      enabled: true
+      ai_provider: anthropic
+      base_url: https://api.anthropic.com/v1
+      models:
+        default: claude-sonnet-4-5-20250929
+      credentials:
+        - label: default
+          priority: 0
+          api_key: "" # Use NAMELENS_AILINK_PROVIDERS_NAMELENS_ANTHROPIC_CREDENTIALS_0_API_KEY env var
+
 # Expert output (routes through AILink)
 expert:
   enabled: true
@@ -116,12 +170,17 @@ All configuration can be overridden via environment variables with the
 
 ### Server Configuration
 
-| Variable                 | Default     | Description         |
-| ------------------------ | ----------- | ------------------- |
-| `NAMELENS_HOST`          | `localhost` | Server bind address |
-| `NAMELENS_PORT`          | `8080`      | Server port         |
-| `NAMELENS_READ_TIMEOUT`  | `30s`       | HTTP read timeout   |
-| `NAMELENS_WRITE_TIMEOUT` | `30s`       | HTTP write timeout  |
+| Variable                            | Default     | Description                     |
+| ----------------------------------- | ----------- | ------------------------------- |
+| `NAMELENS_HOST`                     | `localhost` | Server bind address             |
+| `NAMELENS_PORT`                     | `8080`      | Server port                     |
+| `NAMELENS_READ_TIMEOUT`             | `30s`       | HTTP read timeout               |
+| `NAMELENS_WRITE_TIMEOUT`            | `30s`       | HTTP write timeout              |
+| `NAMELENS_CONTROL_PLANE_API_KEY`    |             | API key for `/v1/*` endpoints   |
+
+> **Security note**: When no API key is configured, the control plane API allows
+> all requests from localhost. Configure a key when exposing the server beyond
+> localhost. See [HTTP API Reference](http-api.md) for authentication details.
 
 ### Database Configuration
 
@@ -164,17 +223,17 @@ Important terminology note:
 
 #### Provider Recommendations
 
-| Use Case                      | Recommended Provider | Reason                                       |
-| ----------------------------- | -------------------- | -------------------------------------------- |
-| Expert search (`--expert`)    | xAI (Grok)           | Real-time web intelligence via live search   |
-| Phonetics (`--phonetics`)     | OpenAI or xAI        | Both produce comparable results              |
-| Suitability (`--suitability`) | OpenAI or xAI        | Both work; xAI may catch more via web search |
-| Generate (`generate`)         | OpenAI               | Fast, reliable structured JSON output        |
-| Review (`review`)             | Either               | Works on both providers                      |
+| Use Case                      | Recommended Provider | Reason                                         |
+| ----------------------------- | -------------------- | ---------------------------------------------- |
+| Expert search (`--expert`)    | xAI (Grok)           | Real-time web intelligence via live search     |
+| Phonetics (`--phonetics`)     | Any                  | All three produce comparable results           |
+| Suitability (`--suitability`) | xAI or Anthropic     | xAI catches more via web; Anthropic reasons deeply |
+| Generate (`generate`)         | Anthropic or OpenAI  | Anthropic for depth; OpenAI for speed          |
+| Review (`review`)             | Any                  | Works on all providers                         |
 
-**Key difference:** xAI/Grok has built-in web search capabilities for real-time
-internet intelligence. OpenAI runs "offline" without live web search but is
-faster for structured analysis.
+**Key differences:** xAI/Grok has built-in web search capabilities for real-time
+internet intelligence. Anthropic excels at structured reasoning and conflict
+awareness. OpenAI is fastest for structured analysis.
 
 #### OpenAI Provider Setup
 
@@ -192,6 +251,22 @@ NAMELENS_AILINK_PROVIDERS_NAMELENS_OPENAI_MODELS_FAST=gpt-4o-mini
 
 # To use OpenAI as default provider
 NAMELENS_AILINK_DEFAULT_PROVIDER=namelens-openai
+```
+
+#### Anthropic Provider Setup
+
+```bash
+# Enable Anthropic provider
+NAMELENS_AILINK_PROVIDERS_NAMELENS_ANTHROPIC_ENABLED=true
+NAMELENS_AILINK_PROVIDERS_NAMELENS_ANTHROPIC_AI_PROVIDER=anthropic
+NAMELENS_AILINK_PROVIDERS_NAMELENS_ANTHROPIC_BASE_URL=https://api.anthropic.com/v1
+NAMELENS_AILINK_PROVIDERS_NAMELENS_ANTHROPIC_CREDENTIALS_0_API_KEY=sk-ant-your-key
+
+# Model configuration
+NAMELENS_AILINK_PROVIDERS_NAMELENS_ANTHROPIC_MODELS_DEFAULT=claude-sonnet-4-5-20250929
+
+# To use Anthropic as default provider
+NAMELENS_AILINK_DEFAULT_PROVIDER=namelens-anthropic
 ```
 
 #### Model Tiers

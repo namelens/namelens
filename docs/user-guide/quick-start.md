@@ -30,11 +30,13 @@ namelens check acmecorp --profile=startup
 
 Available profiles:
 
-| Profile   | Domains               | Registries | Handles |
-| --------- | --------------------- | ---------- | ------- |
-| `startup` | .com, .io, .dev, .app | npm, pypi  | github  |
-| `minimal` | .com                  | -          | -       |
-| `web3`    | .xyz, .io, .gg        | npm        | github  |
+| Profile     | Domains                           | Registries       | Handles |
+| ----------- | --------------------------------- | ---------------- | ------- |
+| `startup`   | .com, .io, .dev, .app             | npm, pypi        | github  |
+| `developer` | .com, .io, .dev, .app, .sh, .org, .net | npm, pypi, cargo | github  |
+| `minimal`   | .com                              | -                | -       |
+| `website`   | .com, .org, .net                  | -                | -       |
+| `web3`      | .xyz, .io, .gg                    | npm              | github  |
 
 ## Output Formats
 

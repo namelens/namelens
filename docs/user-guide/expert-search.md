@@ -72,22 +72,23 @@ Each AI provider has a direct HTTP driver implementing the same interface:
 | ----------- | ----------- | ----------------- | -------------- |
 | `xai`       | x.ai (Grok) | OpenAI-compatible | ✅ Implemented |
 | `openai`    | OpenAI      | OpenAI API        | ✅ Implemented |
-| `anthropic` | Anthropic   | Messages API      | Planned        |
+| `anthropic` | Anthropic   | Messages API      | ✅ Implemented |
 
 Drivers are pure `net/http` implementations—no SDKs, no vendor packages.
 
 ### Provider Comparison
 
-| Capability    | xAI (Grok) | OpenAI   | Notes                                          |
-| ------------- | ---------- | -------- | ---------------------------------------------- |
-| Expert search | ✅ Best    | ✅ Works | xAI has live web search; OpenAI runs "offline" |
-| Phonetics     | ✅         | ✅       | Comparable results                             |
-| Suitability   | ✅         | ✅       | xAI may catch more via web search              |
-| Generate      | ✅         | ✅ Best  | OpenAI faster with structured outputs          |
-| Response time | ~30-60s    | ~1-5s    | xAI slower due to live search                  |
+| Capability    | xAI (Grok) | Anthropic | OpenAI   | Notes                                          |
+| ------------- | ---------- | --------- | -------- | ---------------------------------------------- |
+| Expert search | ✅ Best    | ✅ Works  | ✅ Works | xAI has live web search; others run "offline"  |
+| Phonetics     | ✅         | ✅        | ✅       | Comparable results                             |
+| Suitability   | ✅         | ✅        | ✅       | xAI may catch more via web search              |
+| Generate      | ✅         | ✅ Best   | ✅ Fast  | Anthropic most conflict-aware; OpenAI fastest  |
+| Response time | ~30-60s    | ~20-40s   | ~1-5s    | xAI slower due to live search                  |
 
-**Recommendation:** Use xAI for expert search (real-time web intelligence) and
-OpenAI for structured analysis (phonetics, generate). See
+**Recommendation:** Use xAI for expert search (real-time web intelligence),
+Anthropic for deep analysis and generation (conflict awareness), and OpenAI for
+fast structured analysis (phonetics, generate). See
 [Configuration](configuration.md) for multi-provider setup.
 
 ### Request Flow
@@ -180,6 +181,10 @@ No black boxes, no SDK magic.
 ```bash
 # For xAI (recommended for expert search with web intelligence)
 export NAMELENS_AILINK_PROVIDERS_NAMELENS_XAI_CREDENTIALS_0_API_KEY=your-xai-key
+
+# For Anthropic (deep analysis, conflict-aware generation)
+export NAMELENS_AILINK_PROVIDERS_NAMELENS_ANTHROPIC_CREDENTIALS_0_API_KEY=your-anthropic-key
+export NAMELENS_AILINK_DEFAULT_PROVIDER=namelens-anthropic
 
 # For OpenAI (faster, but no live web search)
 export NAMELENS_AILINK_PROVIDERS_NAMELENS_OPENAI_CREDENTIALS_0_API_KEY=your-openai-key
@@ -284,14 +289,16 @@ namelens check myproject --expert --output-format=json
 
 ## Supported Providers
 
-| Provider    | Base URL                    | Models                              | Best For                                  |
-| ----------- | --------------------------- | ----------------------------------- | ----------------------------------------- |
-| x.ai (Grok) | `https://api.x.ai/v1`       | `grok-4-1-fast-reasoning`, `grok-4` | Expert search (web intelligence)          |
-| OpenAI      | `https://api.openai.com/v1` | `gpt-4o`, `gpt-5.1`, `gpt-4o-mini`  | Structured analysis (generate, phonetics) |
+| Provider    | Base URL                        | Models                               | Best For                                  |
+| ----------- | ------------------------------- | ------------------------------------ | ----------------------------------------- |
+| x.ai (Grok) | `https://api.x.ai/v1`           | `grok-4-1-fast-reasoning`, `grok-4`  | Expert search (web intelligence)          |
+| Anthropic   | `https://api.anthropic.com/v1`  | `claude-sonnet-4-5-20250929`         | Deep analysis, conflict-aware generation  |
+| OpenAI      | `https://api.openai.com/v1`     | `gpt-4o`, `gpt-5.1`, `gpt-4o-mini`  | Structured analysis (generate, phonetics) |
 
 The xAI driver uses OpenAI-compatible API format with x.ai's `search_parameters`
-extension for live web search. The OpenAI driver uses native `json_schema`
-structured outputs for reliable JSON responses.
+extension for live web search. The Anthropic driver uses the native Messages API.
+The OpenAI driver uses native `json_schema` structured outputs for reliable JSON
+responses.
 
 ## Prompts
 
@@ -463,6 +470,7 @@ permissions.
 The model name may be incorrect or unsupported. Check the model configuration:
 
 - xAI: `grok-4-1-fast-reasoning`
+- Anthropic: `claude-sonnet-4-5-20250929`
 - OpenAI: `gpt-4o`, `gpt-5.1`, `gpt-4o-mini`
 
 ### Slow response times

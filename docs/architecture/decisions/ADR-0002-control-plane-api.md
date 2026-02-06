@@ -132,7 +132,7 @@ namelens serve --generate-key
 # Output: Generated API key: nlcp_xxxxxxxxxxxx
 
 # Configure
-export NAMELENS_NAMELENS_CONTROL_PLANE_API_KEY=nlcp_xxxxxxxxxxxx
+export NAMELENS_CONTROL_PLANE_API_KEY=nlcp_xxxxxxxxxxxx
 ```
 
 ### 5. Single Port, Unified Server

@@ -43,12 +43,15 @@ namelens serve --port 3000
 
 ### Configuration
 
+Server settings can be set in the config file, environment variables, or a
+`.env` file. See the [Configuration Guide](configuration.md) for full details.
+
 Edit `~/.config/namelens/config.yaml`:
 
 ```yaml
 server:
   port: 8080 # HTTP API port
-  host: localhost # Bind address (0.0.0.0 for all interfaces)
+  host: localhost # Bind address — keep as localhost unless you need network access
   read_timeout: 30s
   write_timeout: 30s
 ```
@@ -57,13 +60,29 @@ Or use environment variables:
 
 ```bash
 export NAMELENS_PORT=3000
-export NAMELENS_HOST=0.0.0.0
+export NAMELENS_HOST=localhost  # Default; change only if you need network access
 ```
+
+Or use a `.env` file (copy from `.env.example` in the repo):
+
+```bash
+namelens serve --env-file ~/.config/namelens/.env
+```
+
+> **Recommendation**: Keep the default `localhost` bind address unless you have
+> a specific need for network access. If you do bind to `0.0.0.0`, configure an
+> API key and use a reverse proxy.
 
 ## Authentication
 
-The Control Plane API supports optional API key authentication for securing
-remote access.
+The Control Plane API uses API key authentication for securing access beyond
+localhost.
+
+> **v0.2.1 security model**: The current authentication is designed for
+> localhost and trusted-network deployments. It provides a shared API key via
+> the `X-API-Key` header. It does not yet support per-user keys, OAuth, mTLS,
+> or automatic key rotation. For public-facing deployments, always place
+> namelens behind a reverse proxy with its own TLS and authentication layer.
 
 ### Generating an API Key
 
@@ -225,14 +244,14 @@ Check availability of a name across domains, registries, and handles.
 }
 ```
 
-| Field        | Type     | Required | Description                            |
-| ------------ | -------- | -------- | -------------------------------------- |
-| `name`       | string   | Yes      | Name to check (1-63 chars)             |
-| `profile`    | string   | No       | Profile: startup, developer, minimal   |
-| `expert`     | boolean  | No       | Enable AI brand safety analysis        |
-| `tlds`       | string[] | No       | Custom TLDs (overrides profile)        |
-| `registries` | string[] | No       | Custom registries: npm, pypi, cargo    |
-| `handles`    | string[] | No       | Custom handles: github                 |
+| Field        | Type     | Required | Description                                        |
+| ------------ | -------- | -------- | -------------------------------------------------- |
+| `name`       | string   | Yes      | Name to check (1-63 chars)                         |
+| `profile`    | string   | No       | Profile: startup, developer, minimal, website, web3 |
+| `expert`     | boolean  | No       | Enable AI brand safety analysis                    |
+| `tlds`       | string[] | No       | Custom TLDs (overrides profile)                    |
+| `registries` | string[] | No       | Custom registries: npm, pypi, cargo                |
+| `handles`    | string[] | No       | Custom handles: github                             |
 
 **Response** (200 OK):
 

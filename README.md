@@ -133,9 +133,12 @@ namelens profile show startup
 # Expert prompts
 namelens ailink list
 
-# Server mode (HTTP API for agents/automation)
-namelens serve
-namelens serve --bind=0.0.0.0:9000
+# Server mode (Control Plane HTTP API)
+namelens serve                              # Foreground, localhost:8080
+namelens serve --daemon                     # Background (daemon mode)
+namelens serve --daemon --api-key nlcp_...  # With authentication
+namelens serve status                       # Check daemon status
+namelens serve stop                         # Stop daemon
 
 # Diagnostics
 namelens version
@@ -160,52 +163,41 @@ generate → compare → review → mark → thumb
 
 Profiles define what to check for a given name:
 
-| Profile     | Domains               | Registries       | Handles |
-| ----------- | --------------------- | ---------------- | ------- |
-| `startup`   | .com, .io, .dev, .app | npm, pypi        | github  |
-| `developer` | .com, .io, .dev       | npm, pypi, cargo | github  |
-| `minimal`   | .com                  | -                | -       |
-| `web3`      | .xyz, .io, .gg        | npm              | github  |
+| Profile     | Domains                             | Registries       | Handles |
+| ----------- | ----------------------------------- | ---------------- | ------- |
+| `startup`   | .com, .io, .dev, .app               | npm, pypi        | github  |
+| `developer` | .com, .io, .dev, .app, .sh, .org, .net | npm, pypi, cargo | github  |
+| `minimal`   | .com                                | -                | -       |
+| `website`   | .com, .org, .net                    | -                | -       |
+| `web3`      | .xyz, .io, .gg                      | npm              | github  |
 
 ## Configuration
 
-NameLens uses environment variables with the `NAMELENS_` prefix:
+NameLens uses environment variables with the `NAMELENS_` prefix, a YAML config
+file, or a `.env` file:
 
 ```bash
+# Core settings
 NAMELENS_PORT=8080
 NAMELENS_LOG_LEVEL=info
 NAMELENS_DB_PATH=$XDG_DATA_HOME/namelens/namelens.db
-# For Turso:
-# NAMELENS_DB_URL=libsql://your-db.turso.io
-# NAMELENS_DB_AUTH_TOKEN=your-auth-token
 
-# AILink providers (optional)
+# Control Plane API authentication (for namelens serve)
+# NAMELENS_CONTROL_PLANE_API_KEY=nlcp_your_secret_key
+
+# AILink providers (optional, for --expert and generate features)
 # NAMELENS_AILINK_DEFAULT_PROVIDER=namelens-xai
-# NAMELENS_AILINK_DEFAULT_TIMEOUT=60s
-# NAMELENS_AILINK_CACHE_TTL=24h
-# NAMELENS_AILINK_PROMPTS_DIR=/path/to/prompts
-#
-# Provider instance: namelens-xai
-# NAMELENS_AILINK_PROVIDERS_NAMELENS_XAI_ENABLED=true
-# NAMELENS_AILINK_PROVIDERS_NAMELENS_XAI_AI_PROVIDER=xai
-# NAMELENS_AILINK_PROVIDERS_NAMELENS_XAI_BASE_URL=https://api.x.ai/v1
-# NAMELENS_AILINK_PROVIDERS_NAMELENS_XAI_MODELS_DEFAULT=grok-4-1-fast-reasoning
-# NAMELENS_AILINK_PROVIDERS_NAMELENS_XAI_CREDENTIALS_0_LABEL=default
 # NAMELENS_AILINK_PROVIDERS_NAMELENS_XAI_CREDENTIALS_0_API_KEY=your-api-key
-#
-# Expert feature wiring (routes through AILink)
-# NAMELENS_EXPERT_ENABLED=true
-# NAMELENS_EXPERT_ROLE=name-availability
-# NAMELENS_EXPERT_DEFAULT_PROMPT=name-availability
-#
-# Brand mark image generation (optional, for namelens mark)
-# NAMELENS_AILINK_ROUTING_BRAND_MARK_IMAGE=namelens-openai-image
 ```
 
-Copy `.env.example` to `.env` for local development.
+Config file location: `~/.config/namelens/config.yaml` (XDG convention).
+
+Copy `.env.example` to `.env` for local development. The server auto-loads
+`.env` from the XDG config directory and the current working directory, or you
+can specify a file explicitly with `namelens serve --env-file path/to/.env`.
 
 See [docs/user-guide/configuration.md](docs/user-guide/configuration.md) for
-full configuration reference.
+the full configuration reference.
 
 ## Why Namelens?
 
