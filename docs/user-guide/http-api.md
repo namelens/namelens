@@ -1,13 +1,13 @@
 ---
-description: HTTP API reference for programmatic name checking and generation
+description: HTTP API reference for programmatic name checking
 ---
 
-# HTTP API Quick Reference
+# HTTP API Reference
 
 **Base URL**: `http://localhost:8080` (default, configurable)
 
-NameLens exposes a REST API for programmatic access to name checking and
-generation. Useful for CI/CD pipelines, automated naming workflows, and
+NameLens exposes a REST API for programmatic access to name availability
+checking. Useful for CI/CD pipelines, automated naming workflows, and
 integration with other tools.
 
 ## Starting the Server
@@ -26,6 +26,9 @@ namelens serve stop
 
 # Force kill if needed
 namelens serve stop --force
+
+# Clean up stale PID files
+namelens serve cleanup
 ```
 
 ### Foreground Mode (Development)
@@ -44,8 +47,8 @@ Edit `~/.config/namelens/config.yaml`:
 
 ```yaml
 server:
-  port: 8080              # HTTP API port
-  host: localhost         # Bind address (0.0.0.0 for all interfaces)
+  port: 8080 # HTTP API port
+  host: localhost # Bind address (0.0.0.0 for all interfaces)
   read_timeout: 30s
   write_timeout: 30s
 ```
@@ -57,101 +60,342 @@ export NAMELENS_PORT=3000
 export NAMELENS_HOST=0.0.0.0
 ```
 
+## Authentication
+
+The Control Plane API supports optional API key authentication for securing
+remote access.
+
+### Generating an API Key
+
+```bash
+# Generate a new API key
+namelens serve --generate-key
+# Output: nlcp_a1b2c3d4e5f6...
+```
+
+### Starting with Authentication
+
+```bash
+# Pass key directly
+namelens serve --daemon --api-key nlcp_a1b2c3d4e5f6...
+
+# Or use environment variable
+export NAMELENS_CONTROL_PLANE_API_KEY=nlcp_a1b2c3d4e5f6...
+namelens serve --daemon
+
+# Or use .env file
+namelens serve --daemon --env-file ~/.config/namelens/.env
+```
+
+### Making Authenticated Requests
+
+```bash
+curl -H "X-API-Key: nlcp_a1b2c3d4e5f6..." \
+  http://localhost:8080/v1/check \
+  -d '{"name": "myproject"}'
+```
+
+### Authentication Behavior
+
+| Scenario                            | Result                                |
+| ----------------------------------- | ------------------------------------- |
+| No key configured                   | All requests allowed                  |
+| Key configured + localhost (no key) | Allowed (dev convenience)             |
+| Key configured + localhost + key    | Key validated (catches config errors) |
+| Key configured + remote (no key)    | 401 Unauthorized                      |
+| Key configured + wrong key          | 401 Unauthorized                      |
+
 ## API Endpoints
 
 ### Health Check
 
-```bash
+```
 GET /health
 ```
 
-**Response**:
+Returns aggregate server health status. Suitable for Kubernetes probes and
+monitoring.
+
+**Response** (200 OK):
 
 ```json
 {
   "status": "healthy",
   "version": "0.2.1",
-  "timestamp": "2026-02-03T14:17:42Z"
+  "checks": {
+    "app_identity": { "status": "pass" },
+    "signal_handlers": { "status": "pass" },
+    "telemetry": { "status": "pass" }
+  }
+}
+```
+
+**Status values**: `healthy`, `degraded`, `unhealthy`  
+**Check status values**: `pass`, `fail`, `warn`
+
+### Kubernetes Probes
+
+```
+GET /health/live     # Liveness probe
+GET /health/ready    # Readiness probe
+GET /health/startup  # Startup probe
+```
+
+**Response** (200 OK):
+
+```json
+{
+  "status": "healthy",
+  "timestamp": "2026-02-05T10:30:00Z"
+}
+```
+
+### Server Status
+
+```
+GET /v1/status
+```
+
+Returns provider status and rate limit headroom.
+
+**Response** (200 OK):
+
+```json
+{
+  "providers": {
+    "domain": { "available": true },
+    "npm": { "available": true },
+    "github": { "available": true }
+  }
+}
+```
+
+### List Profiles
+
+```
+GET /v1/profiles
+```
+
+Returns all available check profiles (built-in and custom).
+
+**Response** (200 OK):
+
+```json
+{
+  "profiles": [
+    {
+      "name": "startup",
+      "description": "Common startup TLDs and registries",
+      "tlds": ["com", "io", "dev", "co"],
+      "registries": ["npm", "pypi"],
+      "handles": ["github"],
+      "is_builtin": true
+    },
+    {
+      "name": "developer",
+      "description": "Developer-focused TLDs and all registries",
+      "tlds": ["dev", "io", "sh", "run"],
+      "registries": ["npm", "pypi", "cargo"],
+      "handles": ["github"],
+      "is_builtin": true
+    }
+  ]
 }
 ```
 
 ### Check Name Availability
 
-```bash
-POST /api/v1/check
+```
+POST /v1/check
 Content-Type: application/json
+```
 
+Check availability of a name across domains, registries, and handles.
+
+**Request Body**:
+
+```json
 {
   "name": "myproject",
+  "profile": "startup",
+  "expert": false,
   "tlds": ["com", "io", "dev"],
-  "registries": ["npm", "pypi"],
-  "handles": ["github"],
-  "expert": false
+  "registries": ["npm"],
+  "handles": ["github"]
 }
 ```
 
-**Response**:
+| Field        | Type     | Required | Description                            |
+| ------------ | -------- | -------- | -------------------------------------- |
+| `name`       | string   | Yes      | Name to check (1-63 chars)             |
+| `profile`    | string   | No       | Profile: startup, developer, minimal   |
+| `expert`     | boolean  | No       | Enable AI brand safety analysis        |
+| `tlds`       | string[] | No       | Custom TLDs (overrides profile)        |
+| `registries` | string[] | No       | Custom registries: npm, pypi, cargo    |
+| `handles`    | string[] | No       | Custom handles: github                 |
+
+**Response** (200 OK):
 
 ```json
 {
   "name": "myproject",
   "results": [
     {
-      "type": "domain",
       "name": "myproject.com",
-      "available": false,
-      "details": "exp: 2026-06-15; registrar: Example Inc."
+      "check_type": "domain",
+      "tld": "com",
+      "available": "taken",
+      "provenance": {
+        "from_cache": false,
+        "source": "rdap",
+        "server": "https://rdap.verisign.com/com/v1"
+      }
     },
     {
-      "type": "domain",
       "name": "myproject.io",
-      "available": true
+      "check_type": "domain",
+      "tld": "io",
+      "available": "available",
+      "provenance": {
+        "from_cache": true,
+        "source": "rdap"
+      }
     },
     {
-      "type": "npm",
       "name": "myproject",
-      "available": true
+      "check_type": "npm",
+      "available": "available",
+      "provenance": {
+        "from_cache": false,
+        "source": "registry"
+      }
     }
   ],
   "summary": {
-    "total": 5,
-    "available": 3,
-    "taken": 2
+    "total": 3,
+    "available": 2,
+    "taken": 1,
+    "unknown": 0,
+    "risk_level": "high"
   }
 }
 ```
 
-### Generate Name Alternatives
+**Availability values**: `available`, `taken`, `unknown`, `error`,
+`rate_limited`, `unsupported`
 
-```bash
-POST /api/v1/generate
+**Risk levels**: `low`, `medium`, `high` (high if .com is taken)
+
+### Compare Multiple Names
+
+```
+POST /v1/compare
 Content-Type: application/json
-
-{
-  "concept": "API gateway for microservices",
-  "description": "Unified control plane for managing services across multiple cloud providers",
-  "depth": "quick",
-  "constraints": "Prefer short names under 8 characters"
-}
 ```
 
-**Response**:
+Compare multiple name candidates side-by-side.
+
+**Request Body**:
 
 ```json
 {
-  "concept_analysis": {
-    "core_function": "...",
-    "key_themes": ["unification", "orchestration", "multi-cloud"],
-    "target_audience": "Platform engineers"
-  },
+  "names": ["acmecorp", "acmeio", "acmehq"],
+  "profile": "startup",
+  "expert": false
+}
+```
+
+| Field        | Type     | Required | Description                     |
+| ------------ | -------- | -------- | ------------------------------- |
+| `names`      | string[] | Yes      | 2-10 names to compare           |
+| `profile`    | string   | No       | Check profile to use            |
+| `expert`     | boolean  | No       | Enable AI analysis per name     |
+| `tlds`       | string[] | No       | Custom TLDs (overrides profile) |
+| `registries` | string[] | No       | Custom registries               |
+| `handles`    | string[] | No       | Custom handles                  |
+
+**Response** (200 OK):
+
+```json
+{
   "candidates": [
     {
-      "name": "omnigate",
-      "strategy": "compound",
-      "strength": "strong",
-      "rationale": "Combines 'omni' (all/universal) with 'gate' (gateway)"
+      "name": "acmecorp",
+      "results": [
+        {
+          "name": "acmecorp.com",
+          "check_type": "domain",
+          "tld": "com",
+          "available": "taken"
+        }
+      ],
+      "summary": {
+        "total": 5,
+        "available": 3,
+        "taken": 2,
+        "unknown": 0,
+        "risk_level": "high"
+      }
+    },
+    {
+      "name": "acmeio",
+      "results": [...],
+      "summary": {
+        "total": 5,
+        "available": 5,
+        "taken": 0,
+        "unknown": 0,
+        "risk_level": "low"
+      }
     }
   ]
+}
+```
+
+## Error Handling
+
+### HTTP Status Codes
+
+| Code | Meaning             | Action                    |
+| ---- | ------------------- | ------------------------- |
+| 200  | Success             | Process response          |
+| 400  | Bad Request         | Check request JSON format |
+| 401  | Unauthorized        | Provide valid API key     |
+| 404  | Not Found           | Endpoint doesn't exist    |
+| 429  | Rate Limited        | Retry after delay         |
+| 500  | Server Error        | Check server logs         |
+| 503  | Service Unavailable | Server may be starting up |
+
+### Error Response Format
+
+All errors return a consistent JSON structure:
+
+```json
+{
+  "error": {
+    "code": "bad_request",
+    "message": "name is required"
+  }
+}
+```
+
+**Error codes** (lowercase snake_case):
+
+- `bad_request` - Invalid request parameters
+- `unauthorized` - Missing or invalid API key
+- `not_found` - Resource not found
+- `rate_limited` - Too many requests (includes `retry_after`)
+- `internal_error` - Server error
+
+Rate limit errors include retry timing:
+
+```json
+{
+  "error": {
+    "code": "rate_limited",
+    "message": "rate limit exceeded, retry after 60 seconds",
+    "retry_after": 60
+  }
 }
 ```
 
@@ -163,20 +407,20 @@ Check proposed project names before creating repos:
 
 ```bash
 #!/bin/bash
-# .github/workflows/check-name.yml
-
 PROJECT_NAME=${GITHUB_REPOSITORY##*/}
 
-# Check availability
-curl -s -X POST http://localhost:8080/api/v1/check \
+RESPONSE=$(curl -s -X POST http://localhost:8080/v1/check \
   -H "Content-Type: application/json" \
-  -d "{\"name\": \"$PROJECT_NAME\", \"expert\": true}" | \
-  jq -e '.summary.available > 0' || {
-    echo "❌ Project name '$PROJECT_NAME' has conflicts"
-    exit 1
-  }
+  -d "{\"name\": \"$PROJECT_NAME\", \"profile\": \"developer\"}")
 
-echo "✅ Project name looks good"
+# Check if .com is available (risk_level != high)
+RISK=$(echo "$RESPONSE" | jq -r '.summary.risk_level')
+if [ "$RISK" = "high" ]; then
+  echo "Warning: $PROJECT_NAME.com is taken"
+  exit 1
+fi
+
+echo "Name looks good"
 ```
 
 ### Pre-Commit Hook
@@ -185,110 +429,58 @@ Validate package names before publishing:
 
 ```bash
 #!/bin/bash
-# .git/hooks/pre-commit
-
 PACKAGE_NAME=$(jq -r '.name' package.json)
 
-# Quick check (no expert for speed)
-RESPONSE=$(curl -s -X POST http://localhost:8080/api/v1/check \
+RESPONSE=$(curl -s -X POST http://localhost:8080/v1/check \
   -H "Content-Type: application/json" \
-  -d "{\"name\": \"$PACKAGE_NAME\", \"tlds\": [\"io\"], \"registries\": [\"npm\"]}")
+  -d "{\"name\": \"$PACKAGE_NAME\", \"registries\": [\"npm\"]}")
 
-if echo "$RESPONSE" | jq -e '.results[] | select(.type == "npm" and .available == false)' > /dev/null; then
-  echo "❌ npm package name '$PACKAGE_NAME' is already taken"
+NPM_TAKEN=$(echo "$RESPONSE" | jq -r '.results[] | select(.check_type == "npm" and .available == "taken")')
+if [ -n "$NPM_TAKEN" ]; then
+  echo "npm package '$PACKAGE_NAME' is already taken"
   exit 1
 fi
 ```
 
-### Bulk Generation via Script
+### Compare Naming Options
 
-Generate names for a new feature and automatically check them:
+Evaluate multiple candidates for a new project:
 
 ```bash
-#!/usr/bin/env bash
-
-CONCEPT="$1"
-
-# Generate candidates
-GENERATE_RESPONSE=$(curl -s -X POST http://localhost:8080/api/v1/generate \
+curl -s -X POST http://localhost:8080/v1/compare \
   -H "Content-Type: application/json" \
-  -d "{\"concept\": \"$CONCEPT\", \"depth\": \"quick\"}")
-
-# Extract top 3 names
-NAMES=$(echo "$GENERATE_RESPONSE" | jq -r '.candidates[0:3].name')
-
-# Check all 3 in one call
-echo "Checking: $NAMES"
-curl -s -X POST http://localhost:8080/api/v1/check/bulk \
-  -H "Content-Type: application/json" \
-  -d "{\"names\": [$(echo "$NAMES" | tr '\n' ',' | sed 's/,$//')], \"expert\": true}"
+  -d '{
+    "names": ["quicksync", "fastsync", "rapidsync"],
+    "profile": "startup"
+  }' | jq '.candidates[] | {name, risk: .summary.risk_level, available: .summary.available}'
 ```
 
-## Error Handling
+## OpenAPI Specification
 
-### Common HTTP Status Codes
+The complete API specification is available in OpenAPI 3.1 format:
 
-| Code | Meaning             | Action                    |
-| ---- | ------------------- | ------------------------- |
-| 200  | Success             | Process response          |
-| 400  | Bad Request         | Check request JSON format |
-| 404  | Not Found           | Endpoint doesn't exist    |
-| 429  | Rate Limited        | Slow down requests        |
-| 500  | Server Error        | Check server logs         |
-| 503  | Service Unavailable | Server may be starting up |
-
-### Error Response Format
-
-```json
-{
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Name parameter is required",
-    "details": {
-      "field": "name",
-      "reason": "missing"
-    }
-  }
-}
-```
+- **File**: `openapi.yaml` in the repository root
+- **Use for**: SDK generation, API documentation tools, testing
 
 ## Performance Tips
 
-1. **Use bulk endpoints** for multiple names:
-   - `POST /api/v1/check/bulk` instead of multiple individual checks
-   - Reduces AI costs by 60-80%
-
-2. **Cache results** for repeated checks:
-   - NameLens has built-in caching (24h default)
-   - Use `--no-cache` only when you need fresh data
-
-3. **Match depth to urgency**:
-   - `depth: quick` for initial screening (faster, cheaper)
-   - `depth: deep` for finalists (thorough analysis)
-
-4. **Parallelize non-AI checks**:
-   - Domain/registry checks are fast and parallelized
-   - Only use `expert: true` for names that pass basic checks
-
-## Security Considerations
-
-- **Default binding**: `localhost:8080` (local only)
-- **To expose externally**: Set `host: 0.0.0.0` and use a reverse proxy
-- **No authentication by default**: Add proxy auth if exposing to internet
-- **Rate limiting**: Built-in (configurable in config.yaml)
+1. **Use profiles** instead of custom TLD lists for common use cases
+2. **Cache results** - NameLens caches responses (24h default)
+3. **Batch comparisons** - Use `/v1/compare` for multiple names
+4. **Skip expert mode** for initial screening (faster, cheaper)
 
 ## Troubleshooting
 
 ### Server won't start
 
 ```bash
-# Check if port is in use
+# Clean up stale PID files
 namelens serve cleanup
 
-# Or check manually
+# Check if port is in use
 lsof -i :8080
 
-# Kill existing process
+# Force stop existing process
 namelens serve stop --force
 ```
 
@@ -298,21 +490,22 @@ namelens serve stop --force
 # Check server is running
 namelens serve status
 
-# Check health endpoint
+# Test health endpoint
 curl http://localhost:8080/health
 
-# Check port configuration
+# Check which port is configured
 namelens envinfo | grep port
 ```
 
-### API returns errors
+### Authentication errors
 
 ```bash
-# Check server logs
-# (When running in foreground, logs go to console)
+# Verify key is set
+echo $NAMELENS_CONTROL_PLANE_API_KEY
 
-# Test with simple request
-curl -v http://localhost:8080/health
+# Test with explicit key
+curl -H "X-API-Key: $NAMELENS_CONTROL_PLANE_API_KEY" \
+  http://localhost:8080/v1/profiles
 ```
 
 ## Further Reading
@@ -324,5 +517,5 @@ curl -v http://localhost:8080/health
 
 ---
 
-_API documentation for namelens v0.2.1. Server must be running for API calls to
-succeed._
+_API documentation for namelens v0.2.1. See `openapi.yaml` for the complete
+specification._

@@ -52,15 +52,15 @@ production deployments.
 
 ### API Endpoints
 
-| Method | Endpoint       | Purpose                         |
-| ------ | -------------- | ------------------------------- |
-| `GET`  | `/health`      | Health check (no auth required) |
-| `POST` | `/v1/check`    | Check a single name             |
-| `POST` | `/v1/compare`  | Compare multiple candidates     |
-| `POST` | `/v1/generate` | Generate name alternatives      |
-| `POST` | `/v1/review`   | Deep brand review               |
-| `GET`  | `/v1/profiles` | List available profiles         |
-| `GET`  | `/v1/status`   | Rate limit and provider status  |
+| Method | Endpoint        | Purpose                           |
+| ------ | --------------- | --------------------------------- |
+| `GET`  | `/health`       | Aggregate health check            |
+| `GET`  | `/health/live`  | Liveness probe                    |
+| `GET`  | `/health/ready` | Readiness probe                   |
+| `GET`  | `/v1/status`    | Rate limit and provider status    |
+| `GET`  | `/v1/profiles`  | List available profiles           |
+| `POST` | `/v1/check`     | Check a single name               |
+| `POST` | `/v1/compare`   | Compare multiple candidates       |
 
 ### OpenAPI Specification
 
@@ -95,26 +95,31 @@ Response:
   "name": "acmecorp",
   "results": [
     {
-      "type": "domain",
       "name": "acmecorp.com",
-      "status": "taken",
-      "notes": "exp: 2026-11-17; registrar: GoDaddy"
+      "check_type": "domain",
+      "tld": "com",
+      "available": "taken",
+      "provenance": {
+        "from_cache": false,
+        "source": "rdap"
+      }
     },
     {
-      "type": "npm",
       "name": "acmecorp",
-      "status": "available",
-      "notes": ""
+      "check_type": "npm",
+      "available": "available",
+      "provenance": {
+        "from_cache": false,
+        "source": "registry"
+      }
     }
   ],
   "summary": {
-    "available": 5,
     "total": 8,
+    "available": 5,
+    "taken": 3,
+    "unknown": 0,
     "risk_level": "medium"
-  },
-  "expert": {
-    "risk": "low",
-    "analysis": "No direct trademark conflicts found..."
   }
 }
 ```
@@ -126,19 +131,7 @@ curl -X POST http://localhost:8080/v1/compare \
   -H "Content-Type: application/json" \
   -d '{
     "names": ["acmecorp", "acmeio", "acmehq"],
-    "profile": "startup",
-    "phonetics": true
-  }'
-```
-
-### Example: Generate Names
-
-```bash
-curl -X POST http://localhost:8080/v1/generate \
-  -H "Content-Type: application/json" \
-  -d '{
-    "concept": "static analyzer for shell scripts",
-    "count": 10
+    "profile": "startup"
   }'
 ```
 
@@ -181,11 +174,11 @@ Combine with other tools:
 ```bash
 # Extract available TLDs
 namelens check myproject --output-format=json | \
-  jq '.results[] | select(.check_type == "domain" and .available == true) | .tld'
+  jq '.results[] | select(.check_type == "domain" and .available == "available") | .tld'
 
 # Count total availability
 namelens check myproject --output-format=json | \
-  jq '.results | map(select(.available == true)) | length'
+  jq '.results | map(select(.available == "available")) | length'
 ```
 
 ### Script Integration
@@ -198,14 +191,14 @@ NAME=$1
 RESULT=$(namelens check "$NAME" --profile=startup --output-format=json)
 
 # Extract availability score
-SCORE=$(echo "$RESULT" | jq '[.results[] | select(.available == true)] | length')
+SCORE=$(echo "$RESULT" | jq '[.results[] | select(.available == "available")] | length')
 TOTAL=$(echo "$RESULT" | jq '.results | length')
 
 if [ "$SCORE" -eq "$TOTAL" ]; then
   echo "All clear - $NAME is fully available"
 else
   echo "Conflicts found: $SCORE/$TOTAL available"
-  echo "$RESULT" | jq '.results[] | select(.available == false)'
+  echo "$RESULT" | jq '.results[] | select(.available == "taken")'
 fi
 ```
 
@@ -242,8 +235,8 @@ jobs:
           ./namelens-linux-amd64 check "$NAME" --profile=startup --output-format=json --out result.json
 
           CONFLICT=$(jq '[.results[] | select(
-            (.check_type == "domain" and .tld == "com" and .available == false) or
-            (.check_type == "npm" and .available == false)
+            (.check_type == "domain" and .tld == "com" and .available == "taken") or
+            (.check_type == "npm" and .available == "taken")
           )] | length' result.json)
 
           if [ "$CONFLICT" -gt 0 ]; then
@@ -264,9 +257,9 @@ if git diff --cached --name-only | grep -q 'package.json'; then
   echo "Checking availability for: $NAME"
 
   RESULT=$(namelens check "$NAME" --profile=minimal --output-format=json)
-  COM_AVAIL=$(jq '.results[] | select(.check_type == "domain" and .tld == "com") | .available' <<< "$RESULT")
+  COM_AVAIL=$(jq -r '.results[] | select(.check_type == "domain" and .tld == "com") | .available' <<< "$RESULT")
 
-  if [ "$COM_AVAIL" == "false" ]; then
+  if [ "$COM_AVAIL" == "taken" ]; then
     echo "Warning: $NAME.com is taken"
     read -p "Continue commit? (y/n) " response
     [ "$response" != "y" ] && exit 1
