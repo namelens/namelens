@@ -135,7 +135,7 @@ func TestShowExpertGuidanceWarning(t *testing.T) {
 		if !strings.Contains(output, "limited analysis mode") {
 			t.Error("expected warning message about limited analysis mode")
 		}
-		if !strings.Contains(output, "namelens config set") {
+		if !strings.Contains(output, "namelens setup") {
 			t.Error("expected configuration instructions")
 		}
 	})

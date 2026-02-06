@@ -18,6 +18,7 @@ require (
 	github.com/tursodatabase/go-libsql v0.0.0-20251219133454-43644db490ff
 	go.uber.org/zap v1.27.0
 	golang.org/x/image v0.35.0
+	golang.org/x/term v0.39.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 

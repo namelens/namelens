@@ -51,14 +51,10 @@ func showExpertGuidanceWarning(cfg ailink.Config, w io.Writer) {
 	_, _ = fmt.Fprintln(w, "  Names may have trademark conflicts, active use, or brand confusion risks")
 	_, _ = fmt.Fprintln(w, "  not detected by basic availability checks.")
 	_, _ = fmt.Fprintln(w, "")
-	_, _ = fmt.Fprintln(w, "  To enable comprehensive analysis, configure an AI backend:")
-	_, _ = fmt.Fprintln(w, "    namelens config set ailink.providers.myai.ai_provider openai")
-	_, _ = fmt.Fprintln(w, "    namelens config set ailink.providers.myai.credentials[0].api_key YOUR_KEY")
-	_, _ = fmt.Fprintln(w, "    namelens config set ailink.default_provider myai")
+	_, _ = fmt.Fprintln(w, "  To enable comprehensive analysis, run the setup wizard:")
+	_, _ = fmt.Fprintln(w, "    namelens setup")
 	_, _ = fmt.Fprintln(w, "")
 	_, _ = fmt.Fprintln(w, "  Then use: namelens check <name> --expert")
-	_, _ = fmt.Fprintln(w, "")
-	_, _ = fmt.Fprintln(w, "  See: https://namelens.dev/docs/configuration")
 	_, _ = fmt.Fprintln(w, "")
 
 	expertGuidanceShown = true
