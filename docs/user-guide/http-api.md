@@ -499,8 +499,12 @@ namelens serve cleanup
 # Check if port is in use
 lsof -i :8080
 
-# Force stop existing process
+# Stop a managed namelens server
 namelens serve stop --force
+
+# If the process isn't managed by namelens (no PID file), stop will refuse.
+# Use cleanup instead to terminate any process on the port:
+namelens serve cleanup --port 8080
 ```
 
 ### Connection refused

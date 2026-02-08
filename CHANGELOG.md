@@ -50,6 +50,9 @@ Versioning.
   of silently falling back to the minimal profile
 - Localhost requests with an incorrect API key are now properly rejected
   when a key is configured (previously bypassed validation)
+- Auth middleware now rejects localhost bypass when proxy forwarding headers
+  (`X-Forwarded-For`, `X-Real-IP`, `Forwarded`) are present, preventing
+  spoofed localhost auth bypass through reverse proxies
 - AILink trace file is now properly flushed on exit
 - Setup wizard respects `--config` global flag for custom config paths
 - Setup config merge preserves custom model tiers when updating provider keys
