@@ -61,7 +61,10 @@ func NewWithAPI(host string, port int, version string, authConfig api.AuthConfig
 	})
 
 	// Create API server with orchestrator for control plane operations
-	apiServer := api.NewServer(orchestrator, version)
+	var apiServer *api.Server
+	if orchestrator != nil {
+		apiServer = api.NewServer(orchestrator, version)
+	}
 
 	s := &Server{
 		router:    r,

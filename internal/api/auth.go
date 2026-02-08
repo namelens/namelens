@@ -58,6 +58,12 @@ func AuthMiddleware(cfg AuthConfig) func(http.Handler) http.Handler {
 
 // isLocalhost checks if the request originated from localhost.
 func isLocalhost(r *http.Request) bool {
+	// If request includes proxy forwarding headers, do not treat as localhost.
+	// This prevents spoofing X-Forwarded-For to bypass auth when RealIP is enabled.
+	if hasForwardedHeaders(r) {
+		return false
+	}
+
 	// Get the remote address
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
@@ -74,6 +80,22 @@ func isLocalhost(r *http.Request) bool {
 
 	// Check for loopback addresses (127.0.0.1, ::1)
 	return ip.IsLoopback()
+}
+
+func hasForwardedHeaders(r *http.Request) bool {
+	if r == nil {
+		return false
+	}
+	if strings.TrimSpace(r.Header.Get("X-Forwarded-For")) != "" {
+		return true
+	}
+	if strings.TrimSpace(r.Header.Get("X-Real-IP")) != "" {
+		return true
+	}
+	if strings.TrimSpace(r.Header.Get("Forwarded")) != "" {
+		return true
+	}
+	return false
 }
 
 // GenerateAPIKey generates a random API key with the nlcp_ prefix.

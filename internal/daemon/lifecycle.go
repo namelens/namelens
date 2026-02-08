@@ -12,6 +12,7 @@ import (
 var (
 	ErrServerNotRunning     = errors.New("server is not running")
 	ErrServerAlreadyRunning = errors.New("server is already running on this port")
+	ErrServerNotManaged     = errors.New("server is not managed by namelens")
 	ErrStopTimeout          = errors.New("server did not stop within timeout")
 	ErrPortInUse            = errors.New("port is in use by another process")
 	ErrDaemonStartupFailed  = errors.New("daemon process exited during startup")
@@ -236,6 +237,9 @@ func Stop(port int, gracePeriod time.Duration) error {
 	if !status.Running {
 		return ErrServerNotRunning
 	}
+	if !status.Managed {
+		return ErrServerNotManaged
+	}
 
 	pid := status.PID
 
@@ -291,6 +295,9 @@ func ForceStop(port int) error {
 
 	if !status.Running {
 		return ErrServerNotRunning
+	}
+	if !status.Managed {
+		return ErrServerNotManaged
 	}
 
 	if err := ForceKillProcess(status.PID); err != nil {

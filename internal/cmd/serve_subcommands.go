@@ -43,6 +43,11 @@ Examples:
 				fmt.Printf("No server running on port %d\n", serverPort)
 				return nil
 			}
+			if errors.Is(err, daemon.ErrServerNotManaged) {
+				fmt.Printf("Refusing to stop non-managed process on port %d\n", serverPort)
+				fmt.Println("  Use 'namelens serve cleanup --port <port>' if you want to terminate it")
+				return nil
+			}
 			return errwrap.WrapInternal(cmd.Context(), err, "failed to stop server")
 		}
 
