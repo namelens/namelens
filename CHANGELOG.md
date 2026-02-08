@@ -32,7 +32,8 @@ Versioning.
   - `POST /v1/compare` - Compare multiple candidates
   - `GET /v1/status` - Provider and rate limit status
   - `GET /v1/profiles` - List available profiles
-  - API key authentication for non-localhost requests
+  - API key authentication (localhost without key header bypasses; incorrect
+    keys rejected even from localhost)
   - `namelens serve --generate-key` creates secure API keys
 - **Anthropic Claude driver** for AILink provider system
   - Direct HTTP integration with Anthropic Messages API
