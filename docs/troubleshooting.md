@@ -133,7 +133,7 @@ namelens check myname --output-format=json | \
 
 ```bash
 # Check cache entry
-sqlite3 ~/.config/namelens/namelens.db "SELECT name, tld, expires_at FROM check_cache WHERE check_type='domain' ORDER BY expires_at DESC LIMIT 5"
+sqlite3 ~/.local/share/namelens/namelens.db "SELECT name, tld, expires_at FROM check_cache WHERE check_type='domain' ORDER BY expires_at DESC LIMIT 5"
 ```
 
 **Root Cause:** Cache TTL is too long or cache was not invalidated after
@@ -148,7 +148,7 @@ namelens check myname --no-cache
 Or clear cache entirely:
 
 ```bash
-rm ~/.config/namelens/namelens.db
+rm ~/.local/share/namelens/namelens.db
 ```
 
 #### Cache Not Persisting
@@ -160,10 +160,10 @@ suggesting cache isn't working.
 
 ```bash
 # Check cache file exists and is writable
-ls -la ~/.config/namelens/namelens.db
+ls -la ~/.local/share/namelens/namelens.db
 
 # Check database integrity
-sqlite3 ~/.config/namelens/namelens.db "PRAGMA integrity_check"
+sqlite3 ~/.local/share/namelens/namelens.db "PRAGMA integrity_check"
 ```
 
 **Root Causes:**
@@ -177,16 +177,16 @@ sqlite3 ~/.config/namelens/namelens.db "PRAGMA integrity_check"
 1. **Fix permissions:**
 
    ```bash
-   # Ensure cache directory exists with correct permissions
-   mkdir -p ~/.config/namelens
-   chmod 755 ~/.config/namelens
-   chmod 644 ~/.config/namelens/namelens.db
+   # Ensure data directory exists with correct permissions
+   mkdir -p ~/.local/share/namelens
+   chmod 755 ~/.local/share/namelens
+   chmod 644 ~/.local/share/namelens/namelens.db
    ```
 
 2. **Recreate cache:**
    ```bash
    # Remove corrupted cache
-   rm ~/.config/namelens/namelens.db
+   rm ~/.local/share/namelens/namelens.db
    # Namelens will recreate on next run
    ```
 
@@ -643,7 +643,7 @@ To inspect the cache database directly:
 
 ```bash
 # Connect to database
-sqlite3 ~/.config/namelens/namelens.db
+sqlite3 ~/.local/share/namelens/namelens.db
 
 # List tables
 .tables

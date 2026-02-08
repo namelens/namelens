@@ -9,7 +9,7 @@ import (
 // Config represents the complete application configuration
 // following the Fulmen Forge Workhorse Standard three-layer pattern:
 // Layer 1: Crucible defaults (config/namelens/v0/namelens-defaults.yaml)
-// Layer 2: User overrides (~/.config/namelens/namelens/config.yaml)
+// Layer 2: User overrides (~/.config/namelens/config.yaml)
 // Layer 3: Environment variables and runtime overrides
 type Config struct {
 	Server  ServerConfig  `mapstructure:"server"`
