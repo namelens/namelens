@@ -59,6 +59,9 @@ make bootstrap
 # Build
 make build
 
+# Configure AI backend (interactive wizard)
+./bin/namelens setup
+
 # Check a name
 ./bin/namelens check acmecorp --profile=startup
 
@@ -140,7 +143,9 @@ namelens serve --daemon --api-key nlcp_...  # With authentication
 namelens serve status                       # Check daemon status
 namelens serve stop                         # Stop daemon
 
-# Diagnostics
+# Setup and diagnostics
+namelens setup                              # Interactive AI backend setup
+namelens setup --provider xai --api-key KEY # Non-interactive setup
 namelens version
 namelens health
 namelens doctor

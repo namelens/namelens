@@ -339,17 +339,20 @@ service status page for resolution.
 
 **Solutions:**
 
-1. **Check configuration:** confirm which config file is being used, then
-   inspect it:
+1. **Run the setup wizard** (recommended):
 
    ```bash
-   # Prints the config file path when --verbose is enabled
-   namelens check myname --verbose 2>&1 | head -n 5
-
-   # Then inspect the file shown (typically ~/.config/namelens/config.yaml)
+   namelens setup
    ```
 
-2. **Add API key:**
+   This walks you through provider selection, API key entry, and connection
+   testing. For non-interactive environments:
+
+   ```bash
+   namelens setup --provider xai --api-key $XAI_KEY --no-test
+   ```
+
+2. **Or add the key manually:**
 
    ```bash
    # Set via environment variable (for xAI/Grok)

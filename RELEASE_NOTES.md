@@ -3,17 +3,81 @@
 This file keeps notes for the latest three releases in reverse chronological
 order.
 
-## Unreleased
+## v0.2.1 (2026-02-06)
 
-Server management and Control Plane API for remote integration.
+Agent-ready deployment: headless server API, guided setup, and safety
+guardrails.
 
 Highlights:
 
+- **Setup wizard**: 30 seconds from install to full AI capability with
+  `namelens setup`
 - **Daemon mode**: Run server in background with `--daemon` flag
-- **Server management**: New `stop`, `status`, `cleanup` subcommands
 - **Control Plane API**: REST API for remote name checking and comparison
+- **Anthropic Claude**: Third AI provider option alongside xAI and OpenAI
+- **Expert mode guidance**: Safety warnings prevent false confidence from
+  availability-only results
 - **Environment files**: Auto-load `.env` from XDG config or specify with
   `--env-file`
+
+### Setup Wizard
+
+Get from zero to expert analysis in 30 seconds:
+
+```bash
+# Interactive — choose provider, paste key, verify connection
+namelens setup
+
+# Non-interactive (CI/automation)
+namelens setup --provider xai --api-key $XAI_KEY --no-test
+
+# Use a custom config path
+namelens setup --config ~/my-project/namelens.yaml
+```
+
+The wizard walks through provider selection (xAI Grok, OpenAI GPT, or
+Anthropic Claude), securely reads your API key (no-echo), runs a layered
+connection test (DNS → TCP → TLS → HTTP auth), and writes the config. Existing
+settings are preserved — updating a provider key won't clobber custom model
+tiers or other providers you've already configured.
+
+### Anthropic Claude
+
+Anthropic is now a first-class AILink provider alongside xAI and OpenAI. The
+default model is `claude-sonnet-4-5-20250929`. Configure via setup wizard or
+manually in config:
+
+```bash
+namelens setup --provider anthropic --api-key $ANTHROPIC_KEY
+```
+
+### Expert Mode Guidance
+
+When no AI backend is configured, `check` and `compare` commands now display a
+warning banner:
+
+```
+Note: Running in limited analysis mode (no AI backend configured).
+
+  Domain and registry checks show availability only, not commercial safety.
+  Names may have trademark conflicts, active use, or brand confusion risks
+  not detected by basic availability checks.
+
+  To enable comprehensive analysis, run the setup wizard:
+    namelens setup
+```
+
+When AI *is* configured but `--expert` wasn't used, a lighter tip appears after
+results:
+
+```
+Tip: These results show availability only. For trademark, commercial use,
+     and brand safety analysis, run with --expert flag.
+```
+
+This addresses the "domain available = name safe" footgun — availability checks
+alone can miss trademark conflicts, active competitors, and brand confusion
+risks that only surface through AI-powered web search.
 
 ### Daemon Mode
 
@@ -110,11 +174,26 @@ New subcommands:
 - `namelens serve status [--port] [--all]`
 - `namelens serve cleanup [--port] [--force]`
 
+### Bug Fixes
+
+- Health endpoint returns proper schema-conformant `status` field (`pass`,
+  `fail`, `warn`)
+- API error codes are consistently lowercase snake_case across all endpoints
+- Invalid profile names in `/v1/check` now return 400 instead of silently
+  falling back
+- Localhost requests with an incorrect API key are properly rejected when a key
+  is configured
+- Setup wizard respects `--config` global flag for custom config paths
+- Config merge preserves custom model tiers when updating provider keys
+- Piped input handling in setup wizard works correctly with buffered readers
+- AILink trace file is properly flushed on exit
+
 ### Dependencies
 
 - gofulmen v0.3.0 → v0.3.3 (fixes `namelens version --extended` reporting)
 - crucible v0.4.2 → v0.4.9
 - sysprims v0.1.10 → v0.1.11 (dynamic library compatibility)
+- golang.org/x/term v0.39.0 (secure terminal input for setup wizard)
 
 ### Upgrade Notes
 

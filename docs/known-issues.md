@@ -148,13 +148,12 @@ namelens check --names-file candidates.txt --output-format=table
 
 ### Multi-Name Checks (Performance)
 
-**Status:** ⚠️ Implemented, sequential execution
+**Status:** ✅ Concurrent execution (v0.2.0)
 
-Multi-name input is supported (positional names and `--names-file`), and JSON
-output is a single array of per-name batch results.
+Multi-name input is supported (positional names and `--names-file`), with
+parallel domain/registry checks via `--concurrency` flag (default: 3).
 
-What’s still missing:
+What's still missing:
 
-- Parallel processing with configurable concurrency
 - Aggregate summary output (totals across all names)
 - `--fail-fast` / partial error handling strategy for large batches

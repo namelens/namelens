@@ -5,10 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this project adheres to Semantic
 Versioning.
 
-## [Unreleased]
+## [0.2.1] - 2026-02-06
 
 ### Added
 
+- **Setup wizard** (`namelens setup`) for interactive AI backend configuration
+  - Provider selection: xAI (Grok), OpenAI (GPT), Anthropic (Claude)
+  - Secure no-echo API key input
+  - Layered connection testing (DNS/TCP/TLS/HTTP auth)
+  - Config merge preserves existing providers and custom model tiers
+  - Non-interactive mode with `--provider`, `--api-key`, `--no-test` flags
+  - Respects `--config` global flag for custom config paths
 - **Server daemon mode** for background operation
   - `namelens serve --daemon` starts server in background
   - `namelens serve stop` gracefully stops running server
@@ -27,6 +34,25 @@ Versioning.
   - `GET /v1/profiles` - List available profiles
   - API key authentication for non-localhost requests
   - `namelens serve --generate-key` creates secure API keys
+- **Anthropic Claude driver** for AILink provider system
+  - Direct HTTP integration with Anthropic Messages API
+  - Supports Claude Sonnet 4.5 as default model
+  - Enables deep analysis and conflict-aware name generation
+
+### Fixed
+
+- Health endpoint response now returns proper HealthCheck objects with
+  `status` field (`pass`, `fail`, `warn`) matching the OpenAPI schema
+- API error responses now use consistent lowercase snake_case error codes
+  (`bad_request`, `not_found`, etc.) across all endpoints
+- Invalid profile names in `/v1/check` now return 400 Bad Request instead
+  of silently falling back to the minimal profile
+- Localhost requests with an incorrect API key are now properly rejected
+  when a key is configured (previously bypassed validation)
+- AILink trace file is now properly flushed on exit
+- Setup wizard respects `--config` global flag for custom config paths
+- Setup config merge preserves custom model tiers when updating provider keys
+- Piped input to setup wizard no longer loses data between prompts
 
 ### Changed
 
@@ -41,6 +67,7 @@ Versioning.
 - Updated `github.com/fulmenhq/crucible` v0.4.2 → v0.4.9
 - Updated `github.com/3leaps/sysprims` v0.1.10 → v0.1.11 (dynamic library fix)
 - Added `github.com/joho/godotenv` v1.5.1 for .env file loading
+- Added `golang.org/x/term` v0.39.0 for secure terminal input
 - Go directive updated 1.25.1 → 1.25.5
 
 ## [0.2.0] - 2026-02-01

@@ -212,8 +212,9 @@ remote libsql/Turso database instead of a local file.
 AILink providers are configured as **named instances** under `ailink.providers`.
 The instance id is a slug (e.g. `namelens-xai`, `namelens-openai`).
 
-NameLens ships with an `xai` driver (for Grok via x.ai) and an `openai` driver
-for OpenAI-hosted models.
+NameLens ships with three drivers: `xai` (for Grok via x.ai), `openai` (for
+OpenAI-hosted models), and `anthropic` (for Claude via Anthropic's Messages
+API).
 
 Important terminology note:
 
@@ -383,7 +384,20 @@ This shows:
 
 ## Config Initialization and Status
 
-Use `doctor` to initialize a config file and inspect system state:
+The **recommended** way to configure an AI provider is the setup wizard:
+
+```bash
+namelens setup
+```
+
+This interactively selects a provider, securely reads your API key, tests the
+connection, and writes the config file. For non-interactive environments:
+
+```bash
+namelens setup --provider xai --api-key $XAI_KEY --no-test
+```
+
+For manual initialization, use `doctor`:
 
 ```bash
 namelens doctor init
