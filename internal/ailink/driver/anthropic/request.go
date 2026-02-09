@@ -49,7 +49,14 @@ func buildMessagesRequest(req *driver.Request) (*messagesRequest, error) {
 
 		// Anthropic uses a top-level system field, not a system message
 		if role == "system" {
-			systemText = extractTextContent(msg.Content)
+			chunk := strings.TrimSpace(extractTextContent(msg.Content))
+			if chunk != "" {
+				if systemText != "" {
+					systemText += "\n" + chunk
+				} else {
+					systemText = chunk
+				}
+			}
 			continue
 		}
 

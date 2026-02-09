@@ -222,7 +222,7 @@ func TestClientName(t *testing.T) {
 func TestClientCapabilities(t *testing.T) {
 	client := NewClient("", "key")
 	caps := client.Capabilities()
-	require.True(t, caps.SupportsTools)
+	require.False(t, caps.SupportsTools)
 	require.False(t, caps.SupportsImages) // Claude doesn't generate images
 	require.False(t, caps.SupportsStreaming)
 }

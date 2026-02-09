@@ -48,7 +48,7 @@ func (c *Client) Name() string {
 // Capabilities describes supported features.
 func (c *Client) Capabilities() driver.Capabilities {
 	return driver.Capabilities{
-		SupportsTools:     true,
+		SupportsTools:     false,
 		SupportsImages:    false, // Claude supports vision but not image generation
 		SupportsStreaming: false,
 	}
