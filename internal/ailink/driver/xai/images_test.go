@@ -51,4 +51,23 @@ func TestClientGenerateImageDecodesDataURLBase64(t *testing.T) {
 	require.NotNil(t, resp)
 	require.Len(t, resp.Images, 1)
 	require.Equal(t, []byte("hello"), resp.Images[0].Data)
+	require.Equal(t, "image/jpeg", string(resp.Images[0].Type))
+}
+
+func TestClientGenerateImageDecodesDataURLBase64PNG(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"created":1,"data":[{"b64_json":"data:image/png;base64,aGVsbG8="}]}`))
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL, "test-key")
+	client.HTTPClient = server.Client()
+
+	resp, err := client.GenerateImage(context.Background(), &driver.ImageRequest{Model: "grok-2-image", Prompt: "hello", Count: 1})
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	require.Len(t, resp.Images, 1)
+	require.Equal(t, []byte("hello"), resp.Images[0].Data)
+	require.Equal(t, "image/png", string(resp.Images[0].Type))
 }

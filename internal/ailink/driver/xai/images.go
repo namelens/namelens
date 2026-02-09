@@ -110,18 +110,37 @@ func (c *Client) GenerateImage(ctx context.Context, req *driver.ImageRequest) (*
 		if b64 == "" {
 			continue
 		}
+		mime := "image/jpeg"
 		// xAI may return either raw base64 or a data URL.
 		if strings.HasPrefix(b64, "data:") {
-			if idx := strings.Index(b64, ","); idx > 0 {
-				b64 = b64[idx+1:]
+			mime, b64 = splitDataURL(b64)
+			if mime == "" {
+				mime = "image/jpeg"
 			}
 		}
 		decoded, err := encode.DecodeBase64String(b64)
 		if err != nil {
 			return nil, fmt.Errorf("decode image base64: %w", err)
 		}
-		blocks = append(blocks, content.ContentBlock{Type: "image/jpeg", Data: decoded})
+		blocks = append(blocks, content.ContentBlock{Type: content.ContentType(mime), Data: decoded})
 	}
 
 	return &driver.ImageResponse{Created: parsed.Created, Images: blocks}, nil
+}
+
+func splitDataURL(value string) (string, string) {
+	if !strings.HasPrefix(value, "data:") {
+		return "", value
+	}
+	comma := strings.Index(value, ",")
+	if comma < 0 {
+		return "", value
+	}
+	meta := strings.TrimPrefix(value[:comma], "data:")
+	if meta == "" {
+		return "", value[comma+1:]
+	}
+	parts := strings.Split(meta, ";")
+	mime := strings.TrimSpace(parts[0])
+	return mime, value[comma+1:]
 }
