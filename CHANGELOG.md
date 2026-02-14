@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this project adheres to Semantic
 Versioning.
 
-## [0.2.1] - 2026-02-06
+## [0.2.1] - 2026-02-14
 
 ### Added
 
@@ -57,6 +57,19 @@ Versioning.
 - Setup wizard respects `--config` global flag for custom config paths
 - Setup config merge preserves custom model tiers when updating provider keys
 - Piped input to setup wizard no longer loses data between prompts
+- Anthropic expert check no longer fails when model returns tool-call
+  hallucinations outside the expected schema (returned generic "provider
+  request failed")
+- Anthropic generate responses no longer truncated (content block extraction
+  now handles array-of-blocks correctly for longer outputs)
+- Expert mode "no AI backend configured" warning now correctly detects
+  configured providers (previously fired even with working backend)
+- xAI image responses preserve original MIME type instead of forcing
+  default
+- Anthropic provider capabilities (supported features) corrected in
+  registry
+- Server `serve stop` hardened for clean shutdown; API auth edge cases
+  resolved
 
 ### Changed
 

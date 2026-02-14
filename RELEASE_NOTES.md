@@ -3,7 +3,7 @@
 This file keeps notes for the latest three releases in reverse chronological
 order.
 
-## v0.2.1 (2026-02-06)
+## v0.2.1 (2026-02-14)
 
 Agent-ready deployment: headless server API, guided setup, and safety
 guardrails.
@@ -188,6 +188,14 @@ New subcommands:
 - Config merge preserves custom model tiers when updating provider keys
 - Piped input handling in setup wizard works correctly with buffered readers
 - AILink trace file is properly flushed on exit
+- Anthropic expert check no longer fails with "provider request failed" when
+  model returns tool-call hallucinations outside the expected schema
+- Anthropic generate no longer truncates candidate lists
+- Expert mode warning only displays when no AI backend is genuinely configured
+  (previously fired even with a working provider)
+- xAI image responses now preserve original MIME type correctly
+- Anthropic provider capabilities reporting corrected
+- Server `serve stop` and API auth hardened for edge cases
 
 ### Dependencies
 
