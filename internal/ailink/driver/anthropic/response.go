@@ -55,8 +55,9 @@ func toDriverResponse(resp *messagesResponse) (*driver.Response, error) {
 		}
 	}
 
-	// Strip markdown fences if present (Anthropic sometimes wraps JSON in ```json ... ```)
-	text = stripMarkdownFences(text)
+	// Extract JSON from response text. Anthropic may include additional text
+	// (e.g., tool call hallucinations) before or around the JSON block.
+	text = extractJSON(text)
 
 	response := &driver.Response{
 		Content: []content.ContentBlock{
@@ -74,6 +75,63 @@ func toDriverResponse(resp *messagesResponse) (*driver.Response, error) {
 	}
 
 	return response, nil
+}
+
+// extractJSON finds and extracts JSON content from response text.
+// Handles cases where the model includes additional text before or around the JSON,
+// such as when the model hallucinates tool calls.
+func extractJSON(text string) string {
+	text = strings.TrimSpace(text)
+
+	// First, try to extract JSON from a ```json code block
+	if idx := strings.Index(text, "```json"); idx != -1 {
+		start := idx + 7 // len("```json")
+		end := strings.Index(text[start:], "```")
+		if end != -1 {
+			return strings.TrimSpace(text[start : start+end])
+		}
+	}
+
+	// Try to find a JSON object in the text
+	// Look for the first '{' and match it to the closing '}'
+	start := strings.Index(text, "{")
+	if start == -1 {
+		return stripMarkdownFences(text)
+	}
+
+	depth := 0
+	inString := false
+	escape := false
+	for i := start; i < len(text); i++ {
+		ch := text[i]
+		if escape {
+			escape = false
+			continue
+		}
+		if ch == '\\' && inString {
+			escape = true
+			continue
+		}
+		if ch == '"' {
+			inString = !inString
+			continue
+		}
+		if inString {
+			continue
+		}
+		switch ch {
+		case '{':
+			depth++
+		case '}':
+			depth--
+			if depth == 0 {
+				return text[start : i+1]
+			}
+		}
+	}
+
+	// Fallback to original behavior
+	return stripMarkdownFences(text)
 }
 
 // stripMarkdownFences removes markdown code fences (```json ... ``` or ``` ... ```)

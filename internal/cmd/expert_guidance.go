@@ -14,13 +14,15 @@ import (
 var expertGuidanceShown bool
 
 // isAIBackendConfigured checks if any AI provider has a valid API key configured.
+// Uses the same logic as credential selection: if any provider has credentials
+// with an API key, consider it configured (matching the registry fallback behavior).
 func isAIBackendConfigured(cfg ailink.Config) bool {
 	for _, provider := range cfg.Providers {
 		if !provider.Enabled {
 			continue
 		}
 		for _, cred := range provider.Credentials {
-			if cred.Enabled && strings.TrimSpace(cred.APIKey) != "" {
+			if strings.TrimSpace(cred.APIKey) != "" {
 				return true
 			}
 		}

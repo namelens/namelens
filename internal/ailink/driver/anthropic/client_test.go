@@ -338,3 +338,85 @@ func TestClientStripsMarkdownFencesFromResponse(t *testing.T) {
 	// Should have stripped the markdown fences
 	require.Equal(t, `{"name": "test"}`, resp.Content[0].Text)
 }
+
+func TestExtractJSON(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "plain json object",
+			input: `{"name": "test"}`,
+			want:  `{"name": "test"}`,
+		},
+		{
+			name:  "json in markdown fence",
+			input: "```json\n{\"name\": \"test\"}\n```",
+			want:  `{"name": "test"}`,
+		},
+		{
+			name:  "tool call junk before json",
+			input: "<function_calls>\n<invoke name=\"web_search\">\n</invoke>\n</function_calls>\n{\"name\": \"test\"}",
+			want:  `{"name": "test"}`,
+		},
+		{
+			name:  "text before json",
+			input: "Here is the result:\n\n{\"name\": \"test\", \"nested\": {\"key\": \"value\"}}",
+			want:  `{"name": "test", "nested": {"key": "value"}}`,
+		},
+		{
+			name:  "nested json objects",
+			input: "{\"outer\": {\"inner\": \"value\"}}",
+			want:  `{"outer": {"inner": "value"}}`,
+		},
+		{
+			name:  "json with braces in strings",
+			input: `{"text": "not a {brace} here", "name": "test"}`,
+			want:  `{"text": "not a {brace} here", "name": "test"}`,
+		},
+		{
+			name:  "json with escaped quotes",
+			input: `{"text": "he said \"hello\"", "name": "test"}`,
+			want:  `{"text": "he said \"hello\"", "name": "test"}`,
+		},
+		{
+			name:  "no json returns original",
+			input: "just plain text",
+			want:  "just plain text",
+		},
+		{
+			name:  "empty object",
+			input: "prefix {} suffix",
+			want:  `{}`,
+		},
+		{
+			name:  "multiple objects gets first - known limitation",
+			input: "{\"first\": 1} some text {\"second\": 2}",
+			want:  `{"first": 1}`,
+		},
+		{
+			// NOTE: This test documents the "first object wins" behavior.
+			// If Claude outputs an earlier {...} pattern, extractJSON will capture it.
+			// This is acceptable because:
+			// 1. The prompt demands "Respond EXCLUSIVELY in this JSON structure"
+			// 2. The real issue (tool hallucinations) don't contain unquoted { characters
+			// 3. String content with braces is handled by the inString check
+			name:  "fake object before real json - documents first object wins limitation",
+			input: "I searched for {query} and found:\n\n{\"name\": \"test\", \"risk\": \"low\"}",
+			want:  "{query}",
+		},
+		{
+			name:  "realistic tool hallucination with full json",
+			input: "<function_calls>\n<invoke name=\"web_search\">\n<parameter name=\"query\">gotcreds</parameter>\n</invoke>\n</function_calls>\n\n{\"summary\": \"Available\", \"risk_level\": \"low\", \"mentions\": []}",
+			want:  `{"summary": "Available", "risk_level": "low", "mentions": []}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := extractJSON(tt.input)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}

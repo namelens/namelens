@@ -91,6 +91,14 @@ func (s *Service) Search(ctx context.Context, req SearchRequest) (*SearchRespons
 	if resolved.Driver.Name() != "xai" {
 		driverReq.SearchParameters = nil
 		driverReq.Tools = nil
+		// Strip tool-related instructions from the prompt to prevent hallucination.
+		// Models like Claude may hallucinate tool calls when instructed to use tools
+		// but no actual tool definitions are provided.
+		for i := range driverReq.Messages {
+			for j := range driverReq.Messages[i].Content {
+				driverReq.Messages[i].Content[j].Text = stripToolInstructions(driverReq.Messages[i].Content[j].Text)
+			}
+		}
 	}
 	if driverReq.SearchParameters != nil {
 		driverReq.Tools = nil // Prefer search_parameters for xAI; avoid conflicts
@@ -222,6 +230,14 @@ func (s *Service) Generate(ctx context.Context, req GenerateRequest) (*GenerateR
 	if resolved.Driver.Name() != "xai" {
 		driverReq.SearchParameters = nil
 		driverReq.Tools = nil
+		// Strip tool-related instructions from the prompt to prevent hallucination.
+		// Models like Claude may hallucinate tool calls when instructed to use tools
+		// but no actual tool definitions are provided.
+		for i := range driverReq.Messages {
+			for j := range driverReq.Messages[i].Content {
+				driverReq.Messages[i].Content[j].Text = stripToolInstructions(driverReq.Messages[i].Content[j].Text)
+			}
+		}
 	}
 	if driverReq.SearchParameters != nil {
 		driverReq.Tools = nil
@@ -550,4 +566,25 @@ func (s *Service) validateResponse(def *prompt.Prompt, payload []byte) error {
 		return fmt.Errorf("response schema validation failed: %s", diagnostics[0].Message)
 	}
 	return nil
+}
+
+// stripToolInstructions removes tool-related instructions from prompts when tools
+// are not available. This prevents models like Claude from hallucinating tool calls
+// when they see tool instructions but no actual tool definitions are provided.
+func stripToolInstructions(text string) string {
+	// Remove lines containing tool-related instructions
+	lines := strings.Split(text, "\n")
+	var filtered []string
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		// Skip lines that instruct the model to use tools
+		if strings.Contains(trimmed, "Use tools extensively") {
+			continue
+		}
+		if strings.Contains(trimmed, "using available tools") {
+			line = strings.Replace(line, " using available tools", "", 1)
+		}
+		filtered = append(filtered, line)
+	}
+	return strings.Join(filtered, "\n")
 }

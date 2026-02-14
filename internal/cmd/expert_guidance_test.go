@@ -29,7 +29,7 @@ func TestIsAIBackendConfigured(t *testing.T) {
 			expected: false,
 		},
 		{
-			name: "provider with disabled credential",
+			name: "provider with disabled credential but valid API key",
 			cfg: ailink.Config{
 				Providers: map[string]ailink.ProviderInstanceConfig{
 					"test": {
@@ -40,7 +40,7 @@ func TestIsAIBackendConfigured(t *testing.T) {
 					},
 				},
 			},
-			expected: false,
+			expected: true,
 		},
 		{
 			name: "provider with empty API key",
