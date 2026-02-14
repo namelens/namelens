@@ -42,6 +42,9 @@ and observability.
 | Format         | `make fmt`       |
 | Lint           | `make lint`      |
 
+Note: Prefer `make test`/`make check` over raw `go test`; the Make targets set
+required build tags (e.g. `sysprims_shared`) to avoid CGO/Rust linker conflicts.
+
 ## Session Protocol
 
 ### Before Changes
@@ -158,6 +161,7 @@ Standard role identifiers for 3leaps ecosystem. Use in `Role:` commit trailer.
 | CI/CD Automation      | `cicd`     | Pipelines, deployments, automation          |
 | Security Review       | `secrev`   | Security analysis, vulnerability review     |
 | Release Manager       | `releng`   | Versioning, releases, changelogs            |
+| Delivery Lead         | `deliverylead` | Sprint coordination, timeline orchestration, projectbook governance |
 | Dispatcher            | `dispatch` | Cross-session coordination, message routing |
 | Product Marketing     | `prodmktg` | Messaging, branding, personas, storytelling |
 
