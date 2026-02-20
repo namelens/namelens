@@ -27,9 +27,9 @@ explicitly specify a different address. For local development and single-machine
 use, this is the recommended configuration — no API key is needed.
 
 > **Current auth model**: v0.2.1 provides API key authentication suitable for
-> localhost and trusted-network deployments. It does not yet support OAuth, mTLS,
-> or token rotation. Do not expose the API to the public internet without a
-> reverse proxy that provides its own authentication layer.
+> localhost and trusted-network deployments. It does not yet support OAuth,
+> mTLS, or token rotation. Do not expose the API to the public internet without
+> a reverse proxy that provides its own authentication layer.
 
 **API key authentication**: When deploying beyond localhost, configure an API
 key:
@@ -64,15 +64,15 @@ sufficient for public-facing deployments.
 
 ### API Endpoints
 
-| Method | Endpoint        | Purpose                           |
-| ------ | --------------- | --------------------------------- |
-| `GET`  | `/health`       | Aggregate health check            |
-| `GET`  | `/health/live`  | Liveness probe                    |
-| `GET`  | `/health/ready` | Readiness probe                   |
-| `GET`  | `/v1/status`    | Rate limit and provider status    |
-| `GET`  | `/v1/profiles`  | List available profiles           |
-| `POST` | `/v1/check`     | Check a single name               |
-| `POST` | `/v1/compare`   | Compare multiple candidates       |
+| Method | Endpoint        | Purpose                        |
+| ------ | --------------- | ------------------------------ |
+| `GET`  | `/health`       | Aggregate health check         |
+| `GET`  | `/health/live`  | Liveness probe                 |
+| `GET`  | `/health/ready` | Readiness probe                |
+| `GET`  | `/v1/status`    | Rate limit and provider status |
+| `GET`  | `/v1/profiles`  | List available profiles        |
+| `POST` | `/v1/check`     | Check a single name            |
+| `POST` | `/v1/compare`   | Compare multiple candidates    |
 
 ### OpenAPI Specification
 

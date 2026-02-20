@@ -14,11 +14,11 @@ pitfalls.
 
 NameLens integrates with three AI providers, each optimized for different tasks:
 
-| Provider      | Model (Default)            | Best For                               | Key Strength                            |
-| ------------- | -------------------------- | -------------------------------------- | --------------------------------------- |
-| **xAI**       | grok-4-1-fast-reasoning    | `check --expert`, real-time validation | Live web/X search for current conflicts |
-| **Anthropic** | claude-sonnet-4-6          | `generate`, deep analysis              | Technical accuracy, conflict awareness  |
-| **OpenAI**    | gpt-4o                     | `generate`, quick iteration            | Speed, brandable suggestions            |
+| Provider      | Model (Default)         | Best For                               | Key Strength                            |
+| ------------- | ----------------------- | -------------------------------------- | --------------------------------------- |
+| **xAI**       | grok-4-1-fast-reasoning | `check --expert`, real-time validation | Live web/X search for current conflicts |
+| **Anthropic** | claude-sonnet-4-6       | `generate`, deep analysis              | Technical accuracy, conflict awareness  |
+| **OpenAI**    | gpt-4o                  | `generate`, quick iteration            | Speed, brandable suggestions            |
 
 ### Why the Differences Matter
 

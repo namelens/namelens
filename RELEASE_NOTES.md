@@ -11,18 +11,18 @@ Highlights:
 
 - **Anthropic models updated**: Default and reasoning tiers now use
   `claude-sonnet-4-6`; fast tier updated to `claude-haiku-4-5-20251001`
-- **OpenAI reasoning tier added**: `o3` configured as the `reasoning` model
-  for `--depth=deep` workloads — OpenAI's dedicated reasoning model delivers
+- **OpenAI reasoning tier added**: `o3` configured as the `reasoning` model for
+  `--depth=deep` workloads — OpenAI's dedicated reasoning model delivers
   significantly higher quality for deep brand analysis
 
 ### Model Updates
 
-| Provider  | Tier        | Before                     | After                    |
-| --------- | ----------- | -------------------------- | ------------------------ |
-| Anthropic | `default`   | claude-sonnet-4-5-20250929 | claude-sonnet-4-6        |
-| Anthropic | `reasoning` | claude-sonnet-4-5-20250929 | claude-sonnet-4-6        |
+| Provider  | Tier        | Before                     | After                     |
+| --------- | ----------- | -------------------------- | ------------------------- |
+| Anthropic | `default`   | claude-sonnet-4-5-20250929 | claude-sonnet-4-6         |
+| Anthropic | `reasoning` | claude-sonnet-4-5-20250929 | claude-sonnet-4-6         |
 | Anthropic | `fast`      | claude-3-5-haiku-20241022  | claude-haiku-4-5-20251001 |
-| OpenAI    | `reasoning` | (not set)                  | o3                       |
+| OpenAI    | `reasoning` | (not set)                  | o3                        |
 
 To update an existing config, re-run the setup wizard or edit
 `~/.config/namelens/config.yaml` directly.
@@ -66,11 +66,11 @@ namelens setup --provider xai --api-key $XAI_KEY --no-test
 namelens setup --config ~/my-project/namelens.yaml
 ```
 
-The wizard walks through provider selection (xAI Grok, OpenAI GPT, or
-Anthropic Claude), securely reads your API key (no-echo), runs a layered
-connection test (DNS → TCP → TLS → HTTP auth), and writes the config. Existing
-settings are preserved — updating a provider key won't clobber custom model
-tiers or other providers you've already configured.
+The wizard walks through provider selection (xAI Grok, OpenAI GPT, or Anthropic
+Claude), securely reads your API key (no-echo), runs a layered connection test
+(DNS → TCP → TLS → HTTP auth), and writes the config. Existing settings are
+preserved — updating a provider key won't clobber custom model tiers or other
+providers you've already configured.
 
 ### Anthropic Claude
 
@@ -98,7 +98,7 @@ Note: Running in limited analysis mode (no AI backend configured).
     namelens setup
 ```
 
-When AI *is* configured but `--expert` wasn't used, a lighter tip appears after
+When AI _is_ configured but `--expert` wasn't used, a lighter tip appears after
 results:
 
 ```

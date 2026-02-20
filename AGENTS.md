@@ -153,17 +153,17 @@ When using NameLens for naming work (projects, features, repos):
 
 Standard role identifiers for 3leaps ecosystem. Use in `Role:` commit trailer.
 
-| Role                  | Identifier | Typical Scope                               |
-| --------------------- | ---------- | ------------------------------------------- |
-| Development Lead      | `devlead`  | Architecture, implementation, code review   |
-| Information Architect | `infoarch` | Documentation, structure, standards         |
-| Quality Assurance     | `qa`       | Testing, validation, quality gates          |
-| CI/CD Automation      | `cicd`     | Pipelines, deployments, automation          |
-| Security Review       | `secrev`   | Security analysis, vulnerability review     |
-| Release Manager       | `releng`   | Versioning, releases, changelogs            |
+| Role                  | Identifier     | Typical Scope                                                       |
+| --------------------- | -------------- | ------------------------------------------------------------------- |
+| Development Lead      | `devlead`      | Architecture, implementation, code review                           |
+| Information Architect | `infoarch`     | Documentation, structure, standards                                 |
+| Quality Assurance     | `qa`           | Testing, validation, quality gates                                  |
+| CI/CD Automation      | `cicd`         | Pipelines, deployments, automation                                  |
+| Security Review       | `secrev`       | Security analysis, vulnerability review                             |
+| Release Manager       | `releng`       | Versioning, releases, changelogs                                    |
 | Delivery Lead         | `deliverylead` | Sprint coordination, timeline orchestration, projectbook governance |
-| Dispatcher            | `dispatch` | Cross-session coordination, message routing |
-| Product Marketing     | `prodmktg` | Messaging, branding, personas, storytelling |
+| Dispatcher            | `dispatch`     | Cross-session coordination, message routing                         |
+| Product Marketing     | `prodmktg`     | Messaging, branding, personas, storytelling                         |
 
 See
 [agent-identity standard](https://crucible.3leaps.dev/repository/agent-identity)

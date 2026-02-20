@@ -42,34 +42,31 @@ Versioning.
 
 ### Fixed
 
-- Health endpoint response now returns proper HealthCheck objects with
-  `status` field (`pass`, `fail`, `warn`) matching the OpenAPI schema
+- Health endpoint response now returns proper HealthCheck objects with `status`
+  field (`pass`, `fail`, `warn`) matching the OpenAPI schema
 - API error responses now use consistent lowercase snake_case error codes
   (`bad_request`, `not_found`, etc.) across all endpoints
-- Invalid profile names in `/v1/check` now return 400 Bad Request instead
-  of silently falling back to the minimal profile
-- Localhost requests with an incorrect API key are now properly rejected
-  when a key is configured (previously bypassed validation)
+- Invalid profile names in `/v1/check` now return 400 Bad Request instead of
+  silently falling back to the minimal profile
+- Localhost requests with an incorrect API key are now properly rejected when a
+  key is configured (previously bypassed validation)
 - Auth middleware now rejects localhost bypass when proxy forwarding headers
-  (`X-Forwarded-For`, `X-Real-IP`, `Forwarded`) are present, preventing
-  spoofed localhost auth bypass through reverse proxies
+  (`X-Forwarded-For`, `X-Real-IP`, `Forwarded`) are present, preventing spoofed
+  localhost auth bypass through reverse proxies
 - AILink trace file is now properly flushed on exit
 - Setup wizard respects `--config` global flag for custom config paths
 - Setup config merge preserves custom model tiers when updating provider keys
 - Piped input to setup wizard no longer loses data between prompts
 - Anthropic expert check no longer fails when model returns tool-call
-  hallucinations outside the expected schema (returned generic "provider
-  request failed")
-- Anthropic generate responses no longer truncated (content block extraction
-  now handles array-of-blocks correctly for longer outputs)
+  hallucinations outside the expected schema (returned generic "provider request
+  failed")
+- Anthropic generate responses no longer truncated (content block extraction now
+  handles array-of-blocks correctly for longer outputs)
 - Expert mode "no AI backend configured" warning now correctly detects
   configured providers (previously fired even with working backend)
-- xAI image responses preserve original MIME type instead of forcing
-  default
-- Anthropic provider capabilities (supported features) corrected in
-  registry
-- Server `serve stop` hardened for clean shutdown; API auth edge cases
-  resolved
+- xAI image responses preserve original MIME type instead of forcing default
+- Anthropic provider capabilities (supported features) corrected in registry
+- Server `serve stop` hardened for clean shutdown; API auth edge cases resolved
 
 ### Changed
 

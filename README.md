@@ -168,13 +168,13 @@ generate → compare → review → mark → thumb
 
 Profiles define what to check for a given name:
 
-| Profile     | Domains                             | Registries       | Handles |
-| ----------- | ----------------------------------- | ---------------- | ------- |
-| `startup`   | .com, .io, .dev, .app               | npm, pypi        | github  |
+| Profile     | Domains                                | Registries       | Handles |
+| ----------- | -------------------------------------- | ---------------- | ------- |
+| `startup`   | .com, .io, .dev, .app                  | npm, pypi        | github  |
 | `developer` | .com, .io, .dev, .app, .sh, .org, .net | npm, pypi, cargo | github  |
-| `minimal`   | .com                                | -                | -       |
-| `website`   | .com, .org, .net                    | -                | -       |
-| `web3`      | .xyz, .io, .gg                      | npm              | github  |
+| `minimal`   | .com                                   | -                | -       |
+| `website`   | .com, .org, .net                       | -                | -       |
+| `web3`      | .xyz, .io, .gg                         | npm              | github  |
 
 ## Configuration
 
@@ -201,8 +201,8 @@ Copy `.env.example` to `.env` for local development. The server auto-loads
 `.env` from the XDG config directory and the current working directory, or you
 can specify a file explicitly with `namelens serve --env-file path/to/.env`.
 
-See [docs/user-guide/configuration.md](docs/user-guide/configuration.md) for
-the full configuration reference.
+See [docs/user-guide/configuration.md](docs/user-guide/configuration.md) for the
+full configuration reference.
 
 ## Why Namelens?
 

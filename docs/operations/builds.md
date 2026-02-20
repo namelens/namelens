@@ -13,7 +13,8 @@ NameLens depends on `go-libsql`, which requires CGO and a glibc-based runtime.
 NameLens uses Rust FFI libraries (via CGO). To avoid Rust static library symbol
 collisions, builds and tests should use the shared-library mode for sysprims.
 
-- **Use the Make targets**: `make test`, `make check`, `make build` (these set the correct tags).
+- **Use the Make targets**: `make test`, `make check`, `make build` (these set
+  the correct tags).
 - **If running Go directly**, include: `-tags sysprims_shared`
 
 Examples:

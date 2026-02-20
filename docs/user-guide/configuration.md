@@ -7,12 +7,12 @@ Workhorse Standard.
 
 Configuration is merged in order of precedence (lowest to highest):
 
-| Layer | Source      | Description                                     |
-| ----- | ----------- | ----------------------------------------------- |
-| 1     | Defaults    | `config/namelens/v0/namelens-defaults.yaml`     |
-| 2     | User Config | Platform-specific config file (see paths below) |
-| 3     | `.env` File | Auto-loaded or specified with `--env-file`      |
-| 4     | Environment | `NAMELENS_*` environment variables              |
+| Layer | Source      | Description                                      |
+| ----- | ----------- | ------------------------------------------------ |
+| 1     | Defaults    | `config/namelens/v0/namelens-defaults.yaml`      |
+| 2     | User Config | Platform-specific config file (see paths below)  |
+| 3     | `.env` File | Auto-loaded or specified with `--env-file`       |
+| 4     | Environment | `NAMELENS_*` environment variables               |
 | 5     | CLI Flags   | Command-line flags (`--port`, `--verbose`, etc.) |
 
 Higher layers override lower layers. CLI flags and explicit environment
@@ -170,13 +170,13 @@ All configuration can be overridden via environment variables with the
 
 ### Server Configuration
 
-| Variable                            | Default     | Description                     |
-| ----------------------------------- | ----------- | ------------------------------- |
-| `NAMELENS_HOST`                     | `localhost` | Server bind address             |
-| `NAMELENS_PORT`                     | `8080`      | Server port                     |
-| `NAMELENS_READ_TIMEOUT`             | `30s`       | HTTP read timeout               |
-| `NAMELENS_WRITE_TIMEOUT`            | `30s`       | HTTP write timeout              |
-| `NAMELENS_CONTROL_PLANE_API_KEY`    |             | API key for `/v1/*` endpoints   |
+| Variable                         | Default     | Description                   |
+| -------------------------------- | ----------- | ----------------------------- |
+| `NAMELENS_HOST`                  | `localhost` | Server bind address           |
+| `NAMELENS_PORT`                  | `8080`      | Server port                   |
+| `NAMELENS_READ_TIMEOUT`          | `30s`       | HTTP read timeout             |
+| `NAMELENS_WRITE_TIMEOUT`         | `30s`       | HTTP write timeout            |
+| `NAMELENS_CONTROL_PLANE_API_KEY` |             | API key for `/v1/*` endpoints |
 
 > **Security note**: When no API key is configured, the control plane API allows
 > all requests from localhost. Configure a key when exposing the server beyond
@@ -224,13 +224,13 @@ Important terminology note:
 
 #### Provider Recommendations
 
-| Use Case                      | Recommended Provider | Reason                                         |
-| ----------------------------- | -------------------- | ---------------------------------------------- |
-| Expert search (`--expert`)    | xAI (Grok)           | Real-time web intelligence via live search     |
-| Phonetics (`--phonetics`)     | Any                  | All three produce comparable results           |
+| Use Case                      | Recommended Provider | Reason                                             |
+| ----------------------------- | -------------------- | -------------------------------------------------- |
+| Expert search (`--expert`)    | xAI (Grok)           | Real-time web intelligence via live search         |
+| Phonetics (`--phonetics`)     | Any                  | All three produce comparable results               |
 | Suitability (`--suitability`) | xAI or Anthropic     | xAI catches more via web; Anthropic reasons deeply |
-| Generate (`generate`)         | Anthropic or OpenAI  | Anthropic for depth; OpenAI for speed          |
-| Review (`review`)             | Any                  | Works on all providers                         |
+| Generate (`generate`)         | Anthropic or OpenAI  | Anthropic for depth; OpenAI for speed              |
+| Review (`review`)             | Any                  | Works on all providers                             |
 
 **Key differences:** xAI/Grok has built-in web search capabilities for real-time
 internet intelligence. Anthropic excels at structured reasoning and conflict
