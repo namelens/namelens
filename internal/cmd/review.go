@@ -254,6 +254,8 @@ func init() {
 	reviewCmd.Flags().String("include-raw", string(includeRawOnFail), "Include raw analysis output: never, on-failure, always")
 	reviewCmd.Flags().Bool("strict", false, "Return non-zero if any analysis fails")
 	reviewCmd.Flags().Bool("no-cache", false, "Skip cache lookup")
+	reviewCmd.Flags().String("locales", "", "Comma-separated locales for phonetics analysis (passed to name-phonetics prompt)")
+	reviewCmd.Flags().String("keyboards", "", "Comma-separated keyboard layouts for phonetics analysis (passed to name-phonetics prompt)")
 }
 
 func runReview(cmd *cobra.Command, args []string) error {
@@ -287,6 +289,14 @@ func runReview(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	noCache, err := cmd.Flags().GetBool("no-cache")
+	if err != nil {
+		return err
+	}
+	locales, err := cmd.Flags().GetString("locales")
+	if err != nil {
+		return err
+	}
+	keyboards, err := cmd.Flags().GetString("keyboards")
 	if err != nil {
 		return err
 	}
@@ -387,7 +397,7 @@ func runReview(cmd *cobra.Command, args []string) error {
 				}
 				analyses[slug] = a
 			case "name-phonetics":
-				vars := map[string]string{"name": name}
+				vars := reviewPhoneticsVariables(name, locales, keyboards)
 				phoneticsResult, phoneticsError, raw := runReviewGenerate(ctx, cfg, store, slug, name, depth, "", vars, !noCache)
 				analyses[slug] = analysisFromGenerate(phoneticsResult, phoneticsError, raw, rawMode)
 			case "name-suitability":
@@ -753,4 +763,18 @@ func extractSummary(payload json.RawMessage) string {
 		return strings.TrimSpace(v)
 	}
 	return ""
+}
+
+func reviewPhoneticsVariables(name, locales, keyboards string) map[string]string {
+	vars := map[string]string{"name": name}
+
+	if trimmed := strings.TrimSpace(locales); trimmed != "" {
+		vars["locales"] = trimmed
+	}
+
+	if trimmed := strings.TrimSpace(keyboards); trimmed != "" {
+		vars["keyboards"] = trimmed
+	}
+
+	return vars
 }

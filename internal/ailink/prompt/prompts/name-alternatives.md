@@ -2,9 +2,9 @@
 slug: name-alternatives
 name: Name Alternatives Generator
 description: Generate alternative naming candidates for a product based on concept and constraints
-version: 1.2.0
+version: 1.3.0
 author: namelens
-updated: 2026-02-01
+updated: 2026-02-20
 input:
   required_variables:
     - concept
@@ -22,8 +22,8 @@ provider_hints:
     - grok-4-1-fast-reasoning
   supports_tools: false
 depth_variants:
-  quick: "Generate 5 naming alternatives for: {{concept}}"
-  deep: "Generate 10+ naming alternatives with diverse strategies for: {{concept}}"
+  quick: "Generate exactly 5 naming alternatives for: {{concept}}. Prioritize practical, directly descriptive names and keep conflict notes brief."
+  deep: "Generate 12 naming alternatives for: {{concept}} with explicitly varied strategy coverage. Include at least 2 uncorrelated/abstract names, at least 2 cross-language or non-English-root coinages, and at least 4 distinct naming strategies overall. Provide stronger conflict pre-screening notes for each candidate."
 response_schema:
   $ref: "ailink/v0/name-alternatives-response"
 ---

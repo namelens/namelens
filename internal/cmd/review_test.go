@@ -189,3 +189,48 @@ func TestPromptSupportsNameOnly(t *testing.T) {
 		})
 	}
 }
+
+func TestReviewPhoneticsVariables(t *testing.T) {
+	tests := []struct {
+		name      string
+		locales   string
+		keyboards string
+		expected  map[string]string
+	}{
+		{
+			name:      "only name when optional empty",
+			locales:   "",
+			keyboards: "",
+			expected: map[string]string{
+				"name": "voxforge",
+			},
+		},
+		{
+			name:      "includes locales and keyboards",
+			locales:   "en-US,de-DE,ja-JP",
+			keyboards: "QWERTY-US,JIS",
+			expected: map[string]string{
+				"name":      "voxforge",
+				"locales":   "en-US,de-DE,ja-JP",
+				"keyboards": "QWERTY-US,JIS",
+			},
+		},
+		{
+			name:      "trims whitespace",
+			locales:   "  en-US,fr-FR  ",
+			keyboards: "  AZERTY-FR  ",
+			expected: map[string]string{
+				"name":      "voxforge",
+				"locales":   "en-US,fr-FR",
+				"keyboards": "AZERTY-FR",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			vars := reviewPhoneticsVariables("voxforge", tt.locales, tt.keyboards)
+			require.Equal(t, tt.expected, vars)
+		})
+	}
+}
