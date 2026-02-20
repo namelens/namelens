@@ -38,9 +38,9 @@ var checkCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(checkCmd)
 
-	checkCmd.Flags().StringSlice("tlds", []string{"com"}, "TLDs to check")
-	checkCmd.Flags().StringSlice("registries", nil, "Registries to check (npm, pypi, cargo)")
-	checkCmd.Flags().StringSlice("handles", nil, "Handles to check (github)")
+	checkCmd.Flags().StringSlice("tlds", []string{"com", "dev", "io", "app"}, "TLDs to check")
+	checkCmd.Flags().StringSlice("registries", []string{"npm", "pypi", "cargo"}, "Registries to check (npm, pypi, cargo)")
+	checkCmd.Flags().StringSlice("handles", []string{"github"}, "Handles to check (github)")
 	checkCmd.Flags().String("profile", "", "Use predefined profile")
 	checkCmd.Flags().String("names-file", "", "Read names from file (one per line) or '-' for stdin")
 	checkCmd.Flags().String("output-format", "table", "Output format: table, json, markdown")

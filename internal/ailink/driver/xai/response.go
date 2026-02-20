@@ -2,11 +2,27 @@ package xai
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/namelens/namelens/internal/ailink/content"
 	"github.com/namelens/namelens/internal/ailink/driver"
 )
+
+var (
+	grokRenderRE   = regexp.MustCompile(`(?s)<grok:render[^>]*>.*?</grok:render>`)
+	grokArgumentRE = regexp.MustCompile(`(?s)<argument[^>]*>.*?</argument>`)
+)
+
+// stripGrokMarkup removes xAI-internal citation markup tags from response text.
+// Grok embeds <grok:render type="render_inline_citation"> and <argument> tags in
+// web-search responses; these are internal chain-of-thought artifacts that must
+// not reach the caller.
+func stripGrokMarkup(text string) string {
+	text = grokRenderRE.ReplaceAllString(text, "")
+	text = grokArgumentRE.ReplaceAllString(text, "")
+	return text
+}
 
 // chatCompletionResponse is for the legacy /v1/chat/completions endpoint.
 type chatCompletionResponse struct {
@@ -119,16 +135,16 @@ func toDriverResponseFromResponses(resp *responsesAPIResponse) (*driver.Response
 			// Extract text from nested content array
 			for _, c := range item.Content {
 				if c.Type == "output_text" && c.Text != "" {
-					textParts = append(textParts, c.Text)
+					textParts = append(textParts, stripGrokMarkup(c.Text))
 				}
 			}
 			// Fallback to direct text field
 			if item.Text != "" {
-				textParts = append(textParts, item.Text)
+				textParts = append(textParts, stripGrokMarkup(item.Text))
 			}
 		case "text":
 			if item.Text != "" {
-				textParts = append(textParts, item.Text)
+				textParts = append(textParts, stripGrokMarkup(item.Text))
 			}
 		}
 	}

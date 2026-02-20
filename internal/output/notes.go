@@ -11,12 +11,13 @@ func expertRow(result *core.BatchResult) (string, string, string, string, bool) 
 	if result == nil {
 		return "", "", "", "", false
 	}
+	name := strings.TrimSpace(result.Name)
 	if result.AILinkError != nil {
 		notes := result.AILinkError.Message
 		if strings.TrimSpace(notes) == "" {
 			notes = result.AILinkError.Details
 		}
-		return "expert", "ailink", "error", notes, true
+		return "expert", name, "error", notes, true
 	}
 	if result.AILink == nil {
 		return "", "", "", "", false
@@ -36,7 +37,7 @@ func expertRow(result *core.BatchResult) (string, string, string, string, bool) 
 		}
 	}
 
-	return "expert", "ailink", status, notes, true
+	return "expert", name, status, notes, true
 }
 
 func displayName(result *core.CheckResult) string {
