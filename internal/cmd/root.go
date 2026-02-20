@@ -64,6 +64,9 @@ Use the subcommands to perform specific operations.`,
 func Execute() error {
 	// Ensure tracing is properly closed when command completes
 	defer driver.DisableTracing()
+	defer func() {
+		_ = config.CleanupStandaloneAssets()
+	}()
 	return rootCmd.Execute()
 }
 

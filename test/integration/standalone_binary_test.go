@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -9,7 +10,7 @@ import (
 	"testing"
 )
 
-func TestStandaloneBinaryVersionAndHelpWorkOutsideRepo(t *testing.T) {
+func TestStandaloneBinaryVersionAndCommandsWorkOutsideRepo(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("standalone binary copy/exec test is unix-focused")
 	}
@@ -23,10 +24,20 @@ func TestStandaloneBinaryVersionAndHelpWorkOutsideRepo(t *testing.T) {
 	}
 	repoRoot := filepath.Dir(goModPath)
 
+	versionBytes, err := os.ReadFile(filepath.Join(repoRoot, "VERSION"))
+	if err != nil {
+		t.Fatalf("read VERSION: %v", err)
+	}
+	expectedVersion := strings.TrimSpace(string(versionBytes))
+	if expectedVersion == "" {
+		t.Fatal("VERSION file is empty")
+	}
+
 	buildDir := t.TempDir()
 	binaryPath := filepath.Join(buildDir, "namelens")
 
-	build := exec.Command("go", "build", "-tags", "sysprims_shared", "-o", binaryPath, "./cmd/namelens")
+	ldflags := fmt.Sprintf("-X main.version=%s -X main.commit=integration-test -X main.buildDate=integration-test", expectedVersion)
+	build := exec.Command("go", "build", "-tags", "sysprims_shared", "-ldflags", ldflags, "-o", binaryPath, "./cmd/namelens")
 	build.Dir = repoRoot
 	build.Env = os.Environ()
 	if out, err := build.CombinedOutput(); err != nil {
@@ -45,15 +56,35 @@ func TestStandaloneBinaryVersionAndHelpWorkOutsideRepo(t *testing.T) {
 		t.Fatalf("write copied binary: %v", err)
 	}
 
+	cmdEnv := append(os.Environ(),
+		"HOME="+outside,
+		"XDG_CONFIG_HOME="+filepath.Join(outside, "xdg-config"),
+		"XDG_CACHE_HOME="+filepath.Join(outside, "xdg-cache"),
+		"XDG_DATA_HOME="+filepath.Join(outside, "xdg-data"),
+	)
+
 	version := exec.Command(copiedBinary, "version")
 	version.Dir = outside
-	if out, err := version.CombinedOutput(); err != nil {
-		t.Fatalf("version failed: %v\n%s", err, string(out))
+	version.Env = cmdEnv
+	versionOut, err := version.CombinedOutput()
+	if err != nil {
+		t.Fatalf("version failed: %v\n%s", err, string(versionOut))
+	}
+	if strings.Contains(string(versionOut), " dev") {
+		t.Fatalf("version output should not fall back to dev: %s", string(versionOut))
+	}
+	if !strings.Contains(string(versionOut), "namelens "+expectedVersion) {
+		t.Fatalf("version output mismatch, expected %q in %q", "namelens "+expectedVersion, strings.TrimSpace(string(versionOut)))
 	}
 
-	help := exec.Command(copiedBinary, "--help")
-	help.Dir = outside
-	if out, err := help.CombinedOutput(); err != nil {
-		t.Fatalf("--help failed: %v\n%s", err, string(out))
+	envInfo := exec.Command(copiedBinary, "envinfo")
+	envInfo.Dir = outside
+	envInfo.Env = cmdEnv
+	envInfoOut, err := envInfo.CombinedOutput()
+	if err != nil {
+		t.Fatalf("envinfo failed: %v\n%s", err, string(envInfoOut))
+	}
+	if strings.Contains(string(envInfoOut), "Config load failed") {
+		t.Fatalf("envinfo indicates config loading failed outside repo: %s", string(envInfoOut))
 	}
 }

@@ -1,7 +1,7 @@
 # NameLens Makefile
 # Follows 3leaps/crucible makefile-minimum standard
 
-.PHONY: all help bootstrap check fmt fmt-check lint check-prompts test test-cov build build-all clean run version install
+.PHONY: all help bootstrap check fmt fmt-check lint check-prompts test test-cov test-standalone-binary build build-all clean run version install
 .PHONY: precommit prepush dependencies licenses
 .PHONY: version-set version-bump version-bump-major version-bump-minor version-bump-patch
 .PHONY: release-clean release-download release-checksums release-verify-checksums
@@ -9,6 +9,7 @@
 .PHONY: release-upload release-upload-provenance release-upload-all release-build
 .PHONY: release-guard-tag-version
 .PHONY: api-lint api-generate check-api
+.PHONY: sync-embedded-config verify-embedded-config
 
 # Binary and version information
 BINARY_NAME := namelens
@@ -151,6 +152,11 @@ test: ## Run tests
 	@$(GOTEST) -tags sysprims_shared ./... -v
 	@echo "Tests complete"
 
+test-standalone-binary: ## Run standalone binary integration test
+	@echo "Running standalone binary integration test..."
+	@$(GOTEST) -tags sysprims_shared ./test/integration -run TestStandaloneBinaryVersionAndCommandsWorkOutsideRepo -v
+	@echo "Standalone binary integration test complete"
+
 build: ## Build binary
 	@echo "Building $(BINARY_NAME) v$(VERSION)..."
 	@mkdir -p bin
@@ -238,7 +244,21 @@ precommit: ## Pre-commit checks (format, lint, security - fail on CRITICAL)
 	@goneat format; goneat assess --check --categories format,lint,security --fail-on critical --format concise
 	@echo "Pre-commit checks passed"
 
-prepush: ## Pre-push checks (format, lint, security - fail on HIGH)
+sync-embedded-config: ## Sync embedded config/schema assets from source of truth
+	@mkdir -p internal/config/embedded/namelens/v0
+	@mkdir -p internal/config/embedded/schemas/namelens/v0
+	@cp config/namelens/v0/namelens-defaults.yaml internal/config/embedded/namelens/v0/namelens-defaults.yaml
+	@cp schemas/namelens/v0/config.schema.json internal/config/embedded/schemas/namelens/v0/config.schema.json
+	@echo "✅ Embedded config assets synced"
+
+verify-embedded-config: ## Verify embedded config/schema assets are in sync
+	@cmp -s config/namelens/v0/namelens-defaults.yaml internal/config/embedded/namelens/v0/namelens-defaults.yaml || \
+		(echo "❌ Embedded defaults drifted; run 'make sync-embedded-config'" && exit 1)
+	@cmp -s schemas/namelens/v0/config.schema.json internal/config/embedded/schemas/namelens/v0/config.schema.json || \
+		(echo "❌ Embedded schema drifted; run 'make sync-embedded-config'" && exit 1)
+	@echo "✅ Embedded config assets verified"
+
+prepush: verify-embedded-config test-standalone-binary ## Pre-push checks (format, lint, security - fail on HIGH)
 	@echo "Running pre-push checks..."
 	@if ! command -v goneat >/dev/null 2>&1; then \
 		echo "[!!] goneat not found (run 'make bootstrap')"; \

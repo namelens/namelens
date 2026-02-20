@@ -116,18 +116,19 @@ func Load(ctx context.Context, runtimeOverrides ...map[string]any) (*Config, err
 		appIdentity = identity
 	}
 
-	// Find project root for absolute paths
-	// This ensures config loading works from any working directory (including tests)
-	projectRoot, err := findProjectRoot()
+	// Resolve root for config defaults/schema assets.
+	// Prefer repository assets when running in-tree; fall back to embedded assets
+	// when running a standalone binary outside a repository.
+	assetRoot, err := resolveConfigAssetRoot()
 	if err != nil {
-		return nil, fmt.Errorf("failed to find project root: %w", err)
+		return nil, fmt.Errorf("failed to resolve config assets: %w", err)
 	}
 
 	// Build layered config options
 	// NameLens uses its own schema located in schemas/namelens/
 	// Defaults are in config/namelens/v0/namelens-defaults.yaml
 	// Using absolute paths ensures this works from any working directory
-	catalog := schema.NewCatalog(filepath.Join(projectRoot, "schemas"))
+	catalog := schema.NewCatalog(filepath.Join(assetRoot, "schemas"))
 	opts := gfconfig.LayeredConfigOptions{
 		Category:     "namelens",
 		Version:      "v0",
@@ -135,7 +136,7 @@ func Load(ctx context.Context, runtimeOverrides ...map[string]any) (*Config, err
 		SchemaID:     "namelens/v0/config",
 		UserPaths:    getUserConfigPaths(),
 		Catalog:      catalog,
-		DefaultsRoot: filepath.Join(projectRoot, "config"), // Absolute path for Layer 2 template
+		DefaultsRoot: filepath.Join(assetRoot, "config"), // Absolute path for Layer 1 defaults
 	}
 
 	// Load environment variable overrides
@@ -391,6 +392,20 @@ func applyAILinkDynamicEnvOverrides(prefix string, envOverrides map[string]any) 
 			applyAILinkRoutingOverride(envOverrides, key[len(routingPrefix):], value)
 		}
 	}
+}
+
+func resolveConfigAssetRoot() (string, error) {
+	projectRoot, err := findProjectRoot()
+	if err == nil {
+		return projectRoot, nil
+	}
+
+	fallbackRoot, fallbackErr := standaloneAssetsRoot()
+	if fallbackErr != nil {
+		return "", fmt.Errorf("project root lookup failed: %w; embedded fallback failed: %w", err, fallbackErr)
+	}
+
+	return fallbackRoot, nil
 }
 
 func applyAILinkRoutingOverride(envOverrides map[string]any, rawRole string, providerID string) {
