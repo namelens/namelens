@@ -137,7 +137,7 @@ ailink:
       ai_provider: anthropic
       base_url: https://api.anthropic.com/v1
       models:
-        default: claude-sonnet-4-5-20250929
+        default: claude-sonnet-4-6
       credentials:
         - label: default
           priority: 0
@@ -247,7 +247,7 @@ NAMELENS_AILINK_PROVIDERS_NAMELENS_OPENAI_CREDENTIALS_0_API_KEY=sk-your-key
 
 # Model tiers (recommended)
 NAMELENS_AILINK_PROVIDERS_NAMELENS_OPENAI_MODELS_DEFAULT=gpt-4o
-NAMELENS_AILINK_PROVIDERS_NAMELENS_OPENAI_MODELS_REASONING=gpt-5.1
+NAMELENS_AILINK_PROVIDERS_NAMELENS_OPENAI_MODELS_REASONING=o3
 NAMELENS_AILINK_PROVIDERS_NAMELENS_OPENAI_MODELS_FAST=gpt-4o-mini
 
 # To use OpenAI as default provider
@@ -264,7 +264,7 @@ NAMELENS_AILINK_PROVIDERS_NAMELENS_ANTHROPIC_BASE_URL=https://api.anthropic.com/
 NAMELENS_AILINK_PROVIDERS_NAMELENS_ANTHROPIC_CREDENTIALS_0_API_KEY=sk-ant-your-key
 
 # Model configuration
-NAMELENS_AILINK_PROVIDERS_NAMELENS_ANTHROPIC_MODELS_DEFAULT=claude-sonnet-4-5-20250929
+NAMELENS_AILINK_PROVIDERS_NAMELENS_ANTHROPIC_MODELS_DEFAULT=claude-sonnet-4-6
 
 # To use Anthropic as default provider
 NAMELENS_AILINK_DEFAULT_PROVIDER=namelens-anthropic
@@ -277,7 +277,7 @@ NameLens supports model tiers for different workloads:
 | Tier        | OpenAI Model | xAI Model               | Used When                     |
 | ----------- | ------------ | ----------------------- | ----------------------------- |
 | `default`   | gpt-4o       | grok-4-1-fast-reasoning | Most prompts, `--depth=quick` |
-| `reasoning` | gpt-5.1      | -                       | Deep analysis, `--depth=deep` |
+| `reasoning` | o3           | -                       | Deep analysis, `--depth=deep` |
 | `fast`      | gpt-4o-mini  | -                       | Quick triage, `--depth=fast`  |
 
 **Note:** For fast tier, use `gpt-4o-mini`. Smaller models like `gpt-5-mini` may

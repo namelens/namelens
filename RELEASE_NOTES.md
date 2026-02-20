@@ -3,6 +3,37 @@
 This file keeps notes for the latest three releases in reverse chronological
 order.
 
+## v0.2.2 (2026-02-20)
+
+Model refresh: updated Anthropic and OpenAI model tiers to current releases.
+
+Highlights:
+
+- **Anthropic models updated**: Default and reasoning tiers now use
+  `claude-sonnet-4-6`; fast tier updated to `claude-haiku-4-5-20251001`
+- **OpenAI reasoning tier added**: `o3` configured as the `reasoning` model
+  for `--depth=deep` workloads — OpenAI's dedicated reasoning model delivers
+  significantly higher quality for deep brand analysis
+
+### Model Updates
+
+| Provider  | Tier        | Before                     | After                    |
+| --------- | ----------- | -------------------------- | ------------------------ |
+| Anthropic | `default`   | claude-sonnet-4-5-20250929 | claude-sonnet-4-6        |
+| Anthropic | `reasoning` | claude-sonnet-4-5-20250929 | claude-sonnet-4-6        |
+| Anthropic | `fast`      | claude-3-5-haiku-20241022  | claude-haiku-4-5-20251001 |
+| OpenAI    | `reasoning` | (not set)                  | o3                       |
+
+To update an existing config, re-run the setup wizard or edit
+`~/.config/namelens/config.yaml` directly.
+
+### Upgrade Notes
+
+No breaking changes. Existing configs with the old model names remain valid —
+the models are still available from Anthropic. Update at your convenience.
+
+---
+
 ## v0.2.1 (2026-02-14)
 
 Agent-ready deployment: headless server API, guided setup, and safety
@@ -385,62 +416,3 @@ valid.
 | 10 names + expert       | ~300s  | ~60s     | 5x faster   |
 | AI API calls (10 names) | 10     | 1        | 10x fewer   |
 | Domain check throughput | serial | parallel | 3-5x faster |
-
-## v0.1.3 (2026-01-14)
-
-Candidate comparison and Rust ecosystem support.
-
-Highlights:
-
-- **Compare command**: New `namelens compare` for side-by-side candidate
-  screening with availability, risk, phonetics, and suitability scores
-- **Cargo/crates.io checker**: Rust crate availability now included in registry
-  checks
-- **Review quick mode**: New `--mode=quick` flag for fast screening workflows
-- **Improved reliability**: .app/.dev domains now route via Google RDAP
-
-### Compare Command
-
-Screen 2-10 candidates before running expensive brand analysis:
-
-```bash
-# Quick availability screening
-namelens compare fulgate agentanvil toolcrux --mode=quick
-
-# Full analysis with phonetics and suitability
-namelens compare fulgate toolcrux
-
-# Export for stakeholders
-namelens compare alpha beta gamma --output-format=markdown --out comparison.md
-```
-
-Output:
-
-```
-╭──────────┬──────────────┬──────┬───────────┬─────────────┬────────╮
-│ NAME     │ AVAILABILITY │ RISK │ PHONETICS │ SUITABILITY │ LENGTH │
-├──────────┼──────────────┼──────┼───────────┼─────────────┼────────┤
-│ fulgate  │ 7/7          │ low  │ 83        │ 95          │      7 │
-│ toolcrux │ 7/7          │ low  │ 81        │ 95          │      8 │
-╰──────────┴──────────────┴──────┴───────────┴─────────────┴────────╯
-```
-
-### Cargo/crates.io Support
-
-Check Rust crate availability:
-
-```bash
-# Check specific registry
-namelens check mycrate --registries=cargo
-
-# Developer profile now includes cargo
-namelens check myproject --profile=developer
-```
-
-### Review Quick Mode
-
-Fast screening without full brand analysis:
-
-```bash
-namelens review myproject --mode=quick
-```

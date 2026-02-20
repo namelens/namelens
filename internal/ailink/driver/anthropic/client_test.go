@@ -317,7 +317,7 @@ func TestClientStripsMarkdownFencesFromResponse(t *testing.T) {
 			"type": "message",
 			"role": "assistant",
 			"content": [{"type": "text", "text": "` + "```json\\n{\\\"name\\\": \\\"test\\\"}\\n```" + `"}],
-			"model": "claude-sonnet-4-5-20250929",
+			"model": "claude-sonnet-4-6",
 			"stop_reason": "end_turn"
 		}`))
 	}))
@@ -327,7 +327,7 @@ func TestClientStripsMarkdownFencesFromResponse(t *testing.T) {
 	client.HTTPClient = server.Client()
 
 	resp, err := client.Complete(context.Background(), &driver.Request{
-		Model: "claude-sonnet-4-5-20250929",
+		Model: "claude-sonnet-4-6",
 		Messages: []content.Message{
 			{Role: "user", Content: []content.ContentBlock{{Type: content.ContentTypeText, Text: "hi"}}},
 		},

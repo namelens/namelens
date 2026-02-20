@@ -356,7 +356,7 @@ func TestWriteSetupConfig_ExpertEnabled(t *testing.T) {
 		InstanceID:   "namelens-anthropic",
 		AIProvider:   "anthropic",
 		BaseURL:      "https://api.anthropic.com/v1",
-		DefaultModel: "claude-sonnet-4-5-20250929",
+		DefaultModel: "claude-sonnet-4-6",
 	}
 
 	err := writeSetupConfig(path, provider, "sk-ant-key")

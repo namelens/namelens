@@ -292,8 +292,8 @@ namelens check myproject --expert --output-format=json
 | Provider    | Base URL                        | Models                               | Best For                                  |
 | ----------- | ------------------------------- | ------------------------------------ | ----------------------------------------- |
 | x.ai (Grok) | `https://api.x.ai/v1`           | `grok-4-1-fast-reasoning`, `grok-4`  | Expert search (web intelligence)          |
-| Anthropic   | `https://api.anthropic.com/v1`  | `claude-sonnet-4-5-20250929`         | Deep analysis, conflict-aware generation  |
-| OpenAI      | `https://api.openai.com/v1`     | `gpt-4o`, `gpt-5.1`, `gpt-4o-mini`  | Structured analysis (generate, phonetics) |
+| Anthropic   | `https://api.anthropic.com/v1`  | `claude-sonnet-4-6`                  | Deep analysis, conflict-aware generation  |
+| OpenAI      | `https://api.openai.com/v1`     | `gpt-4o`, `o3`, `gpt-4o-mini`       | Structured analysis (generate, phonetics) |
 
 The xAI driver uses OpenAI-compatible API format with x.ai's `search_parameters`
 extension for live web search. The Anthropic driver uses the native Messages API.
@@ -470,8 +470,8 @@ permissions.
 The model name may be incorrect or unsupported. Check the model configuration:
 
 - xAI: `grok-4-1-fast-reasoning`
-- Anthropic: `claude-sonnet-4-5-20250929`
-- OpenAI: `gpt-4o`, `gpt-5.1`, `gpt-4o-mini`
+- Anthropic: `claude-sonnet-4-6`
+- OpenAI: `gpt-4o`, `o3`, `gpt-4o-mini`
 
 ### Slow response times
 

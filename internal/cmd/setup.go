@@ -61,7 +61,7 @@ var providerTable = []providerInfo{
 		InstanceID:   "namelens-anthropic",
 		AIProvider:   "anthropic",
 		BaseURL:      "https://api.anthropic.com/v1",
-		DefaultModel: "claude-sonnet-4-5-20250929",
+		DefaultModel: "claude-sonnet-4-6",
 		AuthHeader:   "x-api-key",
 		TestEndpoint: false,
 	},
