@@ -25,6 +25,7 @@ const (
 const (
 	CheckRequestProfileDeveloper CheckRequestProfile = "developer"
 	CheckRequestProfileMinimal   CheckRequestProfile = "minimal"
+	CheckRequestProfileOss       CheckRequestProfile = "oss"
 	CheckRequestProfileStartup   CheckRequestProfile = "startup"
 	CheckRequestProfileWeb3      CheckRequestProfile = "web3"
 	CheckRequestProfileWebsite   CheckRequestProfile = "website"
@@ -72,6 +73,7 @@ const (
 const (
 	CompareRequestProfileDeveloper CompareRequestProfile = "developer"
 	CompareRequestProfileMinimal   CompareRequestProfile = "minimal"
+	CompareRequestProfileOss       CompareRequestProfile = "oss"
 	CompareRequestProfileStartup   CompareRequestProfile = "startup"
 	CompareRequestProfileWeb3      CompareRequestProfile = "web3"
 	CompareRequestProfileWebsite   CompareRequestProfile = "website"

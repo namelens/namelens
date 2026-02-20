@@ -295,7 +295,7 @@ components:
           example: acmecorp
         profile:
           type: string
-          enum: [startup, developer, minimal, website, web3]
+          enum: [startup, developer, oss, minimal, website, web3]
           description: Predefined check profile to use
         expert:
           type: boolean
@@ -437,7 +437,7 @@ components:
           description: Names to compare
         profile:
           type: string
-          enum: [startup, developer, minimal, website, web3]
+          enum: [startup, developer, oss, minimal, website, web3]
           description: Check profile to use
         expert:
           type: boolean

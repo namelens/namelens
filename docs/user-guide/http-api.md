@@ -80,9 +80,9 @@ localhost.
 
 > **v0.2.1 security model**: The current authentication is designed for
 > localhost and trusted-network deployments. It provides a shared API key via
-> the `X-API-Key` header. It does not yet support per-user keys, OAuth, mTLS,
-> or automatic key rotation. For public-facing deployments, always place
-> namelens behind a reverse proxy with its own TLS and authentication layer.
+> the `X-API-Key` header. It does not yet support per-user keys, OAuth, mTLS, or
+> automatic key rotation. For public-facing deployments, always place namelens
+> behind a reverse proxy with its own TLS and authentication layer.
 
 ### Generating an API Key
 
@@ -244,14 +244,14 @@ Check availability of a name across domains, registries, and handles.
 }
 ```
 
-| Field        | Type     | Required | Description                                        |
-| ------------ | -------- | -------- | -------------------------------------------------- |
-| `name`       | string   | Yes      | Name to check (1-63 chars)                         |
-| `profile`    | string   | No       | Profile: startup, developer, minimal, website, web3 |
-| `expert`     | boolean  | No       | Enable AI brand safety analysis                    |
-| `tlds`       | string[] | No       | Custom TLDs (overrides profile)                    |
-| `registries` | string[] | No       | Custom registries: npm, pypi, cargo                |
-| `handles`    | string[] | No       | Custom handles: github                             |
+| Field        | Type     | Required | Description                                              |
+| ------------ | -------- | -------- | -------------------------------------------------------- |
+| `name`       | string   | Yes      | Name to check (1-63 chars)                               |
+| `profile`    | string   | No       | Profile: startup, developer, oss, minimal, website, web3 |
+| `expert`     | boolean  | No       | Enable AI brand safety analysis                          |
+| `tlds`       | string[] | No       | Custom TLDs (overrides profile)                          |
+| `registries` | string[] | No       | Custom registries: npm, pypi, cargo                      |
+| `handles`    | string[] | No       | Custom handles: github                                   |
 
 **Response** (200 OK):
 

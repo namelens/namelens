@@ -43,6 +43,13 @@ var BuiltInProfiles = []Profile{
 		Handles:     []string{"github"},
 	},
 	{
+		Name:        "oss",
+		Description: "Open-source project naming with registries and handles only",
+		TLDs:        []string{},
+		Registries:  []string{"npm", "pypi", "cargo"},
+		Handles:     []string{"github"},
+	},
+	{
 		Name:        "website",
 		Description: "Traditional website domains for general web presence",
 		TLDs:        []string{"com", "org", "net"},
@@ -66,6 +73,9 @@ func FindBuiltInProfile(name string) (*Profile, bool) {
 	for _, profile := range BuiltInProfiles {
 		if strings.EqualFold(profile.Name, needle) {
 			copied := profile
+			copied.TLDs = append([]string(nil), profile.TLDs...)
+			copied.Registries = append([]string(nil), profile.Registries...)
+			copied.Handles = append([]string(nil), profile.Handles...)
 			return &copied, true
 		}
 	}
