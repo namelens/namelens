@@ -587,6 +587,7 @@ func buildOrchestrator(cfg *config.Config, store *store.Store, useCache bool) *e
 }
 
 func summarizeResults(name string, results []*core.CheckResult, expert *ailink.SearchResponse, expertErr *ailink.SearchError, phonetics json.RawMessage, phoneticsErr *ailink.SearchError, suitability json.RawMessage, suitabilityErr *ailink.SearchError) *core.BatchResult {
+	canonicalName := canonicalBatchName(name, results)
 	total := 0
 	score := 0
 	unknown := 0
@@ -606,7 +607,7 @@ func summarizeResults(name string, results []*core.CheckResult, expert *ailink.S
 	}
 
 	return &core.BatchResult{
-		Name:             name,
+		Name:             canonicalName,
 		Results:          results,
 		Score:            score,
 		Total:            total,
@@ -619,6 +620,88 @@ func summarizeResults(name string, results []*core.CheckResult, expert *ailink.S
 		Suitability:      suitability,
 		SuitabilityError: suitabilityErr,
 	}
+}
+
+func canonicalBatchName(name string, results []*core.CheckResult) string {
+	normalized := strings.ToLower(strings.TrimSpace(name))
+	inferred := inferredBatchName(results)
+
+	switch {
+	case normalized == "":
+		return inferred
+	case inferred == "":
+		return normalized
+	case normalized == inferred:
+		return normalized
+	case batchNameAppearsInResults(normalized, results):
+		return normalized
+	default:
+		return inferred
+	}
+}
+
+func batchNameAppearsInResults(name string, results []*core.CheckResult) bool {
+	for _, result := range results {
+		if resultNameCandidate(result) == name {
+			return true
+		}
+	}
+	return false
+}
+
+func inferredBatchName(results []*core.CheckResult) string {
+	counts := make(map[string]int)
+	order := make([]string, 0, len(results))
+	for _, result := range results {
+		candidate := resultNameCandidate(result)
+		if candidate == "" {
+			continue
+		}
+		if _, exists := counts[candidate]; !exists {
+			order = append(order, candidate)
+		}
+		counts[candidate]++
+	}
+
+	best := ""
+	bestCount := 0
+	for _, candidate := range order {
+		if count := counts[candidate]; count > bestCount {
+			best = candidate
+			bestCount = count
+		}
+	}
+	return best
+}
+
+func resultNameCandidate(result *core.CheckResult) string {
+	if result == nil {
+		return ""
+	}
+
+	name := strings.ToLower(strings.TrimSpace(result.Name))
+	if name == "" {
+		return ""
+	}
+
+	if result.CheckType == core.CheckTypeGitHub {
+		name = strings.TrimPrefix(name, "@")
+	}
+
+	if result.CheckType == core.CheckTypeDomain {
+		tld := strings.ToLower(strings.TrimSpace(result.TLD))
+		if tld != "" {
+			suffix := "." + tld
+			if strings.HasSuffix(name, suffix) && len(name) > len(suffix) {
+				return strings.TrimSuffix(name, suffix)
+			}
+		}
+		if label, _, ok := strings.Cut(name, "."); ok && label != "" {
+			return label
+		}
+	}
+
+	return name
 }
 
 func runExpert(ctx context.Context, cfg *config.Config, store *store.Store, name, depth, modelOverride, promptOverride string, useCache bool) (*ailink.SearchResponse, *ailink.SearchError) {

@@ -11,7 +11,7 @@ func expertRow(result *core.BatchResult) (string, string, string, string, bool) 
 	if result == nil {
 		return "", "", "", "", false
 	}
-	name := strings.TrimSpace(result.Name)
+	name := expertDisplayName(result)
 	if result.AILinkError != nil {
 		notes := result.AILinkError.Message
 		if strings.TrimSpace(notes) == "" {
@@ -38,6 +38,92 @@ func expertRow(result *core.BatchResult) (string, string, string, string, bool) 
 	}
 
 	return "expert", name, status, notes, true
+}
+
+func expertDisplayName(result *core.BatchResult) string {
+	if result == nil {
+		return ""
+	}
+
+	name := strings.TrimSpace(result.Name)
+	if name != "" && expertNameAppearsInResults(name, result.Results) {
+		return name
+	}
+
+	inferred := expertInferredName(result.Results)
+	if inferred != "" {
+		return inferred
+	}
+
+	return name
+}
+
+func expertNameAppearsInResults(name string, results []*core.CheckResult) bool {
+	needle := strings.ToLower(strings.TrimSpace(name))
+	if needle == "" {
+		return false
+	}
+	for _, result := range results {
+		if expertResultCandidate(result) == needle {
+			return true
+		}
+	}
+	return false
+}
+
+func expertInferredName(results []*core.CheckResult) string {
+	counts := make(map[string]int)
+	order := make([]string, 0, len(results))
+	for _, result := range results {
+		candidate := expertResultCandidate(result)
+		if candidate == "" {
+			continue
+		}
+		if _, exists := counts[candidate]; !exists {
+			order = append(order, candidate)
+		}
+		counts[candidate]++
+	}
+
+	best := ""
+	bestCount := 0
+	for _, candidate := range order {
+		if count := counts[candidate]; count > bestCount {
+			best = candidate
+			bestCount = count
+		}
+	}
+	return best
+}
+
+func expertResultCandidate(result *core.CheckResult) string {
+	if result == nil {
+		return ""
+	}
+
+	name := strings.ToLower(strings.TrimSpace(result.Name))
+	if name == "" {
+		return ""
+	}
+
+	if result.CheckType == core.CheckTypeGitHub {
+		name = strings.TrimPrefix(name, "@")
+	}
+
+	if result.CheckType == core.CheckTypeDomain {
+		tld := strings.ToLower(strings.TrimSpace(result.TLD))
+		if tld != "" {
+			suffix := "." + tld
+			if strings.HasSuffix(name, suffix) && len(name) > len(suffix) {
+				return strings.TrimSuffix(name, suffix)
+			}
+		}
+		if label, _, ok := strings.Cut(name, "."); ok && label != "" {
+			return label
+		}
+	}
+
+	return name
 }
 
 func displayName(result *core.CheckResult) string {

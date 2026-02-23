@@ -2,8 +2,10 @@ package ailink
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 
+	"github.com/fulmenhq/gofulmen/schema"
 	"github.com/stretchr/testify/require"
 
 	"github.com/namelens/namelens/internal/ailink/content"
@@ -59,3 +61,55 @@ type stubPromptRegistry struct {
 
 func (s stubPromptRegistry) Get(slug string) (*prompt.Prompt, error) { return s.prompt, nil }
 func (s stubPromptRegistry) List() []*prompt.Prompt                  { return []*prompt.Prompt{s.prompt} }
+
+func TestServiceValidateResponseBrandPlanSchemaRef(t *testing.T) {
+	svc := &Service{Catalog: schema.NewCatalog(filepath.Join("..", "..", "schemas"))}
+	def := &prompt.Prompt{
+		Config: prompt.Config{
+			Slug:           "brand-plan",
+			ResponseSchema: map[string]any{"$ref": "ailink/v0/brand-plan-response"},
+		},
+	}
+
+	err := svc.validateResponse(def, []byte(`{"summary":"launch plan ready"}`))
+	require.NoError(t, err)
+}
+
+func TestServiceValidateResponseBrandPlanSchemaRefRejectsMissingNestedFields(t *testing.T) {
+	svc := &Service{Catalog: schema.NewCatalog(filepath.Join("..", "..", "schemas"))}
+	def := &prompt.Prompt{
+		Config: prompt.Config{
+			Slug:           "brand-plan",
+			ResponseSchema: map[string]any{"$ref": "ailink/v0/brand-plan-response"},
+		},
+	}
+
+	invalid := `{
+		"summary":"launch plan ready",
+		"mentions":[
+			{"source":"web"}
+		]
+	}`
+
+	err := svc.validateResponse(def, []byte(invalid))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "response schema validation failed")
+}
+
+func TestServiceValidateResponseSearchBulkSchemaRef(t *testing.T) {
+	svc := &Service{Catalog: schema.NewCatalog(filepath.Join("..", "..", "schemas"))}
+	def := &prompt.Prompt{
+		Config: prompt.Config{
+			Slug:           "name-availability-bulk",
+			ResponseSchema: map[string]any{"$ref": "ailink/v0/search-bulk-response"},
+		},
+	}
+
+	valid := `{
+		"items":[
+			{"name":"alpha","summary":"clear","risk_level":"low"}
+		]
+	}`
+	err := svc.validateResponse(def, []byte(valid))
+	require.NoError(t, err)
+}

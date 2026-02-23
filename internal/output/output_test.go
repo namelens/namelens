@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/namelens/namelens/internal/ailink"
 	"github.com/namelens/namelens/internal/core"
 )
 
@@ -200,4 +201,50 @@ func TestFormatBatchListNonJSON(t *testing.T) {
 	rendered, err := FormatBatchList(FormatMarkdown, []*core.BatchResult{result})
 	require.NoError(t, err)
 	require.True(t, strings.HasPrefix(rendered, "## "))
+}
+
+func TestExpertRowInfersNameFromChecksWhenBatchNameMismatches(t *testing.T) {
+	result := &core.BatchResult{
+		Name: "ailink",
+		Results: []*core.CheckResult{
+			{
+				CheckType: core.CheckTypeDomain,
+				Name:      "idpbolt.com",
+				TLD:       "com",
+				Available: core.AvailabilityTaken,
+			},
+			{
+				CheckType: core.CheckTypeNPM,
+				Name:      "idpbolt",
+				Available: core.AvailabilityAvailable,
+			},
+		},
+		AILink: &ailink.SearchResponse{RiskLevel: "low", Summary: "looks clear"},
+	}
+
+	rowType, name, status, notes, ok := expertRow(result)
+	require.True(t, ok)
+	require.Equal(t, "expert", rowType)
+	require.Equal(t, "idpbolt", name)
+	require.Equal(t, "risk: low", status)
+	require.Equal(t, "looks clear", notes)
+}
+
+func TestExpertRowKeepsBatchNameWhenItMatchesChecks(t *testing.T) {
+	result := &core.BatchResult{
+		Name: "ailink",
+		Results: []*core.CheckResult{
+			{
+				CheckType: core.CheckTypeDomain,
+				Name:      "ailink.com",
+				TLD:       "com",
+				Available: core.AvailabilityTaken,
+			},
+		},
+		AILink: &ailink.SearchResponse{RiskLevel: "low", Summary: "ok"},
+	}
+
+	_, name, _, _, ok := expertRow(result)
+	require.True(t, ok)
+	require.Equal(t, "ailink", name)
 }

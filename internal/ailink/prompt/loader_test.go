@@ -18,3 +18,17 @@ func TestLoadDefaults(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, prompt.Config.SystemTemplate)
 }
+
+func TestBrandPlanPromptUsesBrandPlanResponseSchema(t *testing.T) {
+	prompts, err := LoadDefaults()
+	require.NoError(t, err)
+
+	reg, err := NewRegistry(prompts)
+	require.NoError(t, err)
+
+	brandPlan, err := reg.Get("brand-plan")
+	require.NoError(t, err)
+
+	ref, _ := brandPlan.Config.ResponseSchema["$ref"].(string)
+	require.Equal(t, "ailink/v0/brand-plan-response", ref)
+}

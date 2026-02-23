@@ -35,19 +35,42 @@
             "description": "Whether this name appears available"
           },
           "risk_level": {
-            "$ref": "ailink/v0/search-response#/properties/risk_level"
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical",
+              "unknown"
+            ],
+            "description": "Overall risk assessment"
           },
           "confidence": {
-            "$ref": "ailink/v0/search-response#/properties/confidence"
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Model's confidence in the assessment (0-1)"
           },
           "insights": {
-            "$ref": "ailink/v0/search-response#/properties/insights"
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Key findings as bullet points"
           },
           "mentions": {
-            "$ref": "ailink/v0/search-response#/properties/mentions"
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/mention"
+            },
+            "description": "Relevant mentions found during search"
           },
           "recommendations": {
-            "$ref": "ailink/v0/search-response#/properties/recommendations"
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Actionable recommendations"
           }
         },
         "additionalProperties": true
@@ -55,5 +78,62 @@
       "description": "Per-name expert analysis results"
     }
   },
-  "additionalProperties": true
+  "additionalProperties": true,
+  "$defs": {
+    "mention": {
+      "type": "object",
+      "required": [
+        "source",
+        "description"
+      ],
+      "properties": {
+        "source": {
+          "type": "string",
+          "enum": [
+            "X",
+            "web",
+            "news",
+            "trademark",
+            "github",
+            "other"
+          ],
+          "description": "Source type of the mention"
+        },
+        "description": {
+          "type": "string",
+          "description": "Brief summary of the finding"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL to the source (if available)"
+        },
+        "relevance": {
+          "type": "string",
+          "enum": [
+            "high",
+            "medium",
+            "low"
+          ],
+          "description": "Relevance to the name being checked"
+        },
+        "sentiment": {
+          "type": "string",
+          "enum": [
+            "positive",
+            "neutral",
+            "negative",
+            "mixed"
+          ],
+          "description": "Sentiment of the mention"
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the mention was found or published"
+        }
+      },
+      "additionalProperties": true
+    }
+  }
 }

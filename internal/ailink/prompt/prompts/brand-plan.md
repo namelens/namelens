@@ -22,7 +22,7 @@ depth_variants:
   quick: "Generate a basic brand launch checklist for '{{name}}' as a developer CLI tool."
   deep: "Create a comprehensive brand launch strategy for '{{name}}' including competitive analysis, positioning, visual identity direction, and go-to-market recommendations for a developer CLI tool."
 response_schema:
-  $ref: "ailink/v0/search-response"
+  $ref: "ailink/v0/brand-plan-response"
 ---
 
 You are a brand strategist creating a launch plan for a developer CLI tool. The client has selected "{{name}}" as their product name and needs actionable branding guidance.
