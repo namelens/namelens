@@ -16,6 +16,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/namelens/namelens/internal/ailink"
+	ailinkctx "github.com/namelens/namelens/internal/ailink/context"
 	"github.com/namelens/namelens/internal/ailink/prompt"
 	"github.com/namelens/namelens/internal/config"
 	"github.com/namelens/namelens/internal/core"
@@ -254,6 +255,9 @@ func init() {
 	reviewCmd.Flags().String("include-raw", string(includeRawOnFail), "Include raw analysis output: never, on-failure, always")
 	reviewCmd.Flags().Bool("strict", false, "Return non-zero if any analysis fails")
 	reviewCmd.Flags().Bool("no-cache", false, "Skip cache lookup")
+	reviewCmd.Flags().StringP("context-file", "f", "", "Read product context from file for brand analyses (truncated to 2000 chars)")
+	reviewCmd.Flags().StringP("scan-dir", "s", "", "Scan directory for context files for brand analyses")
+	reviewCmd.Flags().Int("scan-budget", 32000, "Max characters to include from scanned context files")
 	reviewCmd.Flags().String("locales", "", "Comma-separated locales for phonetics analysis (passed to name-phonetics prompt)")
 	reviewCmd.Flags().String("keyboards", "", "Comma-separated keyboard layouts for phonetics analysis (passed to name-phonetics prompt)")
 }
@@ -289,6 +293,18 @@ func runReview(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	noCache, err := cmd.Flags().GetBool("no-cache")
+	if err != nil {
+		return err
+	}
+	contextFile, err := cmd.Flags().GetString("context-file")
+	if err != nil {
+		return err
+	}
+	scanDir, err := cmd.Flags().GetString("scan-dir")
+	if err != nil {
+		return err
+	}
+	scanBudget, err := cmd.Flags().GetInt("scan-budget")
 	if err != nil {
 		return err
 	}
@@ -349,6 +365,11 @@ func runReview(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	brandContext, err := reviewBrandContext(contextFile, scanDir, scanBudget)
+	if err != nil {
+		return err
+	}
+
 	type reviewItem struct {
 		result   *reviewResult
 		batch    *core.BatchResult
@@ -405,7 +426,7 @@ func runReview(cmd *cobra.Command, args []string) error {
 				suitabilityRaw, suitabilityErr, raw := runReviewGenerate(ctx, cfg, store, slug, name, depth, "", vars, !noCache)
 				analyses[slug] = analysisFromGenerate(suitabilityRaw, suitabilityErr, raw, rawMode)
 			default:
-				vars := map[string]string{"name": name}
+				vars := reviewAnalysisVariables(slug, name, brandContext)
 				data, errInfo, raw := runReviewGenerate(ctx, cfg, store, slug, name, depth, "", vars, !noCache)
 				analyses[slug] = analysisFromGenerate(data, errInfo, raw, rawMode)
 			}
@@ -777,4 +798,45 @@ func reviewPhoneticsVariables(name, locales, keyboards string) map[string]string
 	}
 
 	return vars
+}
+
+func reviewAnalysisVariables(slug, name, brandContext string) map[string]string {
+	vars := map[string]string{"name": name}
+	if isBrandReviewPrompt(slug) && strings.TrimSpace(brandContext) != "" {
+		vars["description"] = strings.TrimSpace(brandContext)
+	}
+	return vars
+}
+
+func isBrandReviewPrompt(slug string) bool {
+	switch strings.TrimSpace(slug) {
+	case "brand-proposal", "brand-plan":
+		return true
+	default:
+		return false
+	}
+}
+
+func reviewBrandContext(contextFile, scanDir string, scanBudget int) (string, error) {
+	if trimmed := strings.TrimSpace(contextFile); trimmed != "" {
+		content, err := readTruncatedFile(trimmed, 2000)
+		if err != nil {
+			return "", fmt.Errorf("reading context file: %w", err)
+		}
+		return strings.TrimSpace(content), nil
+	}
+
+	if trimmed := strings.TrimSpace(scanDir); trimmed != "" {
+		cfg := ailinkctx.Config{
+			Patterns: ailinkctx.DefaultPatterns,
+			MaxChars: scanBudget,
+		}
+		result, err := ailinkctx.Gather(trimmed, cfg)
+		if err != nil {
+			return "", fmt.Errorf("scanning context directory: %w", err)
+		}
+		return strings.TrimSpace(result.Context), nil
+	}
+
+	return "", nil
 }

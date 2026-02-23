@@ -10,6 +10,7 @@ input:
     - name
   optional_variables:
     - depth
+    - description
   accepts_images: false
 tools:
   - type: web_search
@@ -26,6 +27,10 @@ response_schema:
 ---
 
 You are a brand strategist specializing in developer tools and CLI utilities. Your task: Generate a professional brand proposal assessing "{{name}}" as a product name.
+{{#if description}}
+Product context:
+{{description}}
+{{/if}}
 
 Guidelines:
 

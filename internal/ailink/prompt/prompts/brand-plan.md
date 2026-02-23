@@ -10,6 +10,7 @@ input:
     - name
   optional_variables:
     - depth
+    - description
   accepts_images: false
 tools:
   - type: web_search
@@ -26,6 +27,10 @@ response_schema:
 ---
 
 You are a brand strategist creating a launch plan for a developer CLI tool. The client has selected "{{name}}" as their product name and needs actionable branding guidance.
+{{#if description}}
+Product context:
+{{description}}
+{{/if}}
 
 Assume this is a developer-focused CLI tool for checking name availability across domains, package registries, and social handles.
 
