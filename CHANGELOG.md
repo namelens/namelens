@@ -5,6 +5,50 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this project adheres to Semantic
 Versioning.
 
+## [0.2.3] - 2026-02-23
+
+### Added
+
+- **Brand context for review** (`--context-file`, `--scan-dir`) passes product
+  context through to brand-plan and brand-proposal analyses, replacing generic
+  AI guesses with context-aware brand assessments
+- **Provider override for generate** (`--provider`) enables invocation-scoped
+  provider selection without changing global routing — useful for A/B testing
+  across AI backends
+- **OSS profile** for registry-and-handle-only checks (npm, pypi, cargo,
+  github) — skips domain noise for open-source projects
+- Review phonetics passthrough: `--locales` and `--keyboards` flags for
+  international phonetic analysis
+
+### Fixed
+
+- Expert NAME column in `check` output shows the checked name instead of
+  "ailink" (B3 initial fix, B11 regression fix)
+- xAI/Grok internal citation markup (`<grok:render>`, `<argument>` tags)
+  stripped from response text before display (B5)
+- `brand-plan` prompt no longer fails schema validation via `generate` and
+  `review` — response schema matching corrected for non-search prompts (B12)
+- Check command defaults widened: bare `namelens check <name>` now covers
+  .com/.dev/.io/.app domains, npm/pypi/cargo registries, and GitHub handle (B6)
+- Standalone binary works outside repository directories — embedded config
+  defaults and schema assets used as fallback when project-root discovery fails
+- Deep generation (`--depth=deep`) produces less correlated candidates by using
+  broader naming strategies
+- Slice aliasing bug in profile lookup: returned profiles no longer share
+  backing arrays with global built-in definitions
+
+### Changed
+
+- Markdown documentation reformatted for consistent table and line wrapping
+
+## [0.2.2] - 2026-02-20
+
+### Changed
+
+- Anthropic model tiers updated: default and reasoning to `claude-sonnet-4-6`,
+  fast to `claude-haiku-4-5-20251001`
+- OpenAI reasoning tier added: `o3` for `--depth=deep` workloads
+
 ## [0.2.1] - 2026-02-14
 
 ### Added

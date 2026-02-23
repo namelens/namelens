@@ -118,6 +118,7 @@ namelens compare name1 name2 --mode=quick
 
 # Deep review with AI analysis
 namelens review myproject --depth=deep
+namelens review myproject --mode=brand --context-file ./VISION.md
 
 # Generate brand marks/logos
 namelens mark "myproject" --out-dir ./marks --color brand
@@ -173,6 +174,7 @@ Profiles define what to check for a given name:
 | ----------- | -------------------------------------- | ---------------- | ------- |
 | `startup`   | .com, .io, .dev, .app                  | npm, pypi        | github  |
 | `developer` | .com, .io, .dev, .app, .sh, .org, .net | npm, pypi, cargo | github  |
+| `oss`       | -                                      | npm, pypi, cargo | github  |
 | `minimal`   | .com                                   | -                | -       |
 | `website`   | .com, .org, .net                       | -                | -       |
 | `web3`      | .xyz, .io, .gg                         | npm              | github  |
