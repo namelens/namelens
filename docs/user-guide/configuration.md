@@ -316,6 +316,25 @@ Role routing can be set with:
 
 - `NAMELENS_AILINK_ROUTING_<ROLE>=<provider-id>`
 
+For one-off generation runs, you can override routing at invocation time:
+
+```bash
+namelens generate "my concept" --provider namelens-anthropic
+```
+
+Provider precedence for `generate` is:
+
+1. `--provider` flag (if set)
+2. `ailink.routing[<prompt-slug>]`
+3. Provider `roles` match
+4. `ailink.default_provider`
+5. Single enabled provider fallback
+
+Validation behavior for `--provider`:
+
+- unknown id: `unknown provider "<id>" (valid: ...)`
+- configured but disabled: `provider "<id>" is disabled`
+
 For `namelens mark`, use separate roles for text vs image generation:
 
 - `brand-mark` (mark directions + image prompts)

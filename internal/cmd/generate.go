@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -41,6 +42,7 @@ func init() {
 	generateCmd.Flags().Bool("json", false, "Output raw JSON response")
 	generateCmd.Flags().String("model", "", "Model override")
 	generateCmd.Flags().String("prompt", "name-alternatives", "Prompt slug to use")
+	generateCmd.Flags().String("provider", "", "Override provider for this run (must match an ailink.providers key)")
 }
 
 func runGenerate(cmd *cobra.Command, args []string) error {
@@ -61,6 +63,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 	jsonOutput, _ := cmd.Flags().GetBool("json")
 	modelOverride, _ := cmd.Flags().GetString("model")
 	promptSlug, _ := cmd.Flags().GetString("prompt")
+	providerOverride, _ := cmd.Flags().GetString("provider")
 
 	// Build variables map - use both "concept" and "name" keys for flexibility
 	// Different prompts may use different variable names for the main input
@@ -142,6 +145,14 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 
 	providers := ailink.NewRegistry(cfg.AILink)
 	role := promptSlug
+	if strings.TrimSpace(providerOverride) != "" {
+		ailinkCfg, err := applyGenerateProviderOverride(cfg.AILink, role, providerOverride)
+		if err != nil {
+			return err
+		}
+		providers = ailink.NewRegistry(ailinkCfg)
+	}
+
 	resolved, err := providers.Resolve(role, promptDef, modelOverride)
 	if err != nil {
 		return fmt.Errorf("resolving provider: %w", err)
@@ -181,6 +192,48 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 	}
 
 	return printGenerateResults(response.Raw, concept)
+}
+
+func applyGenerateProviderOverride(cfg ailink.Config, role, providerID string) (ailink.Config, error) {
+	role = strings.TrimSpace(role)
+	if role == "" {
+		return cfg, fmt.Errorf("provider override requires a role")
+	}
+
+	providerID = strings.TrimSpace(providerID)
+	if providerID == "" {
+		return cfg, nil
+	}
+
+	providerCfg, ok := cfg.Providers[providerID]
+	if !ok {
+		return cfg, fmt.Errorf("unknown provider %q (valid: %s)", providerID, strings.Join(configuredProviderIDs(cfg.Providers), ", "))
+	}
+	if !providerCfg.Enabled {
+		return cfg, fmt.Errorf("provider %q is disabled", providerID)
+	}
+
+	out := cfg
+	out.Routing = cloneRoutingMap(cfg.Routing)
+	out.Routing[role] = providerID
+	return out, nil
+}
+
+func configuredProviderIDs(providers map[string]ailink.ProviderInstanceConfig) []string {
+	ids := make([]string, 0, len(providers))
+	for id := range providers {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	return ids
+}
+
+func cloneRoutingMap(in map[string]string) map[string]string {
+	out := make(map[string]string, len(in))
+	for k, v := range in {
+		out[k] = v
+	}
+	return out
 }
 
 func readTruncatedFile(path string, maxLen int) (result string, err error) {

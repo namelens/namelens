@@ -89,6 +89,22 @@ namelens generate "agent gateway" --depth fast
 namelens generate "agent gateway" --depth deep
 ```
 
+### Provider Override
+
+Use `--provider` for invocation-scoped provider selection without changing
+global routing:
+
+```bash
+# Force Anthropic for this run only
+namelens generate "agent gateway" --provider namelens-anthropic
+
+# Force OpenAI while keeping deep depth
+namelens generate "agent gateway" --depth deep --provider namelens-openai
+```
+
+`--provider` takes precedence over configured routing for the selected prompt on
+this command execution only.
+
 ### Output Formats
 
 ```bash
@@ -115,6 +131,7 @@ namelens generate "process utilities library" --json
 | `--json`             |       | bool   | Output raw JSON response                                     |
 | `--model`            |       | string | Model override                                               |
 | `--prompt`           |       | string | Prompt slug (default: `name-alternatives`)                   |
+| `--provider`         |       | string | Provider override for this run (matches `ailink.providers` key) |
 
 ## Output Format
 
@@ -208,6 +225,16 @@ export NAMELENS_AILINK_PROVIDERS_NAMELENS_OPENAI_CREDENTIALS_0_API_KEY=your-key
 # For xAI
 export NAMELENS_AILINK_PROVIDERS_NAMELENS_XAI_CREDENTIALS_0_API_KEY=your-key
 ```
+
+### "unknown provider"
+
+Use a provider id that exists under `ailink.providers`:
+
+```bash
+namelens generate "my concept" --provider namelens-openai
+```
+
+See [Configuration](configuration.md) for provider instance setup.
 
 ### Slow Response
 

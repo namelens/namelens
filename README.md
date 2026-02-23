@@ -110,6 +110,7 @@ namelens check <name> --expert
 # Generate name alternatives from a concept
 namelens generate "static analyzer for shell scripts"
 namelens generate "my product" --scan-dir ./docs
+namelens generate "my product" --provider namelens-anthropic
 
 # Compare candidates side-by-side
 namelens compare name1 name2 name3
