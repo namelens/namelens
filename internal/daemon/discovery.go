@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -35,7 +36,9 @@ func FindProcessByPID(pid uint32) (*ProcessInfo, error) {
 	}
 
 	if proc.StartTimeUnixMS != nil {
-		info.StartTime = time.UnixMilli(int64(*proc.StartTimeUnixMS))
+		if *proc.StartTimeUnixMS <= math.MaxInt64 {
+			info.StartTime = time.UnixMilli(int64(*proc.StartTimeUnixMS)) // #nosec G115 -- bounds checked
+		}
 	}
 
 	return info, nil
@@ -44,7 +47,10 @@ func FindProcessByPID(pid uint32) (*ProcessInfo, error) {
 // FindProcessOnPort finds the process listening on the given port.
 // Returns the process info if found, nil if no process is listening.
 func FindProcessOnPort(port int) (*ProcessInfo, error) {
-	localPort := uint16(port)
+	if port < 0 || port > math.MaxUint16 {
+		return nil, fmt.Errorf("port %d out of valid range (0-%d)", port, math.MaxUint16)
+	}
+	localPort := uint16(port) // #nosec G115 -- bounds checked above
 	filter := &sysprims.PortFilter{
 		LocalPort: &localPort,
 	}
@@ -80,8 +86,8 @@ func FindProcessOnPort(port int) (*ProcessInfo, error) {
 			Cmdline: strings.Join(binding.Process.Cmdline, " "),
 			Running: true,
 		}
-		if binding.Process.StartTimeUnixMS != nil {
-			info.StartTime = time.UnixMilli(int64(*binding.Process.StartTimeUnixMS))
+		if binding.Process.StartTimeUnixMS != nil && *binding.Process.StartTimeUnixMS <= math.MaxInt64 {
+			info.StartTime = time.UnixMilli(int64(*binding.Process.StartTimeUnixMS)) // #nosec G115 -- bounds checked
 		}
 		return info, nil
 	}
@@ -106,7 +112,9 @@ func FindProcessOnPort(port int) (*ProcessInfo, error) {
 	}
 
 	if proc.StartTimeUnixMS != nil {
-		info.StartTime = time.UnixMilli(int64(*proc.StartTimeUnixMS))
+		if *proc.StartTimeUnixMS <= math.MaxInt64 {
+			info.StartTime = time.UnixMilli(int64(*proc.StartTimeUnixMS)) // #nosec G115 -- bounds checked
+		}
 	}
 
 	return info, nil

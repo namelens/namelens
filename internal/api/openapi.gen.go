@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	ApiKeyScopes = "apiKey.Scopes"
+	ApiKeyScopes = "apiKey.Scopes" // #nosec G101 -- not a credential; generated OpenAPI scope name
 )
 
 // Defines values for CheckRequestHandles.

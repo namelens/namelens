@@ -223,9 +223,9 @@ func getAPIKey(stdout io.Writer, stdin io.Reader, reader *bufio.Reader, provider
 	_, _ = fmt.Fprintf(stdout, "\nEnter your %s API key: ", provider.DisplayName)
 
 	// Try secure no-echo input if stdin is a terminal
-	if f, ok := stdin.(*os.File); ok && term.IsTerminal(int(f.Fd())) {
-		key, err := term.ReadPassword(int(f.Fd()))
-		_, _ = fmt.Fprintln(stdout) // newline after hidden input
+	if f, ok := stdin.(*os.File); ok && term.IsTerminal(int(f.Fd())) { // #nosec G115 -- fd fits int on all supported platforms
+		key, err := term.ReadPassword(int(f.Fd())) // #nosec G115 -- fd fits int on all supported platforms
+		_, _ = fmt.Fprintln(stdout)                // newline after hidden input
 		if err != nil {
 			return "", fmt.Errorf("read API key: %w", err)
 		}

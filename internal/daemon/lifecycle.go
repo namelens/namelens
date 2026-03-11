@@ -3,6 +3,7 @@ package daemon
 import (
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"os/exec"
 	"time"
@@ -79,10 +80,13 @@ func Status(port int) (*ServerStatus, error) {
 		return nil, err
 	}
 
-	status.PID = uint32(pid)
+	if pid < 0 || pid > math.MaxUint32 {
+		return nil, fmt.Errorf("PID %d out of valid range", pid)
+	}
+	status.PID = uint32(pid) // #nosec G115 -- bounds checked above
 
 	// Validate process is running
-	proc, err := FindProcessByPID(uint32(pid))
+	proc, err := FindProcessByPID(uint32(pid)) // #nosec G115 -- bounds checked above
 	if err != nil {
 		return nil, err
 	}
@@ -148,6 +152,10 @@ func StartDaemon(executable string, args []string, port int) (int, error) {
 	}
 
 	pid := cmd.Process.Pid
+	if pid < 0 || pid > math.MaxUint32 {
+		_ = cmd.Process.Kill()
+		return 0, fmt.Errorf("spawned PID %d out of valid uint32 range", pid)
+	}
 
 	// Write PID file early so we can track the process
 	pidFile, err := NewPIDFile(port, "")
@@ -167,7 +175,7 @@ func StartDaemon(executable string, args []string, port int) (int, error) {
 
 	// Verify the daemon starts successfully by checking it's still running
 	// after a brief delay. This catches immediate startup failures.
-	if err := verifyDaemonStartup(uint32(pid), port, pidFile); err != nil {
+	if err := verifyDaemonStartup(uint32(pid), port, pidFile); err != nil { // #nosec G115 -- bounds checked after cmd.Start
 		return 0, err
 	}
 
