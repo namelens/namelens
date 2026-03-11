@@ -189,8 +189,10 @@ func runCheck(cmd *cobra.Command, args []string) error {
 		bulkExpertByName map[string]*ailink.SearchResponse
 		bulkFatalErr     *ailink.SearchError
 		fallbackMu       sync.Mutex
+		fallbackExecMu   sync.Mutex
 		fallbackRemain   = expertBulkFallbackLimit
 		fallbackSeq      int // Tracks ordering for staggered backoff after bulk.
+		bulkCompletedAt  time.Time
 	)
 	if (expertEnabled || cfg.Expert.Enabled) && expertBulk && len(names) > 1 {
 		bulkAttempted = true
@@ -204,6 +206,14 @@ func runCheck(cmd *cobra.Command, args []string) error {
 		if bulkExpertByName == nil {
 			bulkExpertByName = map[string]*ailink.SearchResponse{}
 		}
+		if bulkFatalErr != nil {
+			observability.CLILogger.Warn("Expert bulk request failed",
+				zap.String("code", bulkFatalErr.Code),
+				zap.String("message", bulkFatalErr.Message),
+				zap.Int("names", len(names)),
+			)
+		}
+		bulkCompletedAt = time.Now()
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -266,19 +276,36 @@ func runCheck(cmd *cobra.Command, args []string) error {
 						fallbackMu.Unlock()
 
 						if canFallback {
-							// Stagger fallback requests to avoid rate-limit burst after bulk.
+							// Queue fallback requests into a serialized lane with post-bulk cooldown.
 							fallbackMu.Lock()
 							seq := fallbackSeq
 							fallbackSeq++
 							fallbackMu.Unlock()
-							if seq > 0 {
+
+							targetStart := bulkCompletedAt.Add(expertBulkFallbackInitialCooldown + time.Duration(seq)*expertBulkFallbackSpacing)
+							if delay := time.Until(targetStart); delay > 0 {
+								observability.CLILogger.Info("Expert fallback scheduled",
+									zap.String("name", name),
+									zap.Int("fallback_seq", seq),
+									zap.Duration("delay", delay),
+								)
 								select {
-								case <-time.After(time.Duration(seq) * 500 * time.Millisecond):
+								case <-time.After(delay):
 								case <-ctx.Done():
 									continue
 								}
 							}
+
+							fallbackExecMu.Lock()
 							expertResult, expertError = runExpertWithRetry(ctx, cfg, store, name, expertDepth, expertModel, expertPrompt, !noCache)
+							fallbackExecMu.Unlock()
+							if expertError != nil {
+								observability.CLILogger.Warn("Expert fallback failed",
+									zap.String("name", name),
+									zap.String("code", expertError.Code),
+									zap.String("message", expertError.Message),
+								)
+							}
 						} else {
 							if bulkFatalErr != nil {
 								expertError = bulkFatalErr
@@ -813,21 +840,55 @@ func runExpert(ctx context.Context, cfg *config.Config, store *store.Store, name
 	return response, nil
 }
 
+const (
+	expertRateLimitMaxAttempts        = 3
+	expertRateLimitBaseBackoff        = 2 * time.Second
+	expertRateLimitMaxBackoff         = 8 * time.Second
+	expertRateLimitJitterWindow       = 600 * time.Millisecond
+	expertBulkFallbackInitialCooldown = 2 * time.Second
+	expertBulkFallbackSpacing         = 1500 * time.Millisecond
+)
+
 // runExpertWithRetry wraps runExpert with a single retry on rate-limit (429) errors.
 // This handles the burst pattern where fallback requests fire immediately after a bulk request.
 func runExpertWithRetry(ctx context.Context, cfg *config.Config, store *store.Store, name, depth, modelOverride, promptOverride string, useCache bool) (*ailink.SearchResponse, *ailink.SearchError) {
-	resp, searchErr := runExpert(ctx, cfg, store, name, depth, modelOverride, promptOverride, useCache)
-	if searchErr == nil || searchErr.Code != "AILINK_PROVIDER_RATE_LIMIT" {
-		return resp, searchErr
-	}
+	for attempt := 1; attempt <= expertRateLimitMaxAttempts; attempt++ {
+		resp, searchErr := runExpert(ctx, cfg, store, name, depth, modelOverride, promptOverride, useCache)
+		if searchErr == nil || searchErr.Code != "AILINK_PROVIDER_RATE_LIMIT" {
+			return resp, searchErr
+		}
+		if attempt == expertRateLimitMaxAttempts {
+			observability.CLILogger.Warn("Expert fallback exhausted rate-limit retries",
+				zap.String("name", name),
+				zap.Int("attempts", attempt),
+			)
+			return resp, searchErr
+		}
 
-	select {
-	case <-time.After(2 * time.Second):
-	case <-ctx.Done():
-		return resp, searchErr
+		delay := rateLimitRetryDelay(name, attempt)
+		observability.CLILogger.Warn("Expert fallback rate-limited; retrying",
+			zap.String("name", name),
+			zap.Int("attempt", attempt),
+			zap.Int("max_attempts", expertRateLimitMaxAttempts),
+			zap.Duration("backoff", delay),
+		)
+		select {
+		case <-time.After(delay):
+		case <-ctx.Done():
+			return resp, searchErr
+		}
 	}
+	return nil, &ailink.SearchError{Code: "AILINK_PROVIDER_ERROR", Message: "provider request failed"}
+}
 
-	return runExpert(ctx, cfg, store, name, depth, modelOverride, promptOverride, useCache)
+func rateLimitRetryDelay(name string, attempt int) time.Duration {
+	backoff := expertRateLimitBaseBackoff * (1 << (attempt - 1))
+	if backoff > expertRateLimitMaxBackoff {
+		backoff = expertRateLimitMaxBackoff
+	}
+	seed := sha256.Sum256([]byte(fmt.Sprintf("%s:%d", name, attempt)))
+	jitter := time.Duration(seed[0]) * expertRateLimitJitterWindow / 255
+	return backoff + jitter
 }
 
 func runExpertBulk(ctx context.Context, cfg *config.Config, store *store.Store, names []string, depth, modelOverride, promptOverride string, useCache bool) (map[string]*ailink.SearchResponse, *ailink.SearchError) {
