@@ -237,7 +237,7 @@ func cloneRoutingMap(in map[string]string) map[string]string {
 }
 
 func readTruncatedFile(path string, maxLen int) (result string, err error) {
-	f, err := os.Open(path)
+	f, err := os.Open(path) // #nosec G304 -- user-provided --context-file path
 	if err != nil {
 		return "", err
 	}
@@ -290,7 +290,7 @@ func loadCorpus(path string) (*ailinkctx.Corpus, error) {
 			return nil, fmt.Errorf("reading stdin: %w", err)
 		}
 	} else {
-		data, err = os.ReadFile(path)
+		data, err = os.ReadFile(path) // #nosec G304 -- user-provided --corpus file path
 		if err != nil {
 			return nil, fmt.Errorf("reading file: %w", err)
 		}

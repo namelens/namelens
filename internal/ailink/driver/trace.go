@@ -43,7 +43,7 @@ func EnableTracing(path string) (func(), error) {
 		_ = globalTracer.Close()
 	}
 
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600) // #nosec G304 -- user-provided --trace file path
 	if err != nil {
 		return nil, fmt.Errorf("open trace file: %w", err)
 	}

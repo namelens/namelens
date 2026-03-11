@@ -18,8 +18,8 @@ Highlights:
 
 ### Expert Prompt Loading (B13)
 
-Running `check --expert` from outside a git repository (e.g. from a `make
-install` binary in `/usr/local/bin`) failed with "failed to load prompts"
+Running `check --expert` from outside a git repository (e.g. from a
+`make install` binary in `/usr/local/bin`) failed with "failed to load prompts"
 because both `catalogForSchemas()` and `buildSchemaCatalog()` required a
 repository root to locate schema files.
 

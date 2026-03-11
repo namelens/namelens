@@ -69,13 +69,13 @@ func standaloneSchemasRootDir() (string, error) {
 			}
 			target := filepath.Join(root, rel)
 			if d.IsDir() {
-				return os.MkdirAll(target, 0o755)
+				return os.MkdirAll(target, 0o755) // #nosec G301 -- temp extraction dir for embedded schemas
 			}
 			data, err := embeddedSchemasFS.ReadFile(path)
 			if err != nil {
 				return fmt.Errorf("read embedded schema %s: %w", path, err)
 			}
-			return os.WriteFile(target, data, 0o644)
+			return os.WriteFile(target, data, 0o644) // #nosec G306 -- read-only schema files in temp dir
 		})
 		if err != nil {
 			standaloneSchemasErr = fmt.Errorf("extract embedded schemas: %w", err)

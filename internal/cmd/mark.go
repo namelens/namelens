@@ -215,7 +215,7 @@ func runMark(cmd *cobra.Command, args []string) error {
 		if len(block.Data) == 0 {
 			return errors.New("image response missing bytes")
 		}
-		if err := os.WriteFile(path, block.Data, 0644); err != nil {
+		if err := os.WriteFile(path, block.Data, 0644); err != nil { // #nosec G306 -- user-facing image output file
 			return fmt.Errorf("write image: %w", err)
 		}
 
@@ -227,7 +227,7 @@ func runMark(cmd *cobra.Command, args []string) error {
 
 func verifyDirWritable(dir string) error {
 	probe := filepath.Join(dir, ".namelens-write-test")
-	f, err := os.OpenFile(probe, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+	f, err := os.OpenFile(probe, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600) // #nosec G304 -- write-test probe in user-provided output dir
 	if err != nil {
 		return fmt.Errorf("output directory not writable: %w", err)
 	}

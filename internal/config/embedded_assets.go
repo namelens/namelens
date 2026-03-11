@@ -65,11 +65,11 @@ func standaloneAssetsRoot() (string, error) {
 
 func writeEmbeddedAsset(root string, relativePath string, contents []byte) error {
 	target := filepath.Join(root, relativePath)
-	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil { // #nosec G301 -- temp extraction dir for embedded assets; world-readable is fine
 		return fmt.Errorf("create embedded asset dir for %s: %w", relativePath, err)
 	}
 
-	if err := os.WriteFile(target, contents, 0o644); err != nil {
+	if err := os.WriteFile(target, contents, 0o644); err != nil { // #nosec G306 -- read-only config assets in temp dir
 		return fmt.Errorf("write embedded asset %s: %w", relativePath, err)
 	}
 

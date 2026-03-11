@@ -39,7 +39,7 @@ func readNamesFile(path string) ([]string, error) {
 	if path == "-" {
 		reader = os.Stdin
 	} else {
-		file, err := os.Open(path)
+		file, err := os.Open(path) // #nosec G304 -- user-provided --names-file path
 		if err != nil {
 			return nil, err
 		}

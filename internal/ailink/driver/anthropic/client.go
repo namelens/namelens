@@ -159,5 +159,5 @@ func withTimeout(ctx context.Context, timeout time.Duration) (context.Context, c
 	if timeout <= 0 {
 		return ctx, nil
 	}
-	return context.WithTimeout(ctx, timeout)
+	return context.WithTimeout(ctx, timeout) // #nosec G118 -- cancel returned to caller who defers it
 }

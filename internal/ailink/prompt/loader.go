@@ -163,11 +163,11 @@ func standaloneSchemaRoot() (string, error) {
 		}
 
 		target := filepath.Join(root, "ailink", "v0", "prompt.schema.json")
-		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil { // #nosec G301 -- temp extraction dir for embedded schema
 			standaloneRootErr = fmt.Errorf("create embedded schema dir: %w", err)
 			return
 		}
-		if err := os.WriteFile(target, embeddedPromptSchemaJSON, 0o644); err != nil {
+		if err := os.WriteFile(target, embeddedPromptSchemaJSON, 0o644); err != nil { // #nosec G306 -- read-only schema in temp dir
 			standaloneRootErr = fmt.Errorf("write embedded prompt schema: %w", err)
 			return
 		}

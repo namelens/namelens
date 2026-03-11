@@ -345,7 +345,7 @@ func runSetupConnectionTest(ctx context.Context, stdout io.Writer, provider *pro
 
 // detectExistingProvider reads the config file and extracts the current default provider.
 func detectExistingProvider(configPath string) string {
-	data, err := os.ReadFile(configPath)
+	data, err := os.ReadFile(configPath) // #nosec G304 -- config path from CLI flag or default XDG location
 	if err != nil {
 		return ""
 	}
@@ -377,7 +377,7 @@ func writeSetupConfig(configPath string, provider *providerInfo, apiKey string) 
 	var raw map[string]any
 
 	// Read existing config if present
-	data, err := os.ReadFile(configPath)
+	data, err := os.ReadFile(configPath) // #nosec G304 -- config path from CLI flag or default XDG location
 	if err == nil {
 		if err := yaml.Unmarshal(data, &raw); err != nil {
 			// Invalid YAML — start fresh
@@ -423,7 +423,7 @@ func writeSetupConfig(configPath string, provider *providerInfo, apiKey string) 
 	}
 
 	// Ensure config directory exists
-	if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil { // #nosec G301 -- XDG config dir; standard permissions
 		return fmt.Errorf("create config directory: %w", err)
 	}
 

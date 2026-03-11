@@ -201,7 +201,7 @@ var doctorInitCmd = &cobra.Command{
 			expertKey = key
 		}
 
-		if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil { // #nosec G301 -- XDG config dir; standard permissions
 			return fmt.Errorf("create config directory: %w", err)
 		}
 

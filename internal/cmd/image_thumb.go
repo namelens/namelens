@@ -113,7 +113,7 @@ func thumbnailPath(outDir, filename, suffix, format string) string {
 }
 
 func writeThumbnail(inPath, outPath string, maxSize int, format string, jpegQuality int) error {
-	inFile, err := os.Open(inPath)
+	inFile, err := os.Open(inPath) // #nosec G304 -- user-provided input image path
 	if err != nil {
 		return err
 	}
@@ -147,7 +147,7 @@ func writeThumbnail(inPath, outPath string, maxSize int, format string, jpegQual
 	dst := image.NewRGBA(image.Rect(0, 0, newW, newH))
 	draw.ApproxBiLinear.Scale(dst, dst.Bounds(), srcImg, bounds, draw.Over, nil)
 
-	outFile, err := os.Create(outPath)
+	outFile, err := os.Create(outPath) // #nosec G304 -- derived output path from user-provided input
 	if err != nil {
 		return err
 	}

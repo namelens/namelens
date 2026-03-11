@@ -138,7 +138,7 @@ func StartDaemon(executable string, args []string, port int) (int, error) {
 	}
 
 	// Build command with daemon environment variable
-	cmd := exec.Command(executable, args...)
+	cmd := exec.Command(executable, args...) // #nosec G204 -- CLI self-fork for daemon mode; executable is our own binary path
 	cmd.Env = append(os.Environ(), DaemonEnvVar+"=true")
 
 	// Detach from parent process

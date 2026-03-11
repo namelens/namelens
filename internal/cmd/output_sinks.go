@@ -71,10 +71,10 @@ func openSink(path string) (*outputSink, error) {
 		return &outputSink{writer: os.Stdout, close: func() error { return nil }, path: "-"}, nil
 	}
 
-	if err := os.MkdirAll(filepath.Dir(trimmed), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(trimmed), 0755); err != nil { // #nosec G301 -- user-provided output dir
 		return nil, fmt.Errorf("create output directory: %w", err)
 	}
-	file, err := os.Create(trimmed)
+	file, err := os.Create(trimmed) // #nosec G304 -- user-provided --out path for CLI output
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +86,7 @@ func ensureOutDir(dir string) (string, error) {
 	if clean == "" {
 		return "", nil
 	}
-	if err := os.MkdirAll(clean, 0755); err != nil {
+	if err := os.MkdirAll(clean, 0755); err != nil { // #nosec G301 -- user-provided --out-dir path
 		return "", fmt.Errorf("create output directory: %w", err)
 	}
 	abs, err := filepath.Abs(clean)
