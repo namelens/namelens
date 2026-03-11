@@ -134,18 +134,18 @@ func (c *Corpus) ToMarkdown() string {
 	var b strings.Builder
 
 	b.WriteString("# Context Corpus\n\n")
-	b.WriteString(fmt.Sprintf("Generated: %s\n", c.GeneratedAt.Format(time.RFC3339)))
-	b.WriteString(fmt.Sprintf("Source: %s\n", c.Source.Path))
-	b.WriteString(fmt.Sprintf("Budget: %d/%d chars\n\n", c.Budget.UsedChars, c.Budget.MaxChars))
+	fmt.Fprintf(&b, "Generated: %s\n", c.GeneratedAt.Format(time.RFC3339))
+	fmt.Fprintf(&b, "Source: %s\n", c.Source.Path)
+	fmt.Fprintf(&b, "Budget: %d/%d chars\n\n", c.Budget.UsedChars, c.Budget.MaxChars)
 
 	// Manifest table
 	b.WriteString("## Manifest\n\n")
 	b.WriteString("| Metric | Value |\n")
 	b.WriteString("|--------|-------|\n")
-	b.WriteString(fmt.Sprintf("| Files scanned | %d |\n", c.Manifest.TotalFilesScanned))
-	b.WriteString(fmt.Sprintf("| Files included | %d |\n", c.Manifest.FilesIncluded))
-	b.WriteString(fmt.Sprintf("| Files excluded | %d |\n", c.Manifest.FilesExcluded))
-	b.WriteString(fmt.Sprintf("| Files truncated | %d |\n\n", c.Manifest.FilesTruncated))
+	fmt.Fprintf(&b, "| Files scanned | %d |\n", c.Manifest.TotalFilesScanned)
+	fmt.Fprintf(&b, "| Files included | %d |\n", c.Manifest.FilesIncluded)
+	fmt.Fprintf(&b, "| Files excluded | %d |\n", c.Manifest.FilesExcluded)
+	fmt.Fprintf(&b, "| Files truncated | %d |\n\n", c.Manifest.FilesTruncated)
 
 	// Included files table
 	if len(c.Files) > 0 {
@@ -153,7 +153,7 @@ func (c *Corpus) ToMarkdown() string {
 		b.WriteString("| File | Class | Coverage | Chars |\n")
 		b.WriteString("|------|-------|----------|-------|\n")
 		for _, f := range c.Files {
-			b.WriteString(fmt.Sprintf("| %s | %s | %s | %d |\n", f.Path, f.Class, f.Coverage, f.Chars))
+			fmt.Fprintf(&b, "| %s | %s | %s | %d |\n", f.Path, f.Class, f.Coverage, f.Chars)
 		}
 		b.WriteString("\n")
 	}
@@ -164,7 +164,7 @@ func (c *Corpus) ToMarkdown() string {
 		b.WriteString("| File | Class | Reason |\n")
 		b.WriteString("|------|-------|--------|\n")
 		for _, f := range c.Excluded {
-			b.WriteString(fmt.Sprintf("| %s | %s | %s |\n", f.Path, f.Class, f.Reason))
+			fmt.Fprintf(&b, "| %s | %s | %s |\n", f.Path, f.Class, f.Reason)
 		}
 		b.WriteString("\n")
 	}
@@ -180,7 +180,7 @@ func (c *Corpus) ToMarkdown() string {
 				break
 			}
 		}
-		b.WriteString(fmt.Sprintf("### %s (%s)\n\n", fc.File, class))
+		fmt.Fprintf(&b, "### %s (%s)\n\n", fc.File, class)
 		b.WriteString(fc.Text)
 		b.WriteString("\n\n---\n\n")
 	}
@@ -195,16 +195,16 @@ func (c *Corpus) ToPromptContext() string {
 
 	// Add manifest header so the model knows what's available
 	b.WriteString("CONTEXT MANIFEST:\n")
-	b.WriteString(fmt.Sprintf("- Source: %s\n", c.Source.Path))
-	b.WriteString(fmt.Sprintf("- Included %d files (%d chars) from %d total\n",
-		c.Manifest.FilesIncluded, c.Budget.UsedChars, c.Manifest.TotalFilesScanned))
+	fmt.Fprintf(&b, "- Source: %s\n", c.Source.Path)
+	fmt.Fprintf(&b, "- Included %d files (%d chars) from %d total\n",
+		c.Manifest.FilesIncluded, c.Budget.UsedChars, c.Manifest.TotalFilesScanned)
 
 	if c.Manifest.FilesTruncated > 0 {
-		b.WriteString(fmt.Sprintf("- %d files were truncated\n", c.Manifest.FilesTruncated))
+		fmt.Fprintf(&b, "- %d files were truncated\n", c.Manifest.FilesTruncated)
 	}
 
 	if len(c.Excluded) > 0 {
-		b.WriteString(fmt.Sprintf("- %d files excluded (available on request)\n", len(c.Excluded)))
+		fmt.Fprintf(&b, "- %d files excluded (available on request)\n", len(c.Excluded))
 	}
 
 	b.WriteString("\n--- INCLUDED CONTENT ---\n\n")
@@ -220,7 +220,7 @@ func (c *Corpus) ToPromptContext() string {
 				break
 			}
 		}
-		b.WriteString(fmt.Sprintf("--- File: %s (%s, %s) ---\n", fc.File, class, coverage))
+		fmt.Fprintf(&b, "--- File: %s (%s, %s) ---\n", fc.File, class, coverage)
 		b.WriteString(fc.Text)
 		b.WriteString("\n\n")
 	}

@@ -17,7 +17,7 @@ func (f *MarkdownFormatter) FormatBatch(result *core.BatchResult) (string, error
 	}
 
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("## %s availability\n\n", escapeMarkdownCell(result.Name)))
+	fmt.Fprintf(&sb, "## %s availability\n\n", escapeMarkdownCell(result.Name))
 	sb.WriteString("| Type | Name | Status | Notes |\n")
 	sb.WriteString("|------|------|--------|-------|\n")
 
@@ -25,23 +25,23 @@ func (f *MarkdownFormatter) FormatBatch(result *core.BatchResult) (string, error
 		if r == nil {
 			continue
 		}
-		sb.WriteString(fmt.Sprintf("| %s | %s | %s | %s |\n",
+		fmt.Fprintf(&sb, "| %s | %s | %s | %s |\n",
 			escapeMarkdownCell(string(r.CheckType)),
 			escapeMarkdownCell(displayName(r)),
 			escapeMarkdownCell(statusLabel(r)),
 			escapeMarkdownCell(formatNotes(r)),
-		))
+		)
 	}
 
 	if result.AILink != nil || result.AILinkError != nil {
 		rowType, name, status, notes, ok := expertRow(result)
 		if ok {
-			sb.WriteString(fmt.Sprintf("| %s | %s | %s | %s |\n",
+			fmt.Fprintf(&sb, "| %s | %s | %s | %s |\n",
 				escapeMarkdownCell(rowType),
 				escapeMarkdownCell(name),
 				escapeMarkdownCell(status),
 				escapeMarkdownCell(notes),
-			))
+			)
 		}
 	}
 
@@ -50,7 +50,7 @@ func (f *MarkdownFormatter) FormatBatch(result *core.BatchResult) (string, error
 		if result.Unknown > 0 {
 			summary += fmt.Sprintf(", %d unknown", result.Unknown)
 		}
-		sb.WriteString(fmt.Sprintf("\n**Score**: %s\n", summary))
+		fmt.Fprintf(&sb, "\n**Score**: %s\n", summary)
 	}
 
 	sb.WriteString(renderAnalysisSections(analysisSections(result), true))

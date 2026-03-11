@@ -211,14 +211,14 @@ func renderAnalysisSections(sections []analysisSection, markdown bool) string {
 			sb.WriteString("\n")
 		}
 		if markdown {
-			sb.WriteString(fmt.Sprintf("\n\n### %s\n", section.Title))
+			fmt.Fprintf(&sb, "\n\n### %s\n", section.Title)
 			for _, line := range section.Lines {
-				sb.WriteString(fmt.Sprintf("- %s\n", line))
+				fmt.Fprintf(&sb, "- %s\n", line)
 			}
 		} else {
-			sb.WriteString(fmt.Sprintf("\n\n%s:\n", section.Title))
+			fmt.Fprintf(&sb, "\n\n%s:\n", section.Title)
 			for _, line := range section.Lines {
-				sb.WriteString(fmt.Sprintf("  %s\n", line))
+				fmt.Fprintf(&sb, "  %s\n", line)
 			}
 		}
 	}
