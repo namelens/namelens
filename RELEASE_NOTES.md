@@ -3,6 +3,66 @@
 This file keeps notes for the latest three releases in reverse chronological
 order.
 
+## v0.2.4 (2026-03-11)
+
+Stability hardening: two bug fixes from standalone deployment and expert bulk
+analysis, plus lint and security cleanup.
+
+Highlights:
+
+- **B13 fix**: Expert prompt loading now works outside git repos via embedded
+  schema fallback
+- **B14 fix**: Expert bulk rate-limit burst mitigated with serialized fallback,
+  cooldown spacing, and exponential backoff
+- **Code quality**: QF1012 lint cleanup and G115/G101 security hardening
+
+### Expert Prompt Loading (B13)
+
+Running `check --expert` from outside a git repository (e.g. from a `make
+install` binary in `/usr/local/bin`) failed with "failed to load prompts"
+because both `catalogForSchemas()` and `buildSchemaCatalog()` required a
+repository root to locate schema files.
+
+Fixed by embedding prompt and response schemas via `go:embed` with
+temp-directory extraction fallback. Both the prompt loader
+(`internal/ailink/prompt/loader.go`) and the ailink helpers
+(`internal/cmd/ailink_helpers.go`) now fall back to embedded schemas when repo
+root discovery fails.
+
+Makefile `sync-embedded-config` and `verify-embedded-config` targets extended to
+keep embedded copies in sync with source-of-truth schemas.
+
+### Expert Bulk Rate-Limit Burst (B14)
+
+The first name in a multi-name `--expert` batch occasionally got "provider
+request failed" due to rate-limit burst immediately after the bulk request
+completed.
+
+Fixed with layered mitigations:
+
+- Post-bulk fallback requests serialized with 2s initial cooldown and 1.5s
+  spacing, scheduled from bulk completion time
+- Fallback execution mutex-serialized to prevent concurrent provider calls
+- Rate-limited (429) responses trigger exponential backoff retry (2s/4s/8s base,
+  up to 3 attempts) with deterministic per-name SHA256 jitter
+
+### Code Quality
+
+- **QF1012**: Replaced `WriteString(fmt.Sprintf(...))` with `fmt.Fprintf()`
+  across `internal/ailink/context/corpus.go`, `internal/output/analysis.go`, and
+  `internal/output/markdown.go`
+- **G115**: Added integer overflow bounds checks on uint64→int64 timestamp
+  conversions, int→uint16 port conversions, and int→uint32 PID conversions in
+  daemon discovery and lifecycle code
+- **G101**: Suppressed false positive on generated `ApiKeyScopes` constant in
+  `internal/api/openapi.gen.go`
+
+### Upgrade Notes
+
+No breaking changes. All v0.2.3 configurations remain valid.
+
+---
+
 ## v0.2.3 (2026-02-23)
 
 Dogfooding polish: bug fixes from the v0.2.2 naming exercise, brand workflow
@@ -141,22 +201,5 @@ the models are still available from Anthropic. Update at your convenience.
 
 Agent-ready deployment: headless server API, guided setup, and safety
 guardrails.
-
-Highlights:
-
-- **Setup wizard**: 30 seconds from install to full AI capability with
-  `namelens setup`
-- **Daemon mode**: Run server in background with `--daemon` flag
-- **Control Plane API**: REST API for remote name checking and comparison
-- **Anthropic Claude**: Third AI provider option alongside xAI and OpenAI
-- **Expert mode guidance**: Safety warnings prevent false confidence from
-  availability-only results
-- **Environment files**: Auto-load `.env` from XDG config or specify with
-  `--env-file`
-
-### Upgrade Notes
-
-- PID files moved from `~/.namelens/` to `~/.local/share/namelens/run/`
-- Old `~/.namelens/` directory can be safely removed
 
 See [v0.2.1 full release notes](docs/releases/v0.2.1.md) for details.

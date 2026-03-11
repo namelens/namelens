@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this project adheres to Semantic
 Versioning.
 
+## [0.2.4] - 2026-03-11
+
+### Fixed
+
+- **Expert prompt loading outside git repos (B13)**: `check --expert` failed
+  with "failed to load prompts" when run from outside a git repository. Embedded
+  prompt and response schemas via `go:embed` with temp-directory extraction
+  fallback, following the config layer's `standaloneAssetsRoot()` pattern
+- **Expert bulk rate-limit burst (B14)**: First name in multi-name `--expert`
+  batch occasionally got "provider request failed" due to rate-limit burst.
+  Post-bulk fallback requests now serialized with 2s initial cooldown, 1.5s
+  spacing, mutex-serialized execution, and exponential backoff retry (2s/4s/8s
+  base, up to 3 attempts) with deterministic per-name jitter
+- **Lint cleanup (QF1012)**: Replaced `WriteString(fmt.Sprintf(...))` with
+  `fmt.Fprintf()` across output formatting code
+- **Security hardening (G115, G101)**: Added integer overflow bounds checks on
+  uint64→int64 timestamp conversions, int→uint16 port conversions, and
+  int→uint32 PID conversions in daemon lifecycle code; suppressed G101 false
+  positive on generated OpenAPI constant
+
 ## [0.2.3] - 2026-02-23
 
 ### Added
