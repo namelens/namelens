@@ -15,8 +15,8 @@ Versioning.
 - **Provider override for generate** (`--provider`) enables invocation-scoped
   provider selection without changing global routing — useful for A/B testing
   across AI backends
-- **OSS profile** for registry-and-handle-only checks (npm, pypi, cargo,
-  github) — skips domain noise for open-source projects
+- **OSS profile** for registry-and-handle-only checks (npm, pypi, cargo, github)
+  — skips domain noise for open-source projects
 - Review phonetics passthrough: `--locales` and `--keyboards` flags for
   international phonetic analysis
 

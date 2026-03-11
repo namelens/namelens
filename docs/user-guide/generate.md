@@ -117,20 +117,20 @@ namelens generate "process utilities library" --json
 
 ## Flags
 
-| Flag                 | Short | Type   | Description                                                  |
-| -------------------- | ----- | ------ | ------------------------------------------------------------ |
-| `--current-name`     | `-n`  | string | Current working name seeking alternatives                    |
-| `--tagline`          | `-t`  | string | Product tagline/slogan                                       |
-| `--description`      | `-d`  | string | Inline product description                                   |
-| `--description-file` | `-f`  | path   | Read description from file (truncated to 2000 chars)         |
-| `--corpus`           |       | path   | Use pre-generated corpus file (JSON/markdown, `-` for stdin) |
-| `--scan-dir`         | `-s`  | path   | Scan directory for context files (prefer `--corpus`)         |
-| `--scan-budget`      |       | int    | Max chars from scanned files (default: 32000)                |
-| `--constraints`      | `-c`  | string | Naming constraints/requirements                              |
-| `--depth`            |       | string | `quick` (default), `fast`, or `deep`                         |
-| `--json`             |       | bool   | Output raw JSON response                                     |
-| `--model`            |       | string | Model override                                               |
-| `--prompt`           |       | string | Prompt slug (default: `name-alternatives`)                   |
+| Flag                 | Short | Type   | Description                                                     |
+| -------------------- | ----- | ------ | --------------------------------------------------------------- |
+| `--current-name`     | `-n`  | string | Current working name seeking alternatives                       |
+| `--tagline`          | `-t`  | string | Product tagline/slogan                                          |
+| `--description`      | `-d`  | string | Inline product description                                      |
+| `--description-file` | `-f`  | path   | Read description from file (truncated to 2000 chars)            |
+| `--corpus`           |       | path   | Use pre-generated corpus file (JSON/markdown, `-` for stdin)    |
+| `--scan-dir`         | `-s`  | path   | Scan directory for context files (prefer `--corpus`)            |
+| `--scan-budget`      |       | int    | Max chars from scanned files (default: 32000)                   |
+| `--constraints`      | `-c`  | string | Naming constraints/requirements                                 |
+| `--depth`            |       | string | `quick` (default), `fast`, or `deep`                            |
+| `--json`             |       | bool   | Output raw JSON response                                        |
+| `--model`            |       | string | Model override                                                  |
+| `--prompt`           |       | string | Prompt slug (default: `name-alternatives`)                      |
 | `--provider`         |       | string | Provider override for this run (matches `ailink.providers` key) |
 
 ## Output Format

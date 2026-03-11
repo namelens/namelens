@@ -55,7 +55,8 @@ default provider > single-provider fallback.
 
 Validation gives clear errors:
 
-- Unknown provider: `unknown provider "foo" (valid: namelens-anthropic, namelens-openai, namelens-xai)`
+- Unknown provider:
+  `unknown provider "foo" (valid: namelens-anthropic, namelens-openai, namelens-xai)`
 - Disabled provider: `provider "foo" is disabled`
 
 ### OSS Profile
@@ -70,8 +71,8 @@ namelens check mylib --profile=oss
 
 ### Bug Fixes
 
-- **Expert output (B3, B11)**: NAME column in `check --expert` shows the
-  checked name, not "ailink" — fixed in two passes across `output/notes.go` and
+- **Expert output (B3, B11)**: NAME column in `check --expert` shows the checked
+  name, not "ailink" — fixed in two passes across `output/notes.go` and
   `check.go`
 - **xAI markup (B5)**: Internal Grok citation markup (`<grok:render>`,
   `<argument>` tags) stripped from responses before display
