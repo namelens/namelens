@@ -8,6 +8,7 @@ import (
 
 	"github.com/fulmenhq/gofulmen/pathfinder"
 	"github.com/fulmenhq/gofulmen/schema"
+	"github.com/namelens/namelens/internal/ailink"
 	"github.com/namelens/namelens/internal/ailink/prompt"
 	"github.com/namelens/namelens/internal/config"
 )
@@ -51,10 +52,16 @@ func buildPromptRegistry(cfg *config.Config) (prompt.Registry, error) {
 
 func buildSchemaCatalog() (*schema.Catalog, error) {
 	root, err := findRepoRoot()
-	if err != nil {
-		return nil, err
+	if err == nil {
+		return schema.NewCatalog(filepath.Join(root, "schemas")), nil
 	}
-	return schema.NewCatalog(filepath.Join(root, "schemas")), nil
+
+	// Fallback: use embedded ailink schemas extracted to a temp directory.
+	catalog, fallbackErr := ailink.StandaloneSchemaCatalog()
+	if fallbackErr != nil {
+		return nil, fmt.Errorf("project root not found: %w; embedded fallback failed: %w", err, fallbackErr)
+	}
+	return catalog, nil
 }
 
 func findRepoRoot() (string, error) {

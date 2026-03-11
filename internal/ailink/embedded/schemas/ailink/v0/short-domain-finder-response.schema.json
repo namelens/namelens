@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crucible.3leaps.dev/schemas/ailink/v0/short-domain-finder-response",
+  "title": "Short Domain Finder Response",
+  "description": "Schema for short domain finder response",
+  "type": "object",
+  "required": [
+    "candidates"
+  ],
+  "properties": {
+    "purpose": {
+      "type": "string",
+      "description": "What these domains would be used for"
+    },
+    "target_length": {
+      "type": "integer",
+      "description": "Target character length"
+    },
+    "candidates": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/candidate"
+      },
+      "description": "List of generated domain candidates"
+    },
+    "top_recommendations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/recommendation"
+      },
+      "description": "Top recommended domains"
+    },
+    "tld_analysis": {
+      "type": "object",
+      "properties": {
+        "best_tlds_for_short": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "rationale": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "patterns_explored": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Domain patterns explored"
+    },
+    "search_insights": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Insights from availability research"
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "candidate": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The domain name (without TLD)"
+        },
+        "length": {
+          "type": "integer",
+          "description": "Character count"
+        },
+        "pattern": {
+          "type": "string",
+          "enum": [
+            "CVC",
+            "CVCV",
+            "CVCC",
+            "CCVC",
+            "word",
+            "initials",
+            "tld_hack",
+            "numeric",
+            "creative_spelling",
+            "other"
+          ],
+          "description": "Pattern type"
+        },
+        "pronunciation": {
+          "type": "string",
+          "description": "How to pronounce it"
+        },
+        "suggested_tlds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "TLDs likely to have availability"
+        },
+        "full_examples": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Full domain examples"
+        },
+        "memorability": {
+          "type": "string",
+          "enum": [
+            "high",
+            "medium",
+            "low"
+          ]
+        },
+        "availability_likelihood": {
+          "type": "string",
+          "enum": [
+            "high",
+            "medium",
+            "low"
+          ]
+        },
+        "rationale": {
+          "type": "string",
+          "description": "Why this is a good candidate"
+        }
+      },
+      "additionalProperties": true
+    },
+    "recommendation": {
+      "type": "object",
+      "required": [
+        "domain"
+      ],
+      "properties": {
+        "domain": {
+          "type": "string",
+          "description": "Full recommended domain"
+        },
+        "why": {
+          "type": "string",
+          "description": "Reasoning for recommendation"
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

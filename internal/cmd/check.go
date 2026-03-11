@@ -190,6 +190,7 @@ func runCheck(cmd *cobra.Command, args []string) error {
 		bulkFatalErr     *ailink.SearchError
 		fallbackMu       sync.Mutex
 		fallbackRemain   = expertBulkFallbackLimit
+		fallbackSeq      int // Tracks ordering for staggered backoff after bulk.
 	)
 	if (expertEnabled || cfg.Expert.Enabled) && expertBulk && len(names) > 1 {
 		bulkAttempted = true
@@ -265,7 +266,19 @@ func runCheck(cmd *cobra.Command, args []string) error {
 						fallbackMu.Unlock()
 
 						if canFallback {
-							expertResult, expertError = runExpert(ctx, cfg, store, name, expertDepth, expertModel, expertPrompt, !noCache)
+							// Stagger fallback requests to avoid rate-limit burst after bulk.
+							fallbackMu.Lock()
+							seq := fallbackSeq
+							fallbackSeq++
+							fallbackMu.Unlock()
+							if seq > 0 {
+								select {
+								case <-time.After(time.Duration(seq) * 500 * time.Millisecond):
+								case <-ctx.Done():
+									continue
+								}
+							}
+							expertResult, expertError = runExpertWithRetry(ctx, cfg, store, name, expertDepth, expertModel, expertPrompt, !noCache)
 						} else {
 							if bulkFatalErr != nil {
 								expertError = bulkFatalErr
@@ -798,6 +811,23 @@ func runExpert(ctx context.Context, cfg *config.Config, store *store.Store, name
 	}
 
 	return response, nil
+}
+
+// runExpertWithRetry wraps runExpert with a single retry on rate-limit (429) errors.
+// This handles the burst pattern where fallback requests fire immediately after a bulk request.
+func runExpertWithRetry(ctx context.Context, cfg *config.Config, store *store.Store, name, depth, modelOverride, promptOverride string, useCache bool) (*ailink.SearchResponse, *ailink.SearchError) {
+	resp, searchErr := runExpert(ctx, cfg, store, name, depth, modelOverride, promptOverride, useCache)
+	if searchErr == nil || searchErr.Code != "AILINK_PROVIDER_RATE_LIMIT" {
+		return resp, searchErr
+	}
+
+	select {
+	case <-time.After(2 * time.Second):
+	case <-ctx.Done():
+		return resp, searchErr
+	}
+
+	return runExpert(ctx, cfg, store, name, depth, modelOverride, promptOverride, useCache)
 }
 
 func runExpertBulk(ctx context.Context, cfg *config.Config, store *store.Store, names []string, depth, modelOverride, promptOverride string, useCache bool) (map[string]*ailink.SearchResponse, *ailink.SearchError) {

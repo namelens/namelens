@@ -249,6 +249,10 @@ sync-embedded-config: ## Sync embedded config/schema assets from source of truth
 	@mkdir -p internal/config/embedded/schemas/namelens/v0
 	@cp config/namelens/v0/namelens-defaults.yaml internal/config/embedded/namelens/v0/namelens-defaults.yaml
 	@cp schemas/namelens/v0/config.schema.json internal/config/embedded/schemas/namelens/v0/config.schema.json
+	@mkdir -p internal/ailink/prompt/embedded/schemas/ailink/v0
+	@cp schemas/ailink/v0/prompt.schema.json internal/ailink/prompt/embedded/schemas/ailink/v0/prompt.schema.json
+	@mkdir -p internal/ailink/embedded/schemas/ailink/v0
+	@for f in schemas/ailink/v0/*.json; do cp "$$f" internal/ailink/embedded/schemas/ailink/v0/; done
 	@echo "✅ Embedded config assets synced"
 
 verify-embedded-config: ## Verify embedded config/schema assets are in sync
@@ -256,6 +260,13 @@ verify-embedded-config: ## Verify embedded config/schema assets are in sync
 		(echo "❌ Embedded defaults drifted; run 'make sync-embedded-config'" && exit 1)
 	@cmp -s schemas/namelens/v0/config.schema.json internal/config/embedded/schemas/namelens/v0/config.schema.json || \
 		(echo "❌ Embedded schema drifted; run 'make sync-embedded-config'" && exit 1)
+	@cmp -s schemas/ailink/v0/prompt.schema.json internal/ailink/prompt/embedded/schemas/ailink/v0/prompt.schema.json || \
+		(echo "❌ Embedded prompt schema drifted; run 'make sync-embedded-config'" && exit 1)
+	@for f in schemas/ailink/v0/*.json; do \
+		base=$$(basename "$$f"); \
+		cmp -s "$$f" "internal/ailink/embedded/schemas/ailink/v0/$$base" || \
+			(echo "❌ Embedded ailink schema $$base drifted; run 'make sync-embedded-config'" && exit 1); \
+	done
 	@echo "✅ Embedded config assets verified"
 
 prepush: verify-embedded-config test-standalone-binary ## Pre-push checks (format, lint, security - fail on HIGH)

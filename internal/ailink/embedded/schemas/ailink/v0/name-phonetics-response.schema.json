@@ -1,0 +1,236 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crucible.3leaps.dev/schemas/ailink/v0/name-phonetics-response",
+  "title": "Name Phonetics Response",
+  "description": "Schema for name phonetics and typeability analysis response",
+  "type": "object",
+  "required": [
+    "name",
+    "overall_assessment"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "The name being analyzed"
+    },
+    "syllables": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Number of syllables"
+        },
+        "breakdown": {
+          "type": "string",
+          "description": "Syllable breakdown (e.g., 'ful-si-gil')"
+        },
+        "stress_pattern": {
+          "type": "string",
+          "description": "Stress pattern description"
+        }
+      },
+      "additionalProperties": true
+    },
+    "pronunciation": {
+      "type": "object",
+      "properties": {
+        "ipa_primary": {
+          "type": "string",
+          "description": "Primary IPA transcription"
+        },
+        "by_locale": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/locale_pronunciation"
+          }
+        },
+        "difficult_phonemes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "phone_test_score": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "phone_test_notes": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "typeability": {
+      "type": "object",
+      "properties": {
+        "overall_score": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "by_keyboard": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/keyboard_analysis"
+          }
+        },
+        "common_typos": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "muscle_memory": {
+          "type": "string",
+          "enum": [
+            "easy",
+            "moderate",
+            "difficult"
+          ]
+        }
+      },
+      "additionalProperties": true
+    },
+    "cli_suitability": {
+      "type": "object",
+      "properties": {
+        "score": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "length_assessment": {
+          "type": "string",
+          "enum": [
+            "good",
+            "acceptable",
+            "too_long"
+          ]
+        },
+        "shell_conflicts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tab_completion": {
+          "type": "string",
+          "enum": [
+            "distinctive",
+            "crowded",
+            "problematic"
+          ]
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "overall_assessment": {
+      "type": "object",
+      "required": [
+        "combined_score",
+        "recommendation"
+      ],
+      "properties": {
+        "phonetics_score": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "typeability_score": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "combined_score": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "recommendation": {
+          "type": "string"
+        },
+        "concerns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "strengths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "locale_pronunciation": {
+      "type": "object",
+      "required": [
+        "locale"
+      ],
+      "properties": {
+        "locale": {
+          "type": "string"
+        },
+        "ipa": {
+          "type": "string"
+        },
+        "natural": {
+          "type": "boolean"
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "keyboard_analysis": {
+      "type": "object",
+      "required": [
+        "layout"
+      ],
+      "properties": {
+        "layout": {
+          "type": "string"
+        },
+        "score": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "hand_alternation": {
+          "type": "string",
+          "enum": [
+            "good",
+            "mixed",
+            "poor"
+          ]
+        },
+        "home_row_percentage": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "awkward_sequences": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

@@ -1,0 +1,209 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crucible.3leaps.dev/schemas/ailink/v0/name-suitability-response",
+  "title": "Name Suitability Response",
+  "description": "Schema for name cultural suitability analysis response",
+  "type": "object",
+  "required": [
+    "name",
+    "overall_suitability"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "The name being analyzed"
+    },
+    "overall_suitability": {
+      "type": "object",
+      "required": [
+        "score",
+        "rating"
+      ],
+      "properties": {
+        "score": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "rating": {
+          "type": "string",
+          "enum": [
+            "suitable",
+            "caution",
+            "unsuitable"
+          ]
+        },
+        "summary": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "by_locale": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/locale_suitability"
+      }
+    },
+    "risk_assessment": {
+      "type": "object",
+      "properties": {
+        "profanity": {
+          "$ref": "#/$defs/risk_level"
+        },
+        "religious": {
+          "$ref": "#/$defs/risk_level"
+        },
+        "political": {
+          "$ref": "#/$defs/risk_level"
+        },
+        "cultural_taboo": {
+          "$ref": "#/$defs/risk_level"
+        },
+        "discriminatory": {
+          "$ref": "#/$defs/risk_level"
+        },
+        "sexual": {
+          "$ref": "#/$defs/risk_level"
+        },
+        "violence": {
+          "$ref": "#/$defs/risk_level"
+        },
+        "legal": {
+          "$ref": "#/$defs/risk_level"
+        }
+      },
+      "additionalProperties": true
+    },
+    "similar_sounding_risks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/sound_risk"
+      }
+    },
+    "positive_associations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "recommendations": {
+      "type": "object",
+      "properties": {
+        "proceed": {
+          "type": "boolean"
+        },
+        "caveats": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "markets_to_avoid": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "suggested_research": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "locale_suitability": {
+      "type": "object",
+      "required": [
+        "locale",
+        "suitability"
+      ],
+      "properties": {
+        "locale": {
+          "type": "string"
+        },
+        "suitability": {
+          "type": "string",
+          "enum": [
+            "clear",
+            "low",
+            "medium",
+            "high",
+            "blocker"
+          ]
+        },
+        "denotation": {
+          "type": "string"
+        },
+        "connotation": {
+          "type": "string"
+        },
+        "concerns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "risk_level": {
+      "type": "object",
+      "required": [
+        "level"
+      ],
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": [
+            "clear",
+            "low",
+            "medium",
+            "high",
+            "blocker"
+          ]
+        },
+        "details": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "sound_risk": {
+      "type": "object",
+      "required": [
+        "language",
+        "similar_to"
+      ],
+      "properties": {
+        "language": {
+          "type": "string"
+        },
+        "similar_to": {
+          "type": "string"
+        },
+        "meaning": {
+          "type": "string"
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "blocker"
+          ]
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

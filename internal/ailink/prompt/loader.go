@@ -3,15 +3,26 @@ package prompt
 import (
 	"bufio"
 	"bytes"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/fulmenhq/gofulmen/pathfinder"
 	"github.com/fulmenhq/gofulmen/schema"
 	"gopkg.in/yaml.v3"
+)
+
+//go:embed embedded/schemas/ailink/v0/prompt.schema.json
+var embeddedPromptSchemaJSON []byte
+
+var (
+	standaloneOnce    sync.Once
+	standaloneRoot    string
+	standaloneRootErr error
 )
 
 const promptSchemaID = "ailink/v0/prompt"
@@ -132,10 +143,56 @@ func validateConfig(cfg Config) error {
 
 func catalogForSchemas() (*schema.Catalog, error) {
 	root, err := findRepoRoot()
-	if err != nil {
-		return nil, err
+	if err == nil {
+		return schema.NewCatalog(filepath.Join(root, "schemas")), nil
 	}
-	return schema.NewCatalog(filepath.Join(root, "schemas")), nil
+
+	fallback, fallbackErr := standaloneSchemaRoot()
+	if fallbackErr != nil {
+		return nil, fmt.Errorf("project root not found: %w; embedded fallback failed: %w", err, fallbackErr)
+	}
+	return schema.NewCatalog(fallback), nil
+}
+
+func standaloneSchemaRoot() (string, error) {
+	standaloneOnce.Do(func() {
+		root, err := os.MkdirTemp("", "namelens-prompt-schemas-*")
+		if err != nil {
+			standaloneRootErr = fmt.Errorf("create prompt schema temp dir: %w", err)
+			return
+		}
+
+		target := filepath.Join(root, "ailink", "v0", "prompt.schema.json")
+		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+			standaloneRootErr = fmt.Errorf("create embedded schema dir: %w", err)
+			return
+		}
+		if err := os.WriteFile(target, embeddedPromptSchemaJSON, 0o644); err != nil {
+			standaloneRootErr = fmt.Errorf("write embedded prompt schema: %w", err)
+			return
+		}
+
+		standaloneRoot = root
+	})
+
+	if standaloneRootErr != nil {
+		return "", standaloneRootErr
+	}
+	return standaloneRoot, nil
+}
+
+// CleanupStandaloneSchemas removes temporary schema assets written to disk.
+// The sync.Once guard is reset so subsequent calls re-extract if needed.
+func CleanupStandaloneSchemas() error {
+	if standaloneRoot != "" {
+		if err := os.RemoveAll(standaloneRoot); err != nil {
+			return fmt.Errorf("cleanup standalone prompt schema temp dir: %w", err)
+		}
+	}
+	standaloneRoot = ""
+	standaloneRootErr = nil
+	standaloneOnce = sync.Once{}
+	return nil
 }
 
 func findRepoRoot() (string, error) {

@@ -1,0 +1,200 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crucible.3leaps.dev/schemas/ailink/v0/brand-plan-response",
+  "title": "Brand Plan Response",
+  "description": "Schema for brand launch plan generation responses",
+  "type": "object",
+  "required": [
+    "summary"
+  ],
+  "properties": {
+    "summary": {
+      "type": "string",
+      "description": "Executive summary of the brand plan"
+    },
+    "likely_available": {
+      "type": "boolean",
+      "description": "Whether the name appears available"
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical",
+        "unknown"
+      ],
+      "description": "Overall risk assessment"
+    },
+    "brand_identity": {
+      "type": "object",
+      "properties": {
+        "positioning_statement": {
+          "type": "string"
+        },
+        "tagline_options": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "brand_voice": {
+          "type": "string"
+        },
+        "visual_direction": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "immediate_actions": {
+      "type": "object",
+      "properties": {
+        "domains_to_register": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "handles_to_claim": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "trademark_considerations": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "launch_checklist": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/launch_phase"
+      }
+    },
+    "competitive_landscape": {
+      "type": "object",
+      "properties": {
+        "similar_tools": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "differentiation_opportunities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "insights": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Key findings as bullet points"
+    },
+    "mentions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/mention"
+      },
+      "description": "Relevant mentions found during search"
+    },
+    "recommendations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Actionable recommendations"
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "mention": {
+      "type": "object",
+      "required": [
+        "source",
+        "description"
+      ],
+      "properties": {
+        "source": {
+          "type": "string",
+          "enum": [
+            "X",
+            "web",
+            "news",
+            "trademark",
+            "github",
+            "other"
+          ],
+          "description": "Source type of the mention"
+        },
+        "description": {
+          "type": "string",
+          "description": "Brief summary of the finding"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL to the source (if available)"
+        },
+        "relevance": {
+          "type": "string",
+          "enum": [
+            "high",
+            "medium",
+            "low"
+          ],
+          "description": "Relevance to the name being checked"
+        },
+        "sentiment": {
+          "type": "string",
+          "enum": [
+            "positive",
+            "neutral",
+            "negative",
+            "mixed"
+          ],
+          "description": "Sentiment of the mention"
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the mention was found or published"
+        }
+      },
+      "additionalProperties": true
+    },
+    "launch_phase": {
+      "type": "object",
+      "properties": {
+        "phase": {
+          "type": "string"
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "priority": {
+          "type": "string",
+          "enum": [
+            "critical",
+            "high",
+            "medium",
+            "low"
+          ]
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

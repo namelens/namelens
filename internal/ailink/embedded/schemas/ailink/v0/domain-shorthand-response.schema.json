@@ -1,0 +1,180 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crucible.3leaps.dev/schemas/ailink/v0/domain-shorthand-response",
+  "title": "Domain Shorthand Response",
+  "description": "Schema for domain shorthand generation response",
+  "type": "object",
+  "required": [
+    "original",
+    "candidates"
+  ],
+  "properties": {
+    "original": {
+      "type": "string",
+      "description": "The original brand name being abbreviated"
+    },
+    "analysis": {
+      "type": "object",
+      "properties": {
+        "syllable_count": {
+          "type": "integer",
+          "description": "Number of syllables in original"
+        },
+        "key_sounds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Key phonetic elements to preserve"
+        },
+        "compound_structure": {
+          "type": "string",
+          "description": "Structure pattern (word+and+word, single, etc.)"
+        },
+        "distinctive_elements": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Most memorable parts of the name"
+        }
+      },
+      "additionalProperties": true
+    },
+    "candidates": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/candidate"
+      },
+      "description": "List of generated short domain candidates"
+    },
+    "top_recommendations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/recommendation"
+      },
+      "description": "Top recommended shorthand variants"
+    },
+    "strategies_attempted": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Abbreviation strategies explored"
+    },
+    "rejected_approaches": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/rejection"
+      },
+      "description": "Approaches that were tried but rejected"
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "candidate": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The abbreviated domain name"
+        },
+        "length": {
+          "type": "integer",
+          "description": "Character count"
+        },
+        "strategy": {
+          "type": "string",
+          "enum": [
+            "initial_extraction",
+            "phonetic_compression",
+            "syllable_preservation",
+            "number_substitution",
+            "portmanteau",
+            "keyword_focus",
+            "phonetic_respelling",
+            "creative_drops",
+            "semantic_synonyms",
+            "language_translations",
+            "hybrid",
+            "other"
+          ],
+          "description": "Abbreviation strategy used. Use 'hybrid' when combining multiple strategies."
+        },
+        "pronunciation": {
+          "type": "string",
+          "description": "How to pronounce it"
+        },
+        "derivation": {
+          "type": "string",
+          "description": "How this was derived from the original"
+        },
+        "memorability": {
+          "type": "string",
+          "enum": [
+            "high",
+            "medium",
+            "low"
+          ],
+          "description": "How memorable is this variant"
+        },
+        "recognizability": {
+          "type": "string",
+          "enum": [
+            "high",
+            "medium",
+            "low"
+          ],
+          "description": "How obvious is the connection to original"
+        },
+        "concerns": {
+          "type": "string",
+          "description": "Potential issues or 'None'"
+        }
+      },
+      "additionalProperties": true
+    },
+    "recommendation": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Recommended shorthand"
+        },
+        "why": {
+          "type": "string",
+          "description": "Reasoning for recommendation"
+        },
+        "suggested_tlds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Recommended TLDs for this shorthand"
+        }
+      },
+      "additionalProperties": true
+    },
+    "rejection": {
+      "type": "object",
+      "properties": {
+        "attempt": {
+          "type": "string",
+          "description": "The rejected abbreviation"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Why it was rejected"
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

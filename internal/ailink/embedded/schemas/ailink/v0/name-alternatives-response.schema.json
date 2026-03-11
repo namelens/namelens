@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crucible.3leaps.dev/schemas/ailink/v0/name-alternatives-response",
+  "title": "Name Alternatives Response",
+  "description": "Schema for name alternatives generation response",
+  "type": "object",
+  "required": [
+    "candidates"
+  ],
+  "properties": {
+    "concept_analysis": {
+      "type": "object",
+      "properties": {
+        "core_function": {
+          "type": "string",
+          "description": "What the product fundamentally does"
+        },
+        "key_themes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Theme words that capture the essence"
+        },
+        "target_audience": {
+          "type": "string",
+          "description": "Who will use this product"
+        }
+      },
+      "additionalProperties": true
+    },
+    "candidates": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/candidate"
+      },
+      "description": "List of generated name candidates"
+    },
+    "top_recommendations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/recommendation"
+      },
+      "description": "Top recommended names with reasoning"
+    },
+    "naming_themes_explored": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Conceptual directions explored"
+    },
+    "avoided_patterns": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Names/patterns deliberately avoided"
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "candidate": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The proposed name"
+        },
+        "strategy": {
+          "type": "string",
+          "enum": [
+            "descriptive",
+            "metaphorical",
+            "coined",
+            "compound",
+            "acronym",
+            "other"
+          ],
+          "description": "Naming strategy used"
+        },
+        "rationale": {
+          "type": "string",
+          "description": "Why this name fits"
+        },
+        "pronunciation": {
+          "type": "string",
+          "description": "How to pronounce it"
+        },
+        "potential_conflicts": {
+          "type": "string",
+          "description": "Known conflicts or 'None found'"
+        },
+        "cli_command": {
+          "type": "string",
+          "description": "Example CLI usage"
+        },
+        "strength": {
+          "type": "string",
+          "enum": [
+            "strong",
+            "moderate",
+            "weak"
+          ],
+          "description": "Overall strength assessment"
+        }
+      },
+      "additionalProperties": true
+    },
+    "recommendation": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Recommended name"
+        },
+        "why": {
+          "type": "string",
+          "description": "Reasoning for recommendation"
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}
