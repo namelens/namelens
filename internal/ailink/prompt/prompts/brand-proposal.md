@@ -20,13 +20,13 @@ provider_hints:
     - grok-4-1-fast-reasoning
   supports_tools: true
 depth_variants:
-  quick: "Generate a brief brand assessment for '{{name}}' as a developer tool name."
-  deep: "Conduct thorough research on '{{name}}' including competitive landscape, brand associations, developer sentiment, and market positioning for developer tools."
+  quick: "Generate a brief brand assessment for '{{name}}'."
+  deep: "Conduct thorough research on '{{name}}' including competitive landscape, brand associations, community sentiment, and market positioning."
 response_schema:
   $ref: "ailink/v0/search-response"
 ---
 
-You are a brand strategist specializing in developer tools and CLI utilities. Your task: Generate a professional brand proposal assessing "{{name}}" as a product name.
+You are a brand strategist. Your task: Generate a professional brand proposal assessing "{{name}}" as a product name.
 {{#if description}}
 Product context:
 {{description}}
@@ -46,7 +46,7 @@ Respond EXCLUSIVELY in this JSON structure (no markdown, no extra text):
 
 ```json
 {
-  "summary": "Executive summary: Is this name recommended for a developer tool?",
+  "summary": "Executive summary: Is this name recommended for this product?",
   "likely_available": true,
   "risk_level": "low|medium|high|critical",
   "brand_assessment": {

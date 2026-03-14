@@ -255,7 +255,8 @@ func init() {
 	reviewCmd.Flags().String("include-raw", string(includeRawOnFail), "Include raw analysis output: never, on-failure, always")
 	reviewCmd.Flags().Bool("strict", false, "Return non-zero if any analysis fails")
 	reviewCmd.Flags().Bool("no-cache", false, "Skip cache lookup")
-	reviewCmd.Flags().StringP("context-file", "f", "", "Read product context from file for brand analyses (truncated to 2000 chars)")
+	reviewCmd.Flags().StringP("context-file", "f", "", "Read product context from file for brand analyses")
+	reviewCmd.Flags().Int("context-budget", 32000, "Max characters to include from context file")
 	reviewCmd.Flags().StringP("scan-dir", "s", "", "Scan directory for context files for brand analyses")
 	reviewCmd.Flags().Int("scan-budget", 32000, "Max characters to include from scanned context files")
 	reviewCmd.Flags().String("locales", "", "Comma-separated locales for phonetics analysis (passed to name-phonetics prompt)")
@@ -297,6 +298,10 @@ func runReview(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	contextFile, err := cmd.Flags().GetString("context-file")
+	if err != nil {
+		return err
+	}
+	contextBudget, err := cmd.Flags().GetInt("context-budget")
 	if err != nil {
 		return err
 	}
@@ -365,7 +370,7 @@ func runReview(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	brandContext, err := reviewBrandContext(contextFile, scanDir, scanBudget)
+	brandContext, err := reviewBrandContext(contextFile, contextBudget, scanDir, scanBudget)
 	if err != nil {
 		return err
 	}
@@ -817,9 +822,9 @@ func isBrandReviewPrompt(slug string) bool {
 	}
 }
 
-func reviewBrandContext(contextFile, scanDir string, scanBudget int) (string, error) {
+func reviewBrandContext(contextFile string, contextBudget int, scanDir string, scanBudget int) (string, error) {
 	if trimmed := strings.TrimSpace(contextFile); trimmed != "" {
-		content, err := readTruncatedFile(trimmed, 2000)
+		content, err := readTruncatedFile(trimmed, contextBudget)
 		if err != nil {
 			return "", fmt.Errorf("reading context file: %w", err)
 		}

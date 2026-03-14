@@ -33,7 +33,8 @@ func init() {
 	generateCmd.Flags().StringP("current-name", "n", "", "Current working name seeking alternatives")
 	generateCmd.Flags().StringP("tagline", "t", "", "Product tagline/slogan")
 	generateCmd.Flags().StringP("description", "d", "", "Inline product description")
-	generateCmd.Flags().StringP("description-file", "f", "", "Read description from file (truncated to 2000 chars)")
+	generateCmd.Flags().StringP("description-file", "f", "", "Read description from file")
+	generateCmd.Flags().Int("description-budget", 32000, "Max characters to include from description file")
 	generateCmd.Flags().String("corpus", "", "Use pre-generated corpus file (JSON/markdown, or - for stdin)")
 	generateCmd.Flags().StringP("scan-dir", "s", "", "Scan directory for context files (README.md, *.md, etc.)")
 	generateCmd.Flags().Int("scan-budget", 32000, "Max characters to include from scanned files")
@@ -58,6 +59,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 	corpusPath, _ := cmd.Flags().GetString("corpus")
 	scanDir, _ := cmd.Flags().GetString("scan-dir")
 	scanBudget, _ := cmd.Flags().GetInt("scan-budget")
+	descriptionBudget, _ := cmd.Flags().GetInt("description-budget")
 	constraints, _ := cmd.Flags().GetString("constraints")
 	depth, _ := cmd.Flags().GetString("depth")
 	jsonOutput, _ := cmd.Flags().GetBool("json")
@@ -96,7 +98,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 				zap.Int("chars", corpus.Budget.UsedChars))
 		}
 	} else if descriptionFile != "" {
-		content, err := readTruncatedFile(descriptionFile, 2000)
+		content, err := readTruncatedFile(descriptionFile, descriptionBudget)
 		if err != nil {
 			return fmt.Errorf("reading description file: %w", err)
 		}

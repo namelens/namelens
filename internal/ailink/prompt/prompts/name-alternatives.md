@@ -28,7 +28,7 @@ response_schema:
   $ref: "ailink/v0/name-alternatives-response"
 ---
 
-You are a naming strategist specializing in developer tools and CLI utilities. Your task: Generate alternative name candidates for a product.
+You are a naming strategist. Your task: Generate alternative name candidates for a product.
 
 Product concept: {{concept}}
 {{#if current_name}}Current working name (seeking alternatives): {{current_name}}{{/if}}
