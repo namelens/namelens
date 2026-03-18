@@ -68,6 +68,34 @@ cooling:
       approved_by: "@3leapsdave"
       approved_date: "2026-01-04"
 # ============================================================================
+# VULNERABILITY SCANNING POLICY
+# ============================================================================
+# Keep `goneat dependencies --vuln` in report mode by default for release triage.
+# Known false positives from transitive minimum-version metadata are allowlisted
+# with an SDR reference so future scans stay actionable and auditable.
+vulnerabilities:
+  enabled: true
+  fail_on: none
+  allow:
+    - id: GHSA-v778-237x-gjrc
+      status: false_positive
+      reason: "Grype may flag openrdap's minimum x/crypto requirement instead of the resolved patched module version"
+      sdr: SDR-001
+      verified_by: "@3leapsdave"
+      verified_date: "2026-03-18"
+    - id: GHSA-hcg3-q754-cr77
+      status: false_positive
+      reason: "Grype may flag openrdap's minimum x/crypto requirement instead of the resolved patched module version"
+      sdr: SDR-001
+      verified_by: "@3leapsdave"
+      verified_date: "2026-03-18"
+    - id: GHSA-4374-p667-p6c8
+      status: false_positive
+      reason: "Grype may flag openrdap's minimum x/net requirement instead of the resolved patched module version"
+      sdr: SDR-001
+      verified_by: "@3leapsdave"
+      verified_date: "2026-03-18"
+# ============================================================================
 # POLICY ENGINE
 # ============================================================================
 policy_engine:

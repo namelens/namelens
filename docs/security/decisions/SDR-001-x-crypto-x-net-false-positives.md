@@ -105,7 +105,7 @@ well-understood and documented.
 
 - [x] Document analysis in SDR
 - [x] Update x/crypto and x/net to latest versions
-- [ ] Add allowlist entry to `.goneat/dependencies.yaml` if needed
+- [x] Add allowlist entry to `.goneat/dependencies.yaml`
 - [ ] Monitor openrdap for new releases
 - [ ] Monitor grype/syft for improved Go module handling
 
