@@ -19,9 +19,10 @@ type chatCompletionRequest struct {
 
 // responsesAPIRequest is for the new /v1/responses endpoint (with tools).
 type responsesAPIRequest struct {
-	Model string          `json:"model"`
-	Input []inputMessage  `json:"input"`
-	Tools []responsesTool `json:"tools,omitempty"`
+	Model string              `json:"model"`
+	Input []inputMessage      `json:"input"`
+	Tools []responsesTool     `json:"tools,omitempty"`
+	Text  *responsesTextInput `json:"text,omitempty"`
 }
 
 type inputMessage struct {
@@ -31,6 +32,21 @@ type inputMessage struct {
 
 type responsesTool struct {
 	Type string `json:"type"`
+}
+
+type responsesTextInput struct {
+	Format *responsesTextFormat `json:"format,omitempty"`
+}
+
+type responsesTextFormat struct {
+	Type       string               `json:"type"`
+	JSONSchema *responsesJSONSchema `json:"json_schema,omitempty"`
+}
+
+type responsesJSONSchema struct {
+	Name   string         `json:"name"`
+	Strict bool           `json:"strict"`
+	Schema map[string]any `json:"schema"`
 }
 
 type chatMessage struct {
@@ -91,6 +107,18 @@ func buildResponsesRequest(req *driver.Request) (*responsesAPIRequest, error) {
 		Model: req.Model,
 		Input: input,
 		Tools: tools,
+	}
+	if req.ResponseFormat != nil {
+		payload.Text = &responsesTextInput{
+			Format: &responsesTextFormat{Type: req.ResponseFormat.Type},
+		}
+		if req.ResponseFormat.JSONSchema != nil {
+			payload.Text.Format.JSONSchema = &responsesJSONSchema{
+				Name:   req.ResponseFormat.JSONSchema.Name,
+				Strict: req.ResponseFormat.JSONSchema.Strict,
+				Schema: req.ResponseFormat.JSONSchema.Schema,
+			}
+		}
 	}
 
 	return payload, nil
