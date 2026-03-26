@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -79,6 +80,34 @@ func TestAnalysisFromGenerateIncludeRawOnFailure(t *testing.T) {
 	require.False(t, analysis.OK)
 	require.NotNil(t, analysis.Error)
 	require.Equal(t, json.RawMessage(`{"raw": true}`), analysis.Raw)
+}
+
+func TestRenderReviewExtrasMarkdownReportsSuccessfulBrandProposalAsOK(t *testing.T) {
+	analyses := map[string]reviewAnalysis{
+		"name-availability": {OK: true, Data: json.RawMessage(`{"summary":"base"}`)},
+		"brand-proposal":    {OK: true, Data: json.RawMessage(`{"summary":"Highly recommended: spekref is distinctive."}`)},
+	}
+
+	var buf bytes.Buffer
+	renderReviewExtrasMarkdown(&buf, analyses, []string{"name-availability", "name-phonetics", "name-suitability"})
+
+	out := buf.String()
+	require.Contains(t, out, "## Additional analyses")
+	require.Contains(t, out, "- `brand-proposal`: ok (Highly recommended: spekref is distinctive.)")
+	require.NotContains(t, out, "- `brand-proposal`: error")
+}
+
+func TestRenderReviewExtrasMarkdownMatchesJSONSuccessState(t *testing.T) {
+	analysis := reviewAnalysis{OK: true, Data: json.RawMessage(`{"summary":"Highly recommended: 'spekref' is a clean, synthetic name..."}`)}
+	result := reviewResult{Analyses: map[string]reviewAnalysis{"brand-proposal": analysis}}
+
+	payload, err := json.Marshal(result)
+	require.NoError(t, err)
+	require.Contains(t, string(payload), `"brand-proposal":{"ok":true`)
+
+	var buf bytes.Buffer
+	renderReviewExtrasMarkdown(&buf, result.Analyses, []string{"name-availability", "name-phonetics", "name-suitability"})
+	require.Contains(t, buf.String(), "- `brand-proposal`: ok (Highly recommended: 'spekref' is a clean, synthetic name...)")
 }
 
 func TestReviewPromptSetFullMode(t *testing.T) {
