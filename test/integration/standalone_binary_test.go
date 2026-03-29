@@ -87,4 +87,28 @@ func TestStandaloneBinaryVersionAndCommandsWorkOutsideRepo(t *testing.T) {
 	if strings.Contains(string(envInfoOut), "Config load failed") {
 		t.Fatalf("envinfo indicates config loading failed outside repo: %s", string(envInfoOut))
 	}
+
+	// Verify the binary works when CWD is inside an unrelated git repository.
+	// This catches the bug where findProjectRoot() finds the wrong repo's root
+	// and then fails loading namelens defaults from that foreign tree.
+	foreignRepo := filepath.Join(outside, "other-project")
+	if err := os.MkdirAll(foreignRepo, 0o755); err != nil {
+		t.Fatalf("create foreign repo dir: %v", err)
+	}
+	gitInit := exec.Command("git", "init")
+	gitInit.Dir = foreignRepo
+	if out, err := gitInit.CombinedOutput(); err != nil {
+		t.Fatalf("git init foreign repo: %v\n%s", err, string(out))
+	}
+
+	envInfoForeign := exec.Command(copiedBinary, "envinfo")
+	envInfoForeign.Dir = foreignRepo
+	envInfoForeign.Env = cmdEnv
+	envInfoForeignOut, err := envInfoForeign.CombinedOutput()
+	if err != nil {
+		t.Fatalf("envinfo in foreign repo failed: %v\n%s", err, string(envInfoForeignOut))
+	}
+	if strings.Contains(string(envInfoForeignOut), "Config load failed") {
+		t.Fatalf("envinfo failed inside foreign repo (should use embedded defaults): %s", string(envInfoForeignOut))
+	}
 }

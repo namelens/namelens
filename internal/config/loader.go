@@ -395,14 +395,21 @@ func applyAILinkDynamicEnvOverrides(prefix string, envOverrides map[string]any) 
 }
 
 func resolveConfigAssetRoot() (string, error) {
-	projectRoot, err := findProjectRoot()
-	if err == nil {
-		return projectRoot, nil
+	projectRoot, findErr := findProjectRoot()
+	if findErr == nil {
+		// Validate the discovered root actually contains namelens config assets.
+		// Without this check, running the binary inside an unrelated repository
+		// (e.g. crucible) would use that repo's root and fail when the expected
+		// defaults file is missing.
+		defaultsPath := filepath.Join(projectRoot, "config", "namelens", "v0", "namelens-defaults.yaml")
+		if _, err := os.Stat(defaultsPath); err == nil {
+			return projectRoot, nil
+		}
 	}
 
 	fallbackRoot, fallbackErr := standaloneAssetsRoot()
 	if fallbackErr != nil {
-		return "", fmt.Errorf("project root lookup failed: %w; embedded fallback failed: %w", err, fallbackErr)
+		return "", fmt.Errorf("project root lookup failed: %v; embedded fallback failed: %w", findErr, fallbackErr)
 	}
 
 	return fallbackRoot, nil

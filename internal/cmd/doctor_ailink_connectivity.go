@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -20,6 +21,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/namelens/namelens/internal/ailink"
+	"github.com/namelens/namelens/internal/ailink/content"
+	"github.com/namelens/namelens/internal/ailink/driver"
 	"github.com/namelens/namelens/internal/config"
 	"github.com/namelens/namelens/internal/output"
 )
@@ -33,6 +36,7 @@ var (
 	doctorAILinkConnectivityOutputRaw   string
 	doctorAILinkConnectivityOut         string
 	doctorAILinkConnectivityOutDir      string
+	doctorAILinkConnectivityCompletion  bool
 )
 
 type connectivityReport struct {
@@ -174,7 +178,7 @@ var doctorAILinkConnectivityCmd = &cobra.Command{
 		}
 
 		promptPreferred := firstPreferredModel(promptDef)
-		report, err := runConnectivity(cmd.Context(), promptSlug, role, promptPreferred, resolved, resolutionSource, routingTarget, format)
+		report, err := runConnectivity(cmd.Context(), promptSlug, role, promptPreferred, resolved, resolutionSource, routingTarget, format, doctorAILinkConnectivityCompletion)
 		if err != nil {
 			return err
 		}
@@ -225,7 +229,7 @@ var doctorAILinkConnectivityCmd = &cobra.Command{
 	},
 }
 
-func runConnectivity(ctx context.Context, promptSlug string, role string, promptPreferred string, resolved *ailink.ResolvedProvider, resolutionSource string, routingTarget string, format output.Format) (*connectivityReport, error) {
+func runConnectivity(ctx context.Context, promptSlug string, role string, promptPreferred string, resolved *ailink.ResolvedProvider, resolutionSource string, routingTarget string, format output.Format, runCompletion bool) (*connectivityReport, error) {
 	if resolved == nil {
 		return nil, fmt.Errorf("provider not resolved")
 	}
@@ -348,8 +352,23 @@ func runConnectivity(ctx context.Context, promptSlug string, role string, prompt
 
 	httpCheck := runHTTPAuthCheck(ctx, report.Resolution.AIProvider, baseURL, resolved.Credential.APIKey, timeout)
 	checks = append(checks, httpCheck)
+	if !httpCheck.OK {
+		report.Checks = checks
+		report.Summary = classifyConnectivity(checks, report, "http_auth")
+		return report, nil
+	}
+
+	if runCompletion && resolved.Driver != nil {
+		completionCheck := runChatCompletionCheck(ctx, resolved.Driver, resolved.Model, timeout)
+		checks = append(checks, completionCheck)
+	}
+
 	report.Checks = checks
-	report.Summary = classifyConnectivity(checks, report, "http_auth")
+	lastLayer := "http_auth"
+	if runCompletion {
+		lastLayer = "chat_completion"
+	}
+	report.Summary = classifyConnectivity(checks, report, lastLayer)
 	return report, nil
 }
 
@@ -507,6 +526,81 @@ func runHTTPAuthCheck(ctx context.Context, aiProvider string, baseURL string, ap
 		check.OK = false
 		check.Error = &connectivityErrInfo{Code: "HTTP_STATUS_ERROR", Message: resp.Status}
 	}
+	return check
+}
+
+func runChatCompletionCheck(ctx context.Context, d driver.Driver, model string, timeout time.Duration) connectivityCheck {
+	check := connectivityCheck{Name: "chat_completion"}
+	if d == nil {
+		check.Skipped = true
+		check.Details = map[string]any{"reason": "no driver resolved"}
+		return check
+	}
+	if strings.TrimSpace(model) == "" {
+		check.Skipped = true
+		check.Details = map[string]any{"reason": "no model resolved"}
+		return check
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	req := &driver.Request{
+		Model: model,
+		Messages: []content.Message{
+			{Role: "user", Content: []content.ContentBlock{
+				{Type: content.ContentTypeText, Text: "Say hello in exactly one word."},
+			}},
+		},
+	}
+
+	start := time.Now()
+	resp, err := d.Complete(ctx, req)
+	elapsed := time.Since(start)
+	check.LatencyMS = elapsed.Milliseconds()
+
+	details := map[string]any{
+		"model":   model,
+		"driver":  d.Name(),
+	}
+
+	if err != nil {
+		check.OK = false
+		details["error_type"] = "completion_failed"
+
+		var provErr *driver.ProviderError
+		if errors.As(err, &provErr) {
+			details["status_code"] = provErr.StatusCode
+			details["provider"] = provErr.Provider
+			// Include a snippet of the error body for diagnostics.
+			msg := provErr.Message
+			if len(msg) > 300 {
+				msg = msg[:300]
+			}
+			check.Error = &connectivityErrInfo{
+				Code:    fmt.Sprintf("COMPLETION_%d", provErr.StatusCode),
+				Message: msg,
+			}
+		} else {
+			check.Error = &connectivityErrInfo{
+				Code:    "COMPLETION_ERROR",
+				Message: err.Error(),
+			}
+		}
+		check.Details = details
+		return check
+	}
+
+	check.OK = true
+	if resp != nil && resp.Usage != nil {
+		details["prompt_tokens"] = resp.Usage.PromptTokens
+		details["completion_tokens"] = resp.Usage.CompletionTokens
+		details["total_tokens"] = resp.Usage.TotalTokens
+	}
+	if resp != nil {
+		details["finish_reason"] = resp.FinishReason
+	}
+	check.Details = details
 	return check
 }
 
@@ -820,6 +914,35 @@ func classifyConnectivity(checks []connectivityCheck, report *connectivityReport
 			}
 			break
 		}
+	case "chat_completion":
+		summary.Classification = "completion_failed"
+		for _, chk := range checks {
+			if chk.Name != "chat_completion" || chk.Error == nil {
+				continue
+			}
+			code := chk.Error.Code
+			switch {
+			case code == "COMPLETION_429":
+				summary.Classification = "rate_limited"
+				summary.Hints = append(summary.Hints, "Provider rate limited the completion request; retry later or rotate credentials")
+			case code == "COMPLETION_401" || code == "COMPLETION_403":
+				summary.Classification = "auth_invalid"
+				summary.Hints = append(summary.Hints, "API key accepted by /models but rejected for completions; check key permissions")
+			case strings.HasPrefix(code, "COMPLETION_5"):
+				summary.Classification = "provider_overloaded"
+				summary.Hints = append(summary.Hints, "Provider returned server error on completion; the model may be temporarily unavailable")
+			case code == "COMPLETION_400":
+				summary.Classification = "bad_request"
+				summary.Hints = append(summary.Hints, "Completion request rejected (400); the model name may be invalid or unsupported")
+			case code == "COMPLETION_ERROR":
+				summary.Classification = "completion_error"
+				summary.Hints = append(summary.Hints, "Completion failed at the client level (timeout, network, or driver error)")
+			default:
+				summary.Classification = "completion_failed"
+				summary.Hints = append(summary.Hints, "Chat completion failed; see error details")
+			}
+			break
+		}
 	}
 
 	return summary
@@ -834,6 +957,7 @@ func init() {
 	doctorAILinkConnectivityCmd.Flags().BoolVar(&doctorAILinkConnectivityQuiet, "quiet", false, "Exit code only")
 	doctorAILinkConnectivityCmd.Flags().BoolVar(&doctorAILinkConnectivityShowSecrets, "show-secrets", false, "Include masked key hints in output")
 	doctorAILinkConnectivityCmd.Flags().StringVar(&doctorAILinkConnectivityOutputRaw, "output-format", string(output.FormatTable), "Output format: table|json")
+	doctorAILinkConnectivityCmd.Flags().BoolVar(&doctorAILinkConnectivityCompletion, "completion", false, "Send a test chat completion (costs a few tokens)")
 	doctorAILinkConnectivityCmd.Flags().StringVar(&doctorAILinkConnectivityOut, "out", "", "Write output to a file (default stdout)")
 	doctorAILinkConnectivityCmd.Flags().StringVar(&doctorAILinkConnectivityOutDir, "out-dir", "", "Write output to a directory")
 }

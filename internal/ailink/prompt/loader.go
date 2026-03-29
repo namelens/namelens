@@ -209,7 +209,7 @@ func findRepoRoot() (string, error) {
 			pathfinder.WithBoundary(hint.Boundary),
 			pathfinder.WithMaxDepth(20),
 		)
-		if err == nil {
+		if err == nil && isNamelensSchemaRoot(root) {
 			return root, nil
 		}
 	}
@@ -218,5 +218,14 @@ func findRepoRoot() (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if !isNamelensSchemaRoot(root) {
+		return "", fmt.Errorf("project root %s is not a namelens repository", root)
+	}
 	return root, nil
+}
+
+// isNamelensSchemaRoot returns true if the directory contains namelens prompt schema assets.
+func isNamelensSchemaRoot(root string) bool {
+	_, err := os.Stat(filepath.Join(root, "schemas", "ailink", "v0", "prompt.schema.json"))
+	return err == nil
 }
