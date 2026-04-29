@@ -98,7 +98,7 @@ func findRepoRoot() (string, error) {
 				pathfinder.WithBoundary(boundary),
 				pathfinder.WithMaxDepth(20),
 			)
-			if err == nil {
+			if err == nil && isNamelensRoot(rootPath) {
 				return rootPath, nil
 			}
 		}
@@ -108,5 +108,14 @@ func findRepoRoot() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("project root not found: %w", err)
 	}
+	if !isNamelensRoot(root) {
+		return "", fmt.Errorf("project root %s is not a namelens repository", root)
+	}
 	return root, nil
+}
+
+// isNamelensRoot returns true if the directory contains namelens schema assets.
+func isNamelensRoot(root string) bool {
+	_, err := os.Stat(filepath.Join(root, "schemas", "ailink", "v0"))
+	return err == nil
 }

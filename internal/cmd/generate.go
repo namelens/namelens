@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -33,7 +34,8 @@ func init() {
 	generateCmd.Flags().StringP("current-name", "n", "", "Current working name seeking alternatives")
 	generateCmd.Flags().StringP("tagline", "t", "", "Product tagline/slogan")
 	generateCmd.Flags().StringP("description", "d", "", "Inline product description")
-	generateCmd.Flags().StringP("description-file", "f", "", "Read description from file (truncated to 2000 chars)")
+	generateCmd.Flags().StringP("description-file", "f", "", "Read description from file")
+	generateCmd.Flags().Int("description-budget", 32000, "Max characters to include from description file")
 	generateCmd.Flags().String("corpus", "", "Use pre-generated corpus file (JSON/markdown, or - for stdin)")
 	generateCmd.Flags().StringP("scan-dir", "s", "", "Scan directory for context files (README.md, *.md, etc.)")
 	generateCmd.Flags().Int("scan-budget", 32000, "Max characters to include from scanned files")
@@ -58,6 +60,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 	corpusPath, _ := cmd.Flags().GetString("corpus")
 	scanDir, _ := cmd.Flags().GetString("scan-dir")
 	scanBudget, _ := cmd.Flags().GetInt("scan-budget")
+	descriptionBudget, _ := cmd.Flags().GetInt("description-budget")
 	constraints, _ := cmd.Flags().GetString("constraints")
 	depth, _ := cmd.Flags().GetString("depth")
 	jsonOutput, _ := cmd.Flags().GetBool("json")
@@ -96,7 +99,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 				zap.Int("chars", corpus.Budget.UsedChars))
 		}
 	} else if descriptionFile != "" {
-		content, err := readTruncatedFile(descriptionFile, 2000)
+		content, err := readTruncatedFile(descriptionFile, descriptionBudget)
 		if err != nil {
 			return fmt.Errorf("reading description file: %w", err)
 		}
@@ -191,7 +194,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	return printGenerateResults(response.Raw, concept)
+	return printGenerateResults(response.Raw, concept, promptDef.Config.Slug, promptDef.Config.ResponseSchema)
 }
 
 func applyGenerateProviderOverride(cfg ailink.Config, role, providerID string) (ailink.Config, error) {
@@ -337,84 +340,550 @@ func parseCorpusMarkdown(data []byte) (*ailinkctx.Corpus, error) {
 	return corpus, nil
 }
 
-func printGenerateResults(raw json.RawMessage, concept string) error {
-	// Parse the JSON response
-	var result struct {
-		ConceptAnalysis struct {
-			CoreFunction   string   `json:"core_function"`
-			KeyThemes      []string `json:"key_themes"`
-			TargetAudience string   `json:"target_audience"`
-		} `json:"concept_analysis"`
-		Candidates []struct {
-			Name               string `json:"name"`
-			Strategy           string `json:"strategy"`
-			Rationale          string `json:"rationale"`
-			Pronunciation      string `json:"pronunciation"`
-			PotentialConflicts string `json:"potential_conflicts"`
-			CLICommand         string `json:"cli_command"`
-			Strength           string `json:"strength"`
-		} `json:"candidates"`
-		TopRecommendations []struct {
-			Name string `json:"name"`
-			Why  string `json:"why"`
-		} `json:"top_recommendations"`
-		NamingThemesExplored []string `json:"naming_themes_explored"`
-		AvoidedPatterns      []string `json:"avoided_patterns"`
+func printGenerateResults(raw json.RawMessage, concept, promptSlug string, responseSchema map[string]any) error {
+	rendered, err := renderGenerateResults(os.Stdout, raw, concept, promptSlug, responseSchemaRef(responseSchema))
+	if err != nil {
+		return err
 	}
-
-	if err := json.Unmarshal(raw, &result); err != nil {
-		// Fall back to raw output if parsing fails
-		fmt.Println(string(raw))
+	if rendered {
 		return nil
 	}
+	return printGenerateRawFallback(os.Stdout, raw, concept)
+}
 
-	fmt.Printf("Generating name alternatives for: %s\n\n", concept)
+type generateNameAlternativesResult struct {
+	ConceptAnalysis struct {
+		CoreFunction   string   `json:"core_function"`
+		KeyThemes      []string `json:"key_themes"`
+		TargetAudience string   `json:"target_audience"`
+	} `json:"concept_analysis"`
+	Candidates []struct {
+		Name               string `json:"name"`
+		Strategy           string `json:"strategy"`
+		Rationale          string `json:"rationale"`
+		Pronunciation      string `json:"pronunciation"`
+		PotentialConflicts string `json:"potential_conflicts"`
+		CLICommand         string `json:"cli_command"`
+		Strength           string `json:"strength"`
+	} `json:"candidates"`
+	TopRecommendations []struct {
+		Name string `json:"name"`
+		Why  string `json:"why"`
+	} `json:"top_recommendations"`
+	NamingThemesExplored []string `json:"naming_themes_explored"`
+	AvoidedPatterns      []string `json:"avoided_patterns"`
+}
 
-	// Concept Analysis
+type generateSearchResponse struct {
+	Summary          string                   `json:"summary"`
+	LikelyAvailable  *bool                    `json:"likely_available,omitempty"`
+	RiskLevel        string                   `json:"risk_level,omitempty"`
+	Confidence       *float64                 `json:"confidence,omitempty"`
+	BrandAssessment  generateBrandAssessment  `json:"brand_assessment,omitempty"`
+	ConflictAnalysis generateConflictAnalysis `json:"conflict_analysis,omitempty"`
+	DomainStrategy   generateDomainStrategy   `json:"domain_strategy,omitempty"`
+	Insights         []string                 `json:"insights,omitempty"`
+	Mentions         []generateMention        `json:"mentions,omitempty"`
+	Recommendations  []string                 `json:"recommendations,omitempty"`
+}
+
+type generateBrandAssessment struct {
+	Memorability    string `json:"memorability,omitempty"`
+	DeveloperAppeal string `json:"developer_appeal,omitempty"`
+	Pronunciation   string `json:"pronunciation,omitempty"`
+	VisualPotential string `json:"visual_potential,omitempty"`
+}
+
+type generateConflictAnalysis struct {
+	ExistingSoftware  []string `json:"existing_software,omitempty"`
+	TrademarkConcerns string   `json:"trademark_concerns,omitempty"`
+	SocialPresence    string   `json:"social_presence,omitempty"`
+}
+
+type generateDomainStrategy struct {
+	RecommendedTLD string   `json:"recommended_tld,omitempty"`
+	Rationale      string   `json:"rationale,omitempty"`
+	Alternatives   []string `json:"alternatives,omitempty"`
+}
+
+type generateBrandPlanResponse struct {
+	Summary              string                       `json:"summary"`
+	LikelyAvailable      *bool                        `json:"likely_available,omitempty"`
+	RiskLevel            string                       `json:"risk_level,omitempty"`
+	BrandIdentity        generateBrandIdentity        `json:"brand_identity,omitempty"`
+	ImmediateActions     generateImmediateActions     `json:"immediate_actions,omitempty"`
+	LaunchChecklist      []generateLaunchPhase        `json:"launch_checklist,omitempty"`
+	CompetitiveLandscape generateCompetitiveLandscape `json:"competitive_landscape,omitempty"`
+	Insights             []string                     `json:"insights,omitempty"`
+	Mentions             []generateMention            `json:"mentions,omitempty"`
+	Recommendations      []string                     `json:"recommendations,omitempty"`
+}
+
+type generateBrandIdentity struct {
+	PositioningStatement string   `json:"positioning_statement,omitempty"`
+	TaglineOptions       []string `json:"tagline_options,omitempty"`
+	BrandVoice           string   `json:"brand_voice,omitempty"`
+	VisualDirection      string   `json:"visual_direction,omitempty"`
+}
+
+type generateImmediateActions struct {
+	DomainsToRegister      []string `json:"domains_to_register,omitempty"`
+	HandlesToClaim         []string `json:"handles_to_claim,omitempty"`
+	TrademarkConsideration string   `json:"trademark_considerations,omitempty"`
+}
+
+type generateCompetitiveLandscape struct {
+	SimilarTools                 []string `json:"similar_tools,omitempty"`
+	DifferentiationOpportunities []string `json:"differentiation_opportunities,omitempty"`
+}
+
+type generateLaunchPhase struct {
+	Phase    string   `json:"phase,omitempty"`
+	Actions  []string `json:"actions,omitempty"`
+	Priority string   `json:"priority,omitempty"`
+}
+
+type generateBulkSearchResponse struct {
+	Summary string                     `json:"summary,omitempty"`
+	Items   []generateBulkSearchResult `json:"items"`
+}
+
+type generateBulkSearchResult struct {
+	Name            string            `json:"name"`
+	Summary         string            `json:"summary"`
+	LikelyAvailable *bool             `json:"likely_available,omitempty"`
+	RiskLevel       string            `json:"risk_level,omitempty"`
+	Confidence      *float64          `json:"confidence,omitempty"`
+	Insights        []string          `json:"insights,omitempty"`
+	Mentions        []generateMention `json:"mentions,omitempty"`
+	Recommendations []string          `json:"recommendations,omitempty"`
+}
+
+type generateMention struct {
+	Source      string `json:"source,omitempty"`
+	Description string `json:"description,omitempty"`
+	URL         string `json:"url,omitempty"`
+	Relevance   string `json:"relevance,omitempty"`
+	Sentiment   string `json:"sentiment,omitempty"`
+	Date        string `json:"date,omitempty"`
+}
+
+// errWriter wraps an io.Writer and captures the first write error so callers
+// can drive sequences of fmt.Fprintf/Fprintln calls without checking each one.
+type errWriter struct {
+	w   io.Writer
+	err error
+}
+
+func (ew *errWriter) Fprintf(format string, args ...any) {
+	if ew.err != nil {
+		return
+	}
+	_, ew.err = fmt.Fprintf(ew.w, format, args...)
+}
+
+func (ew *errWriter) Fprintln(args ...any) {
+	if ew.err != nil {
+		return
+	}
+	_, ew.err = fmt.Fprintln(ew.w, args...)
+}
+
+func renderGenerateResults(w io.Writer, raw json.RawMessage, concept, promptSlug, schemaRef string) (bool, error) {
+	switch strings.TrimSpace(schemaRef) {
+	case "", "ailink/v0/name-alternatives-response":
+		return renderNameAlternativesResults(w, raw, concept)
+	case "ailink/v0/search-response":
+		return renderSearchResponseResults(w, raw, concept, promptSlug)
+	case "ailink/v0/brand-plan-response":
+		return renderBrandPlanResults(w, raw, concept)
+	case "ailink/v0/search-bulk-response":
+		return renderBulkSearchResults(w, raw, concept)
+	default:
+		return false, nil
+	}
+}
+
+func renderNameAlternativesResults(w io.Writer, raw json.RawMessage, concept string) (bool, error) {
+	var result generateNameAlternativesResult
+	if err := json.Unmarshal(raw, &result); err != nil {
+		return false, nil
+	}
+
+	if result.ConceptAnalysis.CoreFunction == "" && len(result.Candidates) == 0 && len(result.TopRecommendations) == 0 && len(result.NamingThemesExplored) == 0 && len(result.AvoidedPatterns) == 0 {
+		return false, nil
+	}
+
+	ew := &errWriter{w: w}
+	ew.Fprintf("Generating name alternatives for: %s\n\n", concept)
+
 	if result.ConceptAnalysis.CoreFunction != "" {
-		fmt.Println("Concept Analysis:")
-		fmt.Printf("  Core function: %s\n", result.ConceptAnalysis.CoreFunction)
+		ew.Fprintln("Concept Analysis:")
+		ew.Fprintf("  Core function: %s\n", result.ConceptAnalysis.CoreFunction)
 		if len(result.ConceptAnalysis.KeyThemes) > 0 {
-			fmt.Printf("  Key themes: %s\n", strings.Join(result.ConceptAnalysis.KeyThemes, ", "))
+			ew.Fprintf("  Key themes: %s\n", strings.Join(result.ConceptAnalysis.KeyThemes, ", "))
 		}
 		if result.ConceptAnalysis.TargetAudience != "" {
-			fmt.Printf("  Target audience: %s\n", result.ConceptAnalysis.TargetAudience)
+			ew.Fprintf("  Target audience: %s\n", result.ConceptAnalysis.TargetAudience)
 		}
-		fmt.Println()
+		ew.Fprintln()
 	}
 
-	// Top Recommendations
 	if len(result.TopRecommendations) > 0 {
-		fmt.Println("Top Recommendations:")
+		ew.Fprintln("Top Recommendations:")
 		for i, rec := range result.TopRecommendations {
-			fmt.Printf("  %d. %s - %s\n", i+1, rec.Name, rec.Why)
+			ew.Fprintf("  %d. %s - %s\n", i+1, rec.Name, rec.Why)
 		}
-		fmt.Println()
+		ew.Fprintln()
 	}
 
-	// All Candidates
 	if len(result.Candidates) > 0 {
-		fmt.Println("All Candidates:")
-		fmt.Printf("  %-14s %-12s %-10s %s\n", "NAME", "STRATEGY", "STRENGTH", "CONFLICTS")
+		ew.Fprintln("All Candidates:")
+		ew.Fprintf("  %-14s %-12s %-10s %s\n", "NAME", "STRATEGY", "STRENGTH", "CONFLICTS")
 		for _, c := range result.Candidates {
 			conflicts := c.PotentialConflicts
 			if conflicts == "" {
 				conflicts = "None found"
 			}
-			// Truncate conflicts for display
 			if len(conflicts) > 40 {
 				conflicts = conflicts[:37] + "..."
 			}
-			fmt.Printf("  %-14s %-12s %-10s %s\n", c.Name, c.Strategy, c.Strength, conflicts)
+			ew.Fprintf("  %-14s %-12s %-10s %s\n", c.Name, c.Strategy, c.Strength, conflicts)
 		}
-		fmt.Println()
+		ew.Fprintln()
 	}
 
-	// Themes explored
 	if len(result.NamingThemesExplored) > 0 {
-		fmt.Printf("Themes explored: %s\n", strings.Join(result.NamingThemesExplored, ", "))
+		ew.Fprintf("Themes explored: %s\n", strings.Join(result.NamingThemesExplored, ", "))
 	}
 
-	fmt.Println("\nRun 'namelens check <name>' to verify availability.")
-	return nil
+	writeGenerateFooter(ew)
+	return true, ew.err
+}
+
+func renderSearchResponseResults(w io.Writer, raw json.RawMessage, concept, promptSlug string) (bool, error) {
+	var result generateSearchResponse
+	if err := json.Unmarshal(raw, &result); err != nil {
+		return false, nil
+	}
+	if strings.TrimSpace(result.Summary) == "" {
+		return false, nil
+	}
+
+	ew := &errWriter{w: w}
+	ew.Fprintf("Brand assessment for: %s\n\n", concept)
+	ew.Fprintf("Summary: %s\n", result.Summary)
+	if status := formatGenerateAvailability(result.LikelyAvailable); status != "" {
+		ew.Fprintf("Likely available: %s\n", status)
+	}
+	if risk := strings.TrimSpace(result.RiskLevel); risk != "" {
+		ew.Fprintf("Risk level: %s\n", risk)
+	}
+	if confidence := formatConfidence(result.Confidence); confidence != "" {
+		ew.Fprintf("Confidence: %s\n", confidence)
+	}
+
+	if strings.TrimSpace(promptSlug) == "brand-proposal" {
+		writeBrandAssessmentSection(ew, result.BrandAssessment)
+		writeConflictAnalysisSection(ew, result.ConflictAnalysis)
+		writeDomainStrategySection(ew, result.DomainStrategy)
+	}
+
+	writeStringListSection(ew, "Insights", result.Insights)
+	writeMentionSection(ew, "Mentions", result.Mentions)
+	writeStringListSection(ew, "Recommendations", result.Recommendations)
+
+	writeGenerateFooter(ew)
+	return true, ew.err
+}
+
+func renderBrandPlanResults(w io.Writer, raw json.RawMessage, concept string) (bool, error) {
+	var result generateBrandPlanResponse
+	if err := json.Unmarshal(raw, &result); err != nil {
+		return false, nil
+	}
+	if strings.TrimSpace(result.Summary) == "" {
+		return false, nil
+	}
+
+	ew := &errWriter{w: w}
+	ew.Fprintf("Brand plan for: %s\n\n", concept)
+	ew.Fprintf("Summary: %s\n", result.Summary)
+	if status := formatGenerateAvailability(result.LikelyAvailable); status != "" {
+		ew.Fprintf("Likely available: %s\n", status)
+	}
+	if risk := strings.TrimSpace(result.RiskLevel); risk != "" {
+		ew.Fprintf("Risk level: %s\n", risk)
+	}
+
+	if strings.TrimSpace(result.BrandIdentity.PositioningStatement) != "" || len(result.BrandIdentity.TaglineOptions) > 0 || strings.TrimSpace(result.BrandIdentity.BrandVoice) != "" || strings.TrimSpace(result.BrandIdentity.VisualDirection) != "" {
+		ew.Fprintln()
+		ew.Fprintln("Brand Identity:")
+		if v := strings.TrimSpace(result.BrandIdentity.PositioningStatement); v != "" {
+			ew.Fprintf("  Positioning: %s\n", v)
+		}
+		if len(result.BrandIdentity.TaglineOptions) > 0 {
+			ew.Fprintf("  Taglines: %s\n", strings.Join(result.BrandIdentity.TaglineOptions, "; "))
+		}
+		if v := strings.TrimSpace(result.BrandIdentity.BrandVoice); v != "" {
+			ew.Fprintf("  Voice: %s\n", v)
+		}
+		if v := strings.TrimSpace(result.BrandIdentity.VisualDirection); v != "" {
+			ew.Fprintf("  Visual direction: %s\n", v)
+		}
+	}
+
+	if len(result.ImmediateActions.DomainsToRegister) > 0 || len(result.ImmediateActions.HandlesToClaim) > 0 || strings.TrimSpace(result.ImmediateActions.TrademarkConsideration) != "" {
+		ew.Fprintln()
+		ew.Fprintln("Immediate Actions:")
+		if len(result.ImmediateActions.DomainsToRegister) > 0 {
+			ew.Fprintf("  Domains: %s\n", strings.Join(result.ImmediateActions.DomainsToRegister, ", "))
+		}
+		if len(result.ImmediateActions.HandlesToClaim) > 0 {
+			ew.Fprintf("  Handles: %s\n", strings.Join(result.ImmediateActions.HandlesToClaim, ", "))
+		}
+		if v := strings.TrimSpace(result.ImmediateActions.TrademarkConsideration); v != "" {
+			ew.Fprintf("  Trademark: %s\n", v)
+		}
+	}
+
+	if len(result.LaunchChecklist) > 0 {
+		ew.Fprintln()
+		ew.Fprintln("Launch Checklist:")
+		for _, phase := range result.LaunchChecklist {
+			label := strings.TrimSpace(phase.Phase)
+			if label == "" {
+				label = "phase"
+			}
+			priority := strings.TrimSpace(phase.Priority)
+			if priority != "" {
+				label += " [" + priority + "]"
+			}
+			ew.Fprintf("  - %s\n", label)
+			for _, action := range phase.Actions {
+				if strings.TrimSpace(action) != "" {
+					ew.Fprintf("    * %s\n", action)
+				}
+			}
+		}
+	}
+
+	if len(result.CompetitiveLandscape.SimilarTools) > 0 || len(result.CompetitiveLandscape.DifferentiationOpportunities) > 0 {
+		ew.Fprintln()
+		ew.Fprintln("Competitive Landscape:")
+		if len(result.CompetitiveLandscape.SimilarTools) > 0 {
+			ew.Fprintf("  Similar tools: %s\n", strings.Join(result.CompetitiveLandscape.SimilarTools, ", "))
+		}
+		if len(result.CompetitiveLandscape.DifferentiationOpportunities) > 0 {
+			ew.Fprintf("  Differentiation: %s\n", strings.Join(result.CompetitiveLandscape.DifferentiationOpportunities, "; "))
+		}
+	}
+
+	writeStringListSection(ew, "Insights", result.Insights)
+	writeMentionSection(ew, "Mentions", result.Mentions)
+	writeStringListSection(ew, "Recommendations", result.Recommendations)
+
+	writeGenerateFooter(ew)
+	return true, ew.err
+}
+
+func renderBulkSearchResults(w io.Writer, raw json.RawMessage, concept string) (bool, error) {
+	var result generateBulkSearchResponse
+	if err := json.Unmarshal(raw, &result); err != nil {
+		return false, nil
+	}
+	if len(result.Items) == 0 {
+		return false, nil
+	}
+
+	ew := &errWriter{w: w}
+	if strings.TrimSpace(concept) != "" {
+		ew.Fprintf("Bulk name assessment for: %s\n", concept)
+	} else {
+		ew.Fprintln("Bulk name assessment")
+	}
+	if strings.TrimSpace(result.Summary) != "" {
+		ew.Fprintf("\nSummary: %s\n", result.Summary)
+	}
+
+	for i, item := range result.Items {
+		ew.Fprintln()
+		ew.Fprintf("%d. %s\n", i+1, item.Name)
+		ew.Fprintf("   %s\n", item.Summary)
+		if status := formatGenerateAvailability(item.LikelyAvailable); status != "" {
+			ew.Fprintf("   Likely available: %s\n", status)
+		}
+		if risk := strings.TrimSpace(item.RiskLevel); risk != "" {
+			ew.Fprintf("   Risk level: %s\n", risk)
+		}
+		if confidence := formatConfidence(item.Confidence); confidence != "" {
+			ew.Fprintf("   Confidence: %s\n", confidence)
+		}
+		writeIndentedStringListSection(ew, "Insights", item.Insights, "   ")
+		writeIndentedStringListSection(ew, "Recommendations", item.Recommendations, "   ")
+	}
+
+	writeGenerateFooter(ew)
+	return true, ew.err
+}
+
+func responseSchemaRef(responseSchema map[string]any) string {
+	if len(responseSchema) == 0 {
+		return ""
+	}
+	ref, _ := responseSchema["$ref"].(string)
+	return strings.TrimSpace(ref)
+}
+
+func printGenerateRawFallback(w io.Writer, raw json.RawMessage, concept string) error {
+	ew := &errWriter{w: w}
+	if strings.TrimSpace(concept) != "" {
+		ew.Fprintf("Generated output for: %s\n\n", concept)
+	}
+
+	var pretty bytes.Buffer
+	if err := json.Indent(&pretty, raw, "", "  "); err == nil {
+		ew.Fprintln(pretty.String())
+	} else {
+		ew.Fprintln(string(raw))
+	}
+
+	writeGenerateFooter(ew)
+	return ew.err
+}
+
+func writeGenerateFooter(ew *errWriter) {
+	ew.Fprintln("\nRun 'namelens check <name>' to verify availability.")
+}
+
+func writeStringListSection(ew *errWriter, title string, items []string) {
+	writeIndentedStringListSection(ew, title, items, "")
+}
+
+func writeIndentedStringListSection(ew *errWriter, title string, items []string, indent string) {
+	if len(items) == 0 {
+		return
+	}
+	ew.Fprintln()
+	if indent != "" {
+		ew.Fprintf("%s%s:\n", indent, title)
+		for _, item := range items {
+			if strings.TrimSpace(item) != "" {
+				ew.Fprintf("%s- %s\n", indent, item)
+			}
+		}
+		return
+	}
+	ew.Fprintf("%s:\n", title)
+	for _, item := range items {
+		if strings.TrimSpace(item) != "" {
+			ew.Fprintf("  - %s\n", item)
+		}
+	}
+}
+
+func writeMentionSection(ew *errWriter, title string, mentions []generateMention) {
+	if len(mentions) == 0 {
+		return
+	}
+	ew.Fprintln()
+	ew.Fprintf("%s:\n", title)
+	for _, mention := range mentions {
+		parts := make([]string, 0, 4)
+		if source := strings.TrimSpace(mention.Source); source != "" {
+			parts = append(parts, source)
+		}
+		if relevance := strings.TrimSpace(mention.Relevance); relevance != "" {
+			parts = append(parts, relevance)
+		}
+		if sentiment := strings.TrimSpace(mention.Sentiment); sentiment != "" {
+			parts = append(parts, sentiment)
+		}
+		label := strings.Join(parts, "/")
+		if label != "" {
+			label = "[" + label + "] "
+		}
+		description := strings.TrimSpace(mention.Description)
+		if description == "" {
+			description = strings.TrimSpace(mention.URL)
+		}
+		if description == "" {
+			continue
+		}
+		ew.Fprintf("  - %s%s\n", label, description)
+		if url := strings.TrimSpace(mention.URL); url != "" {
+			ew.Fprintf("    %s\n", url)
+		}
+	}
+}
+
+func writeBrandAssessmentSection(ew *errWriter, result generateBrandAssessment) {
+	if strings.TrimSpace(result.Memorability) == "" && strings.TrimSpace(result.DeveloperAppeal) == "" && strings.TrimSpace(result.Pronunciation) == "" && strings.TrimSpace(result.VisualPotential) == "" {
+		return
+	}
+	ew.Fprintln()
+	ew.Fprintln("Brand Assessment:")
+	if v := strings.TrimSpace(result.Memorability); v != "" {
+		ew.Fprintf("  Memorability: %s\n", v)
+	}
+	if v := strings.TrimSpace(result.DeveloperAppeal); v != "" {
+		ew.Fprintf("  Developer appeal: %s\n", v)
+	}
+	if v := strings.TrimSpace(result.Pronunciation); v != "" {
+		ew.Fprintf("  Pronunciation: %s\n", v)
+	}
+	if v := strings.TrimSpace(result.VisualPotential); v != "" {
+		ew.Fprintf("  Visual potential: %s\n", v)
+	}
+}
+
+func writeConflictAnalysisSection(ew *errWriter, result generateConflictAnalysis) {
+	if len(result.ExistingSoftware) == 0 && strings.TrimSpace(result.TrademarkConcerns) == "" && strings.TrimSpace(result.SocialPresence) == "" {
+		return
+	}
+	ew.Fprintln()
+	ew.Fprintln("Conflict Analysis:")
+	if len(result.ExistingSoftware) > 0 {
+		ew.Fprintf("  Existing software: %s\n", strings.Join(result.ExistingSoftware, ", "))
+	}
+	if v := strings.TrimSpace(result.TrademarkConcerns); v != "" {
+		ew.Fprintf("  Trademark concerns: %s\n", v)
+	}
+	if v := strings.TrimSpace(result.SocialPresence); v != "" {
+		ew.Fprintf("  Social presence: %s\n", v)
+	}
+}
+
+func writeDomainStrategySection(ew *errWriter, result generateDomainStrategy) {
+	if strings.TrimSpace(result.RecommendedTLD) == "" && strings.TrimSpace(result.Rationale) == "" && len(result.Alternatives) == 0 {
+		return
+	}
+	ew.Fprintln()
+	ew.Fprintln("Domain Strategy:")
+	if v := strings.TrimSpace(result.RecommendedTLD); v != "" {
+		ew.Fprintf("  Recommended TLD: %s\n", v)
+	}
+	if v := strings.TrimSpace(result.Rationale); v != "" {
+		ew.Fprintf("  Rationale: %s\n", v)
+	}
+	if len(result.Alternatives) > 0 {
+		ew.Fprintf("  Alternatives: %s\n", strings.Join(result.Alternatives, ", "))
+	}
+}
+
+func formatGenerateAvailability(v *bool) string {
+	if v == nil {
+		return ""
+	}
+	if *v {
+		return "yes"
+	}
+	return "no"
+}
+
+func formatConfidence(v *float64) string {
+	if v == nil {
+		return ""
+	}
+	return fmt.Sprintf("%.0f%%", *v*100)
 }

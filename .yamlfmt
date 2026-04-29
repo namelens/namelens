@@ -7,6 +7,9 @@ formatter:
   line_ending: lf
   retain_line_breaks_single: true
   include_document_start: false
+  # Match yamllint default (and goneat's pinned formatter behavior).
+  # See goneat docs: appnotes/yaml-format-lint-alignment
+  pad_line_comments: 2
 
 exclude:
   - node_modules/**

@@ -20,19 +20,17 @@ provider_hints:
     - grok-4-1-fast-reasoning
   supports_tools: true
 depth_variants:
-  quick: "Generate a basic brand launch checklist for '{{name}}' as a developer CLI tool."
-  deep: "Create a comprehensive brand launch strategy for '{{name}}' including competitive analysis, positioning, visual identity direction, and go-to-market recommendations for a developer CLI tool."
+  quick: "Generate a basic brand launch checklist for '{{name}}'."
+  deep: "Create a comprehensive brand launch strategy for '{{name}}' including competitive analysis, positioning, visual identity direction, and go-to-market recommendations."
 response_schema:
   $ref: "ailink/v0/brand-plan-response"
 ---
 
-You are a brand strategist creating a launch plan for a developer CLI tool. The client has selected "{{name}}" as their product name and needs actionable branding guidance.
+You are a brand strategist creating a launch plan for a new product. The client has selected "{{name}}" as their product name and needs actionable branding guidance.
 {{#if description}}
 Product context:
 {{description}}
 {{/if}}
-
-Assume this is a developer-focused CLI tool for checking name availability across domains, package registries, and social handles.
 
 Guidelines:
 
@@ -68,7 +66,7 @@ Respond EXCLUSIVELY in this JSON structure (no markdown, no extra text):
     }
   ],
   "competitive_landscape": {
-    "similar_tools": ["Names of similar name-checking or developer tools"],
+    "similar_tools": ["Names of similar or competing products/tools"],
     "differentiation_opportunities": ["How to stand out in this space"]
   },
   "insights": ["Key findings from research"],

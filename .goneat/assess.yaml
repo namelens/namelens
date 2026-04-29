@@ -10,7 +10,7 @@ lint:
   shell:
     shfmt:
       enabled: true
-      fix: false # lint is read-only; use 'make fmt' to fix
+      fix: false  # lint is read-only; use 'make fmt' to fix
     shellcheck:
       enabled: false
       path: ""

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -74,6 +75,9 @@ func (s *Service) Search(ctx context.Context, req SearchRequest) (*SearchRespons
 
 	resolved, err := s.Providers.ResolveWithDepth(role, promptDef, req.Model, req.Depth)
 	if err != nil {
+		return nil, err
+	}
+	if err := validatePromptProviderCompatibility(s.Providers, promptDef, resolved); err != nil {
 		return nil, err
 	}
 
@@ -215,6 +219,9 @@ func (s *Service) Generate(ctx context.Context, req GenerateRequest) (*GenerateR
 	if err != nil {
 		return nil, err
 	}
+	if err := validatePromptProviderCompatibility(s.Providers, promptDef, resolved); err != nil {
+		return nil, err
+	}
 
 	driverReq := &driver.Request{
 		Model:            resolved.Model,
@@ -301,6 +308,81 @@ func promptTools(def *prompt.Prompt, enabled bool) []driver.Tool {
 		tools = append(tools, driver.Tool{Type: tool.Type, Config: tool.Config})
 	}
 	return tools
+}
+
+func validatePromptProviderCompatibility(registry *Registry, def *prompt.Prompt, resolved *ResolvedProvider) error {
+	if !promptRequiresLiveSearchProvider(def) {
+		return nil
+	}
+	if resolved == nil || resolved.Driver == nil {
+		return nil
+	}
+	if resolved.Driver.Name() == "xai" {
+		return nil
+	}
+
+	suggestion := "configure an xAI provider"
+	if providerID := suggestedXAIProviderID(registry); providerID != "" {
+		suggestion = fmt.Sprintf("use --provider %s", providerID)
+	}
+
+	return fmt.Errorf("prompt %q requires web_search tool support; selected provider %q cannot satisfy it in this integration. %s", def.Config.Slug, resolved.ProviderID, suggestion)
+}
+
+func promptRequiresLiveSearchProvider(def *prompt.Prompt) bool {
+	if def == nil {
+		return false
+	}
+	if !hasSearchTools(def.Config.Tools) {
+		return false
+	}
+
+	// Most search-backed prompts can still run in an offline fallback mode on
+	// non-xAI providers. short-domain-finder depends on live search to satisfy its
+	// stricter response contract, so fail fast with guidance instead of surfacing a
+	// later schema validation error.
+	if strings.TrimSpace(def.Config.Slug) == "short-domain-finder" {
+		return true
+	}
+	return promptResponseSchemaRef(def) == "ailink/v0/short-domain-finder-response"
+}
+
+func promptResponseSchemaRef(def *prompt.Prompt) string {
+	if def == nil || len(def.Config.ResponseSchema) == 0 {
+		return ""
+	}
+	ref, _ := def.Config.ResponseSchema["$ref"].(string)
+	return strings.TrimSpace(ref)
+}
+
+func hasSearchTools(tools []prompt.ToolConfig) bool {
+	for _, tool := range tools {
+		switch strings.TrimSpace(tool.Type) {
+		case "web_search", "x_search", "live_search":
+			return true
+		}
+	}
+	return false
+}
+
+func suggestedXAIProviderID(registry *Registry) string {
+	if registry == nil {
+		return ""
+	}
+	ids := make([]string, 0, len(registry.cfg.Providers))
+	for providerID, providerCfg := range registry.cfg.Providers {
+		if !providerCfg.Enabled {
+			continue
+		}
+		if strings.EqualFold(strings.TrimSpace(providerCfg.AIProvider), "xai") {
+			ids = append(ids, providerID)
+		}
+	}
+	if len(ids) == 0 {
+		return ""
+	}
+	sort.Strings(ids)
+	return ids[0]
 }
 
 // buildSearchParams maps search-specific tools to xAI search_parameters.

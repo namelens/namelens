@@ -17,6 +17,7 @@ Standard checklist for NameLens releases to ensure consistency and quality.
 - [ ] Code formatted: `make fmt`
 - [ ] Lint checks clean: `make lint`
 - [ ] Application builds: `make build`
+- [ ] PR-final gate clean: `make pr-final` (strictest local gate; mirrors CI)
 - [ ] Manual smoke tests completed:
   - [ ] `./bin/namelens version`
   - [ ] `./bin/namelens check example`

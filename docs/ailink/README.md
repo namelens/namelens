@@ -83,6 +83,19 @@ ailink:
 Routing is role-based. In NameLens, the default role is the prompt slug (e.g.
 `name-availability`).
 
+### Available xAI models
+
+| Model                      | Notes                                |
+| -------------------------- | ------------------------------------ |
+| `grok-4-1-fast-reasoning`  | Default — fast, good for most checks |
+| `grok-4.20-0309-reasoning` | Latest available — deeper reasoning  |
+
+Override per-request with `--expert-model`:
+
+```bash
+namelens check acmecorp --expert --expert-model grok-4.20-0309-reasoning
+```
+
 ## Prompt rules
 
 Prompts are stored in `internal/ailink/prompt/prompts/*.md` and validated at

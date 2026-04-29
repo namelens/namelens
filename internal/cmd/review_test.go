@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -79,6 +80,34 @@ func TestAnalysisFromGenerateIncludeRawOnFailure(t *testing.T) {
 	require.False(t, analysis.OK)
 	require.NotNil(t, analysis.Error)
 	require.Equal(t, json.RawMessage(`{"raw": true}`), analysis.Raw)
+}
+
+func TestRenderReviewExtrasMarkdownReportsSuccessfulBrandProposalAsOK(t *testing.T) {
+	analyses := map[string]reviewAnalysis{
+		"name-availability": {OK: true, Data: json.RawMessage(`{"summary":"base"}`)},
+		"brand-proposal":    {OK: true, Data: json.RawMessage(`{"summary":"Highly recommended: spekref is distinctive."}`)},
+	}
+
+	var buf bytes.Buffer
+	renderReviewExtrasMarkdown(&buf, analyses, []string{"name-availability", "name-phonetics", "name-suitability"})
+
+	out := buf.String()
+	require.Contains(t, out, "## Additional analyses")
+	require.Contains(t, out, "- `brand-proposal`: ok (Highly recommended: spekref is distinctive.)")
+	require.NotContains(t, out, "- `brand-proposal`: error")
+}
+
+func TestRenderReviewExtrasMarkdownMatchesJSONSuccessState(t *testing.T) {
+	analysis := reviewAnalysis{OK: true, Data: json.RawMessage(`{"summary":"Highly recommended: 'spekref' is a clean, synthetic name..."}`)}
+	result := reviewResult{Analyses: map[string]reviewAnalysis{"brand-proposal": analysis}}
+
+	payload, err := json.Marshal(result)
+	require.NoError(t, err)
+	require.Contains(t, string(payload), `"brand-proposal":{"ok":true`)
+
+	var buf bytes.Buffer
+	renderReviewExtrasMarkdown(&buf, result.Analyses, []string{"name-availability", "name-phonetics", "name-suitability"})
+	require.Contains(t, buf.String(), "- `brand-proposal`: ok (Highly recommended: 'spekref' is a clean, synthetic name...)")
 }
 
 func TestReviewPromptSetFullMode(t *testing.T) {
@@ -257,7 +286,7 @@ func TestReviewBrandContextFromFile(t *testing.T) {
 	err := os.WriteFile(path, []byte("Identity provider operations proxy"), 0o644)
 	require.NoError(t, err)
 
-	context, err := reviewBrandContext(path, "", 32000)
+	context, err := reviewBrandContext(path, 32000, "", 32000)
 	require.NoError(t, err)
 	require.Equal(t, "Identity provider operations proxy", context)
 }
@@ -274,7 +303,7 @@ func TestReviewBrandContextFileTakesPrecedenceOverScanDir(t *testing.T) {
 	err = os.WriteFile(filepath.Join(scanDir, "README.md"), []byte("from-scan"), 0o644)
 	require.NoError(t, err)
 
-	context, err := reviewBrandContext(filePath, scanDir, 32000)
+	context, err := reviewBrandContext(filePath, 32000, scanDir, 32000)
 	require.NoError(t, err)
 	require.Equal(t, "from-file", context)
 }
@@ -284,7 +313,7 @@ func TestReviewBrandContextFromScanDir(t *testing.T) {
 	err := os.WriteFile(filepath.Join(dir, "README.md"), []byte("NameLens identity proxy context"), 0o644)
 	require.NoError(t, err)
 
-	context, err := reviewBrandContext("", dir, 32000)
+	context, err := reviewBrandContext("", 32000, dir, 32000)
 	require.NoError(t, err)
 	require.Contains(t, context, "NameLens identity proxy context")
 }

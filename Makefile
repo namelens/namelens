@@ -2,7 +2,7 @@
 # Follows 3leaps/crucible makefile-minimum standard
 
 .PHONY: all help bootstrap check fmt fmt-check lint check-prompts test test-cov test-standalone-binary build build-all clean run version install
-.PHONY: precommit prepush dependencies licenses
+.PHONY: precommit prepush pr-final dependencies licenses
 .PHONY: version-set version-bump version-bump-major version-bump-minor version-bump-patch
 .PHONY: release-clean release-download release-checksums release-verify-checksums
 .PHONY: release-sign release-export-keys release-verify-keys release-verify-signatures release-notes
@@ -278,6 +278,21 @@ prepush: verify-embedded-config test-standalone-binary ## Pre-push checks (forma
 	@goneat format; goneat assess --check --categories format,lint,security --fail-on high --format concise
 	@echo "Pre-push checks passed"
 
+# pr-final is the strictest local gate before pushing PR updates. Same shape
+# as `prepush` (auto-format + goneat assess) but with `--fail-on medium` so
+# warnings that CI surfaces as PR-blocking are caught here. Tool alignment is
+# handled by .yamlfmt + .yamllint at the repo root (see goneat docs:
+# appnotes/yaml-format-lint-alignment).
+pr-final: ## Final PR gate - stricter than prepush; mirrors what CI will reject
+	@echo "Running PR-final gate..."
+	@if ! command -v goneat >/dev/null 2>&1; then \
+		echo "[!!] goneat not found (run 'make bootstrap')"; \
+		exit 1; \
+	fi
+	@goneat format; goneat assess --check --categories format,lint,security --fail-on medium --format concise
+	@$(MAKE) check
+	@echo "PR-final gate passed - safe to push"
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Dependency and license management
 # ─────────────────────────────────────────────────────────────────────────────
@@ -448,6 +463,9 @@ api-generate: ## Generate Go code from OpenAPI spec
 	@mkdir -p internal/api
 	@oapi-codegen -generate types,chi-server -package api \
 		-o internal/api/openapi.gen.go openapi.yaml
+	@# Re-apply gosec G101 false-positive suppression on the generated ApiKeyScopes
+	@# constant. oapi-codegen emits a literal that gosec mistakes for a credential.
+	@perl -i -pe 's|^(\tApiKeyScopes = "apiKey\.Scopes")$$|$$1 // #nosec G101 -- not a credential; generated OpenAPI scope name|' internal/api/openapi.gen.go
 	@echo "Generated internal/api/openapi.gen.go"
 
 check-api: api-lint api-generate ## Check API spec and generated code are in sync
