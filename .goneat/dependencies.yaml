@@ -24,13 +24,13 @@ licenses:
   # Forbidden licenses (build fails if detected)
   # These would create license incompatibility for Apache-2.0 downstream projects
   forbidden:
-    - GPL-2.0 # Strong copyleft - incompatible with Apache-2.0
-    - GPL-3.0 # Strong copyleft - incompatible with Apache-2.0
-    - LGPL-2.0 # Weak copyleft - problematic for static linking
-    - LGPL-2.1 # Weak copyleft - problematic for static linking
-    - LGPL-3.0 # Weak copyleft - problematic for static linking
-    - AGPL-3.0 # Network copyleft - triggers on network use
-    - CDDL-1.0 # Common Development and Distribution License
+    - GPL-2.0  # Strong copyleft - incompatible with Apache-2.0
+    - GPL-3.0  # Strong copyleft - incompatible with Apache-2.0
+    - LGPL-2.0  # Weak copyleft - problematic for static linking
+    - LGPL-2.1  # Weak copyleft - problematic for static linking
+    - LGPL-3.0  # Weak copyleft - problematic for static linking
+    - AGPL-3.0  # Network copyleft - triggers on network use
+    - CDDL-1.0  # Common Development and Distribution License
   # Explicitly allowed licenses (Apache-2.0 compatible permissive licenses)
   allowed:
     - MIT
@@ -41,7 +41,7 @@ licenses:
     - 0BSD
     - Unlicense
     - CC0-1.0
-    - MPL-2.0 # Mozilla Public License - compatible with Apache-2.0
+    - MPL-2.0  # Mozilla Public License - compatible with Apache-2.0
 # ============================================================================
 # PACKAGE COOLING POLICY (Supply Chain Security)
 # ============================================================================
@@ -51,12 +51,12 @@ licenses:
 cooling:
   enabled: true
   # Core thresholds
-  min_age_days: 7 # 7 days catches 80% of attacks
-  min_downloads: 100 # Reasonable adoption baseline
-  min_downloads_recent: 10 # Ongoing maintenance signal
+  min_age_days: 7  # 7 days catches 80% of attacks
+  min_downloads: 100  # Reasonable adoption baseline
+  min_downloads_recent: 10  # Ongoing maintenance signal
   # Enforcement
-  alert_only: false # Fail build on violations
-  grace_period_days: 3 # Time to address violations
+  alert_only: false  # Fail build on violations
+  grace_period_days: 3  # Time to address violations
   # Trusted exceptions
   exceptions:
     - pattern: "github.com/fulmenhq/*"

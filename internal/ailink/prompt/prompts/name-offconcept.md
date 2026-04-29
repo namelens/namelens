@@ -44,6 +44,7 @@ Concept to avoid: {{concept}}
 6. **No cultural landmines.** Check that the combination does not form an offensive or embarrassing word in any major language.
 
 **Construction approaches:**
+
 - Blend two unrelated syllable pairs drawn from unrelated domains: geology, textiles, botany, ancient placenames, materials science, culinary terms
 - Take a short word from a language unrelated to the concept domain and mutate 1-2 phonemes
 - Invent CVC, CVCV, or CVCCV patterns with no existing word matches

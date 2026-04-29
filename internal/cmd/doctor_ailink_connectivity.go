@@ -560,8 +560,8 @@ func runChatCompletionCheck(ctx context.Context, d driver.Driver, model string, 
 	check.LatencyMS = elapsed.Milliseconds()
 
 	details := map[string]any{
-		"model":   model,
-		"driver":  d.Name(),
+		"model":  model,
+		"driver": d.Name(),
 	}
 
 	if err != nil {

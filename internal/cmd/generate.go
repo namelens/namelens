@@ -468,6 +468,27 @@ type generateMention struct {
 	Date        string `json:"date,omitempty"`
 }
 
+// errWriter wraps an io.Writer and captures the first write error so callers
+// can drive sequences of fmt.Fprintf/Fprintln calls without checking each one.
+type errWriter struct {
+	w   io.Writer
+	err error
+}
+
+func (ew *errWriter) Fprintf(format string, args ...any) {
+	if ew.err != nil {
+		return
+	}
+	_, ew.err = fmt.Fprintf(ew.w, format, args...)
+}
+
+func (ew *errWriter) Fprintln(args ...any) {
+	if ew.err != nil {
+		return
+	}
+	_, ew.err = fmt.Fprintln(ew.w, args...)
+}
+
 func renderGenerateResults(w io.Writer, raw json.RawMessage, concept, promptSlug, schemaRef string) (bool, error) {
 	switch strings.TrimSpace(schemaRef) {
 	case "", "ailink/v0/name-alternatives-response":
@@ -493,31 +514,32 @@ func renderNameAlternativesResults(w io.Writer, raw json.RawMessage, concept str
 		return false, nil
 	}
 
-	fmt.Fprintf(w, "Generating name alternatives for: %s\n\n", concept)
+	ew := &errWriter{w: w}
+	ew.Fprintf("Generating name alternatives for: %s\n\n", concept)
 
 	if result.ConceptAnalysis.CoreFunction != "" {
-		fmt.Fprintln(w, "Concept Analysis:")
-		fmt.Fprintf(w, "  Core function: %s\n", result.ConceptAnalysis.CoreFunction)
+		ew.Fprintln("Concept Analysis:")
+		ew.Fprintf("  Core function: %s\n", result.ConceptAnalysis.CoreFunction)
 		if len(result.ConceptAnalysis.KeyThemes) > 0 {
-			fmt.Fprintf(w, "  Key themes: %s\n", strings.Join(result.ConceptAnalysis.KeyThemes, ", "))
+			ew.Fprintf("  Key themes: %s\n", strings.Join(result.ConceptAnalysis.KeyThemes, ", "))
 		}
 		if result.ConceptAnalysis.TargetAudience != "" {
-			fmt.Fprintf(w, "  Target audience: %s\n", result.ConceptAnalysis.TargetAudience)
+			ew.Fprintf("  Target audience: %s\n", result.ConceptAnalysis.TargetAudience)
 		}
-		fmt.Fprintln(w)
+		ew.Fprintln()
 	}
 
 	if len(result.TopRecommendations) > 0 {
-		fmt.Fprintln(w, "Top Recommendations:")
+		ew.Fprintln("Top Recommendations:")
 		for i, rec := range result.TopRecommendations {
-			fmt.Fprintf(w, "  %d. %s - %s\n", i+1, rec.Name, rec.Why)
+			ew.Fprintf("  %d. %s - %s\n", i+1, rec.Name, rec.Why)
 		}
-		fmt.Fprintln(w)
+		ew.Fprintln()
 	}
 
 	if len(result.Candidates) > 0 {
-		fmt.Fprintln(w, "All Candidates:")
-		fmt.Fprintf(w, "  %-14s %-12s %-10s %s\n", "NAME", "STRATEGY", "STRENGTH", "CONFLICTS")
+		ew.Fprintln("All Candidates:")
+		ew.Fprintf("  %-14s %-12s %-10s %s\n", "NAME", "STRATEGY", "STRENGTH", "CONFLICTS")
 		for _, c := range result.Candidates {
 			conflicts := c.PotentialConflicts
 			if conflicts == "" {
@@ -526,16 +548,17 @@ func renderNameAlternativesResults(w io.Writer, raw json.RawMessage, concept str
 			if len(conflicts) > 40 {
 				conflicts = conflicts[:37] + "..."
 			}
-			fmt.Fprintf(w, "  %-14s %-12s %-10s %s\n", c.Name, c.Strategy, c.Strength, conflicts)
+			ew.Fprintf("  %-14s %-12s %-10s %s\n", c.Name, c.Strategy, c.Strength, conflicts)
 		}
-		fmt.Fprintln(w)
+		ew.Fprintln()
 	}
 
 	if len(result.NamingThemesExplored) > 0 {
-		fmt.Fprintf(w, "Themes explored: %s\n", strings.Join(result.NamingThemesExplored, ", "))
+		ew.Fprintf("Themes explored: %s\n", strings.Join(result.NamingThemesExplored, ", "))
 	}
 
-	return true, writeGenerateFooter(w)
+	writeGenerateFooter(ew)
+	return true, ew.err
 }
 
 func renderSearchResponseResults(w io.Writer, raw json.RawMessage, concept, promptSlug string) (bool, error) {
@@ -547,29 +570,31 @@ func renderSearchResponseResults(w io.Writer, raw json.RawMessage, concept, prom
 		return false, nil
 	}
 
-	fmt.Fprintf(w, "Brand assessment for: %s\n\n", concept)
-	fmt.Fprintf(w, "Summary: %s\n", result.Summary)
+	ew := &errWriter{w: w}
+	ew.Fprintf("Brand assessment for: %s\n\n", concept)
+	ew.Fprintf("Summary: %s\n", result.Summary)
 	if status := formatGenerateAvailability(result.LikelyAvailable); status != "" {
-		fmt.Fprintf(w, "Likely available: %s\n", status)
+		ew.Fprintf("Likely available: %s\n", status)
 	}
 	if risk := strings.TrimSpace(result.RiskLevel); risk != "" {
-		fmt.Fprintf(w, "Risk level: %s\n", risk)
+		ew.Fprintf("Risk level: %s\n", risk)
 	}
 	if confidence := formatConfidence(result.Confidence); confidence != "" {
-		fmt.Fprintf(w, "Confidence: %s\n", confidence)
+		ew.Fprintf("Confidence: %s\n", confidence)
 	}
 
 	if strings.TrimSpace(promptSlug) == "brand-proposal" {
-		writeBrandAssessmentSection(w, result.BrandAssessment)
-		writeConflictAnalysisSection(w, result.ConflictAnalysis)
-		writeDomainStrategySection(w, result.DomainStrategy)
+		writeBrandAssessmentSection(ew, result.BrandAssessment)
+		writeConflictAnalysisSection(ew, result.ConflictAnalysis)
+		writeDomainStrategySection(ew, result.DomainStrategy)
 	}
 
-	writeStringListSection(w, "Insights", result.Insights)
-	writeMentionSection(w, "Mentions", result.Mentions)
-	writeStringListSection(w, "Recommendations", result.Recommendations)
+	writeStringListSection(ew, "Insights", result.Insights)
+	writeMentionSection(ew, "Mentions", result.Mentions)
+	writeStringListSection(ew, "Recommendations", result.Recommendations)
 
-	return true, writeGenerateFooter(w)
+	writeGenerateFooter(ew)
+	return true, ew.err
 }
 
 func renderBrandPlanResults(w io.Writer, raw json.RawMessage, concept string) (bool, error) {
@@ -581,49 +606,50 @@ func renderBrandPlanResults(w io.Writer, raw json.RawMessage, concept string) (b
 		return false, nil
 	}
 
-	fmt.Fprintf(w, "Brand plan for: %s\n\n", concept)
-	fmt.Fprintf(w, "Summary: %s\n", result.Summary)
+	ew := &errWriter{w: w}
+	ew.Fprintf("Brand plan for: %s\n\n", concept)
+	ew.Fprintf("Summary: %s\n", result.Summary)
 	if status := formatGenerateAvailability(result.LikelyAvailable); status != "" {
-		fmt.Fprintf(w, "Likely available: %s\n", status)
+		ew.Fprintf("Likely available: %s\n", status)
 	}
 	if risk := strings.TrimSpace(result.RiskLevel); risk != "" {
-		fmt.Fprintf(w, "Risk level: %s\n", risk)
+		ew.Fprintf("Risk level: %s\n", risk)
 	}
 
 	if strings.TrimSpace(result.BrandIdentity.PositioningStatement) != "" || len(result.BrandIdentity.TaglineOptions) > 0 || strings.TrimSpace(result.BrandIdentity.BrandVoice) != "" || strings.TrimSpace(result.BrandIdentity.VisualDirection) != "" {
-		fmt.Fprintln(w)
-		fmt.Fprintln(w, "Brand Identity:")
+		ew.Fprintln()
+		ew.Fprintln("Brand Identity:")
 		if v := strings.TrimSpace(result.BrandIdentity.PositioningStatement); v != "" {
-			fmt.Fprintf(w, "  Positioning: %s\n", v)
+			ew.Fprintf("  Positioning: %s\n", v)
 		}
 		if len(result.BrandIdentity.TaglineOptions) > 0 {
-			fmt.Fprintf(w, "  Taglines: %s\n", strings.Join(result.BrandIdentity.TaglineOptions, "; "))
+			ew.Fprintf("  Taglines: %s\n", strings.Join(result.BrandIdentity.TaglineOptions, "; "))
 		}
 		if v := strings.TrimSpace(result.BrandIdentity.BrandVoice); v != "" {
-			fmt.Fprintf(w, "  Voice: %s\n", v)
+			ew.Fprintf("  Voice: %s\n", v)
 		}
 		if v := strings.TrimSpace(result.BrandIdentity.VisualDirection); v != "" {
-			fmt.Fprintf(w, "  Visual direction: %s\n", v)
+			ew.Fprintf("  Visual direction: %s\n", v)
 		}
 	}
 
 	if len(result.ImmediateActions.DomainsToRegister) > 0 || len(result.ImmediateActions.HandlesToClaim) > 0 || strings.TrimSpace(result.ImmediateActions.TrademarkConsideration) != "" {
-		fmt.Fprintln(w)
-		fmt.Fprintln(w, "Immediate Actions:")
+		ew.Fprintln()
+		ew.Fprintln("Immediate Actions:")
 		if len(result.ImmediateActions.DomainsToRegister) > 0 {
-			fmt.Fprintf(w, "  Domains: %s\n", strings.Join(result.ImmediateActions.DomainsToRegister, ", "))
+			ew.Fprintf("  Domains: %s\n", strings.Join(result.ImmediateActions.DomainsToRegister, ", "))
 		}
 		if len(result.ImmediateActions.HandlesToClaim) > 0 {
-			fmt.Fprintf(w, "  Handles: %s\n", strings.Join(result.ImmediateActions.HandlesToClaim, ", "))
+			ew.Fprintf("  Handles: %s\n", strings.Join(result.ImmediateActions.HandlesToClaim, ", "))
 		}
 		if v := strings.TrimSpace(result.ImmediateActions.TrademarkConsideration); v != "" {
-			fmt.Fprintf(w, "  Trademark: %s\n", v)
+			ew.Fprintf("  Trademark: %s\n", v)
 		}
 	}
 
 	if len(result.LaunchChecklist) > 0 {
-		fmt.Fprintln(w)
-		fmt.Fprintln(w, "Launch Checklist:")
+		ew.Fprintln()
+		ew.Fprintln("Launch Checklist:")
 		for _, phase := range result.LaunchChecklist {
 			label := strings.TrimSpace(phase.Phase)
 			if label == "" {
@@ -633,31 +659,32 @@ func renderBrandPlanResults(w io.Writer, raw json.RawMessage, concept string) (b
 			if priority != "" {
 				label += " [" + priority + "]"
 			}
-			fmt.Fprintf(w, "  - %s\n", label)
+			ew.Fprintf("  - %s\n", label)
 			for _, action := range phase.Actions {
 				if strings.TrimSpace(action) != "" {
-					fmt.Fprintf(w, "    * %s\n", action)
+					ew.Fprintf("    * %s\n", action)
 				}
 			}
 		}
 	}
 
 	if len(result.CompetitiveLandscape.SimilarTools) > 0 || len(result.CompetitiveLandscape.DifferentiationOpportunities) > 0 {
-		fmt.Fprintln(w)
-		fmt.Fprintln(w, "Competitive Landscape:")
+		ew.Fprintln()
+		ew.Fprintln("Competitive Landscape:")
 		if len(result.CompetitiveLandscape.SimilarTools) > 0 {
-			fmt.Fprintf(w, "  Similar tools: %s\n", strings.Join(result.CompetitiveLandscape.SimilarTools, ", "))
+			ew.Fprintf("  Similar tools: %s\n", strings.Join(result.CompetitiveLandscape.SimilarTools, ", "))
 		}
 		if len(result.CompetitiveLandscape.DifferentiationOpportunities) > 0 {
-			fmt.Fprintf(w, "  Differentiation: %s\n", strings.Join(result.CompetitiveLandscape.DifferentiationOpportunities, "; "))
+			ew.Fprintf("  Differentiation: %s\n", strings.Join(result.CompetitiveLandscape.DifferentiationOpportunities, "; "))
 		}
 	}
 
-	writeStringListSection(w, "Insights", result.Insights)
-	writeMentionSection(w, "Mentions", result.Mentions)
-	writeStringListSection(w, "Recommendations", result.Recommendations)
+	writeStringListSection(ew, "Insights", result.Insights)
+	writeMentionSection(ew, "Mentions", result.Mentions)
+	writeStringListSection(ew, "Recommendations", result.Recommendations)
 
-	return true, writeGenerateFooter(w)
+	writeGenerateFooter(ew)
+	return true, ew.err
 }
 
 func renderBulkSearchResults(w io.Writer, raw json.RawMessage, concept string) (bool, error) {
@@ -669,33 +696,35 @@ func renderBulkSearchResults(w io.Writer, raw json.RawMessage, concept string) (
 		return false, nil
 	}
 
+	ew := &errWriter{w: w}
 	if strings.TrimSpace(concept) != "" {
-		fmt.Fprintf(w, "Bulk name assessment for: %s\n", concept)
+		ew.Fprintf("Bulk name assessment for: %s\n", concept)
 	} else {
-		fmt.Fprintln(w, "Bulk name assessment")
+		ew.Fprintln("Bulk name assessment")
 	}
 	if strings.TrimSpace(result.Summary) != "" {
-		fmt.Fprintf(w, "\nSummary: %s\n", result.Summary)
+		ew.Fprintf("\nSummary: %s\n", result.Summary)
 	}
 
 	for i, item := range result.Items {
-		fmt.Fprintln(w)
-		fmt.Fprintf(w, "%d. %s\n", i+1, item.Name)
-		fmt.Fprintf(w, "   %s\n", item.Summary)
+		ew.Fprintln()
+		ew.Fprintf("%d. %s\n", i+1, item.Name)
+		ew.Fprintf("   %s\n", item.Summary)
 		if status := formatGenerateAvailability(item.LikelyAvailable); status != "" {
-			fmt.Fprintf(w, "   Likely available: %s\n", status)
+			ew.Fprintf("   Likely available: %s\n", status)
 		}
 		if risk := strings.TrimSpace(item.RiskLevel); risk != "" {
-			fmt.Fprintf(w, "   Risk level: %s\n", risk)
+			ew.Fprintf("   Risk level: %s\n", risk)
 		}
 		if confidence := formatConfidence(item.Confidence); confidence != "" {
-			fmt.Fprintf(w, "   Confidence: %s\n", confidence)
+			ew.Fprintf("   Confidence: %s\n", confidence)
 		}
-		writeIndentedStringListSection(w, "Insights", item.Insights, "   ")
-		writeIndentedStringListSection(w, "Recommendations", item.Recommendations, "   ")
+		writeIndentedStringListSection(ew, "Insights", item.Insights, "   ")
+		writeIndentedStringListSection(ew, "Recommendations", item.Recommendations, "   ")
 	}
 
-	return true, writeGenerateFooter(w)
+	writeGenerateFooter(ew)
+	return true, ew.err
 }
 
 func responseSchemaRef(responseSchema map[string]any) string {
@@ -707,57 +736,58 @@ func responseSchemaRef(responseSchema map[string]any) string {
 }
 
 func printGenerateRawFallback(w io.Writer, raw json.RawMessage, concept string) error {
+	ew := &errWriter{w: w}
 	if strings.TrimSpace(concept) != "" {
-		fmt.Fprintf(w, "Generated output for: %s\n\n", concept)
+		ew.Fprintf("Generated output for: %s\n\n", concept)
 	}
 
 	var pretty bytes.Buffer
 	if err := json.Indent(&pretty, raw, "", "  "); err == nil {
-		fmt.Fprintln(w, pretty.String())
+		ew.Fprintln(pretty.String())
 	} else {
-		fmt.Fprintln(w, string(raw))
+		ew.Fprintln(string(raw))
 	}
 
-	return writeGenerateFooter(w)
+	writeGenerateFooter(ew)
+	return ew.err
 }
 
-func writeGenerateFooter(w io.Writer) error {
-	_, err := fmt.Fprintln(w, "\nRun 'namelens check <name>' to verify availability.")
-	return err
+func writeGenerateFooter(ew *errWriter) {
+	ew.Fprintln("\nRun 'namelens check <name>' to verify availability.")
 }
 
-func writeStringListSection(w io.Writer, title string, items []string) {
-	writeIndentedStringListSection(w, title, items, "")
+func writeStringListSection(ew *errWriter, title string, items []string) {
+	writeIndentedStringListSection(ew, title, items, "")
 }
 
-func writeIndentedStringListSection(w io.Writer, title string, items []string, indent string) {
+func writeIndentedStringListSection(ew *errWriter, title string, items []string, indent string) {
 	if len(items) == 0 {
 		return
 	}
-	fmt.Fprintln(w)
+	ew.Fprintln()
 	if indent != "" {
-		fmt.Fprintf(w, "%s%s:\n", indent, title)
+		ew.Fprintf("%s%s:\n", indent, title)
 		for _, item := range items {
 			if strings.TrimSpace(item) != "" {
-				fmt.Fprintf(w, "%s- %s\n", indent, item)
+				ew.Fprintf("%s- %s\n", indent, item)
 			}
 		}
 		return
 	}
-	fmt.Fprintf(w, "%s:\n", title)
+	ew.Fprintf("%s:\n", title)
 	for _, item := range items {
 		if strings.TrimSpace(item) != "" {
-			fmt.Fprintf(w, "  - %s\n", item)
+			ew.Fprintf("  - %s\n", item)
 		}
 	}
 }
 
-func writeMentionSection(w io.Writer, title string, mentions []generateMention) {
+func writeMentionSection(ew *errWriter, title string, mentions []generateMention) {
 	if len(mentions) == 0 {
 		return
 	}
-	fmt.Fprintln(w)
-	fmt.Fprintf(w, "%s:\n", title)
+	ew.Fprintln()
+	ew.Fprintf("%s:\n", title)
 	for _, mention := range mentions {
 		parts := make([]string, 0, 4)
 		if source := strings.TrimSpace(mention.Source); source != "" {
@@ -780,64 +810,64 @@ func writeMentionSection(w io.Writer, title string, mentions []generateMention) 
 		if description == "" {
 			continue
 		}
-		fmt.Fprintf(w, "  - %s%s\n", label, description)
+		ew.Fprintf("  - %s%s\n", label, description)
 		if url := strings.TrimSpace(mention.URL); url != "" {
-			fmt.Fprintf(w, "    %s\n", url)
+			ew.Fprintf("    %s\n", url)
 		}
 	}
 }
 
-func writeBrandAssessmentSection(w io.Writer, result generateBrandAssessment) {
+func writeBrandAssessmentSection(ew *errWriter, result generateBrandAssessment) {
 	if strings.TrimSpace(result.Memorability) == "" && strings.TrimSpace(result.DeveloperAppeal) == "" && strings.TrimSpace(result.Pronunciation) == "" && strings.TrimSpace(result.VisualPotential) == "" {
 		return
 	}
-	fmt.Fprintln(w)
-	fmt.Fprintln(w, "Brand Assessment:")
+	ew.Fprintln()
+	ew.Fprintln("Brand Assessment:")
 	if v := strings.TrimSpace(result.Memorability); v != "" {
-		fmt.Fprintf(w, "  Memorability: %s\n", v)
+		ew.Fprintf("  Memorability: %s\n", v)
 	}
 	if v := strings.TrimSpace(result.DeveloperAppeal); v != "" {
-		fmt.Fprintf(w, "  Developer appeal: %s\n", v)
+		ew.Fprintf("  Developer appeal: %s\n", v)
 	}
 	if v := strings.TrimSpace(result.Pronunciation); v != "" {
-		fmt.Fprintf(w, "  Pronunciation: %s\n", v)
+		ew.Fprintf("  Pronunciation: %s\n", v)
 	}
 	if v := strings.TrimSpace(result.VisualPotential); v != "" {
-		fmt.Fprintf(w, "  Visual potential: %s\n", v)
+		ew.Fprintf("  Visual potential: %s\n", v)
 	}
 }
 
-func writeConflictAnalysisSection(w io.Writer, result generateConflictAnalysis) {
+func writeConflictAnalysisSection(ew *errWriter, result generateConflictAnalysis) {
 	if len(result.ExistingSoftware) == 0 && strings.TrimSpace(result.TrademarkConcerns) == "" && strings.TrimSpace(result.SocialPresence) == "" {
 		return
 	}
-	fmt.Fprintln(w)
-	fmt.Fprintln(w, "Conflict Analysis:")
+	ew.Fprintln()
+	ew.Fprintln("Conflict Analysis:")
 	if len(result.ExistingSoftware) > 0 {
-		fmt.Fprintf(w, "  Existing software: %s\n", strings.Join(result.ExistingSoftware, ", "))
+		ew.Fprintf("  Existing software: %s\n", strings.Join(result.ExistingSoftware, ", "))
 	}
 	if v := strings.TrimSpace(result.TrademarkConcerns); v != "" {
-		fmt.Fprintf(w, "  Trademark concerns: %s\n", v)
+		ew.Fprintf("  Trademark concerns: %s\n", v)
 	}
 	if v := strings.TrimSpace(result.SocialPresence); v != "" {
-		fmt.Fprintf(w, "  Social presence: %s\n", v)
+		ew.Fprintf("  Social presence: %s\n", v)
 	}
 }
 
-func writeDomainStrategySection(w io.Writer, result generateDomainStrategy) {
+func writeDomainStrategySection(ew *errWriter, result generateDomainStrategy) {
 	if strings.TrimSpace(result.RecommendedTLD) == "" && strings.TrimSpace(result.Rationale) == "" && len(result.Alternatives) == 0 {
 		return
 	}
-	fmt.Fprintln(w)
-	fmt.Fprintln(w, "Domain Strategy:")
+	ew.Fprintln()
+	ew.Fprintln("Domain Strategy:")
 	if v := strings.TrimSpace(result.RecommendedTLD); v != "" {
-		fmt.Fprintf(w, "  Recommended TLD: %s\n", v)
+		ew.Fprintf("  Recommended TLD: %s\n", v)
 	}
 	if v := strings.TrimSpace(result.Rationale); v != "" {
-		fmt.Fprintf(w, "  Rationale: %s\n", v)
+		ew.Fprintf("  Rationale: %s\n", v)
 	}
 	if len(result.Alternatives) > 0 {
-		fmt.Fprintf(w, "  Alternatives: %s\n", strings.Join(result.Alternatives, ", "))
+		ew.Fprintf("  Alternatives: %s\n", strings.Join(result.Alternatives, ", "))
 	}
 }
 

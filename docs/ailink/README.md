@@ -85,10 +85,10 @@ Routing is role-based. In NameLens, the default role is the prompt slug (e.g.
 
 ### Available xAI models
 
-| Model                        | Notes                                     |
-| ---------------------------- | ----------------------------------------- |
-| `grok-4-1-fast-reasoning`   | Default — fast, good for most checks      |
-| `grok-4.20-0309-reasoning`  | Latest available — deeper reasoning        |
+| Model                      | Notes                                |
+| -------------------------- | ------------------------------------ |
+| `grok-4-1-fast-reasoning`  | Default — fast, good for most checks |
+| `grok-4.20-0309-reasoning` | Latest available — deeper reasoning  |
 
 Override per-request with `--expert-model`:
 
