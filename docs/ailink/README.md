@@ -96,6 +96,25 @@ Override per-request with `--expert-model`:
 namelens check acmecorp --expert --expert-model grok-4.20-0309-reasoning
 ```
 
+## Choosing a provider for `--expert`
+
+`namelens check --expert` and `namelens generate` both accept `--provider` to
+swap the AILink provider for a single run, e.g.
+`namelens check acmecorp --expert --provider namelens-anthropic`.
+
+**Provider capability differs in ways that matter for this command.** xAI's Grok
+models perform real-time web search by default, so `--expert` against
+`namelens-xai` returns conflict signals grounded in current web mentions
+(competing OSS projects, brand collisions, registered handles). Anthropic's
+Claude models do **not** perform web search by default; they answer from
+training data plus pattern-matching, which is reliable for general guidance but
+can confidently miss recent or niche conflicts.
+
+For `--expert` checks where conflict discovery is the goal, prefer xAI as the
+provider unless you have separately wired Anthropic's web-search tool use into
+the AILink pipeline. Cross-checking with multiple providers is also valid —
+divergent verdicts are a useful signal that something is worth a human look.
+
 ## Prompt rules
 
 Prompts are stored in `internal/ailink/prompt/prompts/*.md` and validated at

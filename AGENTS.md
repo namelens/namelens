@@ -71,8 +71,8 @@ and `.yamllint` at the repo root — see goneat appnote
 
 - Run `make pr-final` to mirror CI gates (auto-format + `goneat assess` at
   `--fail-on medium` + full `make check`)
-- The auto-format step rewrites yaml/go in place; review the diff and stage
-  any drift before pushing
+- The auto-format step rewrites yaml/go in place; review the diff and stage any
+  drift before pushing
 
 ## Commit Attribution
 
