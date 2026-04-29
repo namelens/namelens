@@ -448,6 +448,9 @@ api-generate: ## Generate Go code from OpenAPI spec
 	@mkdir -p internal/api
 	@oapi-codegen -generate types,chi-server -package api \
 		-o internal/api/openapi.gen.go openapi.yaml
+	@# Re-apply gosec G101 false-positive suppression on the generated ApiKeyScopes
+	@# constant. oapi-codegen emits a literal that gosec mistakes for a credential.
+	@perl -i -pe 's|^(\tApiKeyScopes = "apiKey\.Scopes")$$|$$1 // #nosec G101 -- not a credential; generated OpenAPI scope name|' internal/api/openapi.gen.go
 	@echo "Generated internal/api/openapi.gen.go"
 
 check-api: api-lint api-generate ## Check API spec and generated code are in sync
