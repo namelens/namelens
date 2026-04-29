@@ -41,9 +41,16 @@ and observability.
 | Run            | `make run`       |
 | Format         | `make fmt`       |
 | Lint           | `make lint`      |
+| PR-final gate  | `make pr-final`  |
 
 Note: Prefer `make test`/`make check` over raw `go test`; the Make targets set
 required build tags (e.g. `sysprims_shared`) to avoid CGO/Rust linker conflicts.
+
+**Before pushing PR updates, run `make pr-final`.** Same shape as `make prepush`
+but with `--fail-on medium` so anything CI would block on surfaces locally
+first. Tool alignment (yamlfmt ↔ yamllint ↔ goneat) is governed by `.yamlfmt`
+and `.yamllint` at the repo root — see goneat appnote
+`yaml-format-lint-alignment` if those configs are ever in question.
 
 ## Session Protocol
 
@@ -59,6 +66,13 @@ required build tags (e.g. `sysprims_shared`) to avoid CGO/Rust linker conflicts.
 - Verify tests pass
 - Use proper attribution (see below)
 - Include `Committer-of-Record` trailer
+
+### Before Pushing PR Updates
+
+- Run `make pr-final` to mirror CI gates (auto-format + `goneat assess` at
+  `--fail-on medium` + full `make check`)
+- The auto-format step rewrites yaml/go in place; review the diff and stage
+  any drift before pushing
 
 ## Commit Attribution
 
