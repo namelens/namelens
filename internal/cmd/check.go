@@ -55,6 +55,7 @@ func init() {
 	checkCmd.Flags().String("expert-depth", "quick", "Expert search depth: quick, deep")
 	checkCmd.Flags().String("expert-model", "", "Expert model override")
 	checkCmd.Flags().String("expert-prompt", "", "Expert prompt slug (defaults to config)")
+	checkCmd.Flags().String("provider", "", "Override provider for this run (must match an ailink.providers key)")
 	checkCmd.Flags().Bool("phonetics", false, "Analyze pronunciation and typeability")
 	checkCmd.Flags().Bool("suitability", false, "Analyze cultural appropriateness")
 	checkCmd.Flags().StringSlice("locales", nil, "Locales to analyze (comma-separated)")
@@ -154,6 +155,10 @@ func runCheck(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	providerOverride, err := cmd.Flags().GetString("provider")
+	if err != nil {
+		return err
+	}
 
 	ctx := cmd.Context()
 	startedAt := time.Now()
@@ -166,6 +171,14 @@ func runCheck(cmd *cobra.Command, args []string) error {
 	cfg := config.GetConfig()
 	if cfg == nil {
 		return errors.New("config not loaded")
+	}
+
+	if strings.TrimSpace(providerOverride) != "" {
+		ailinkCfg, err := applyCheckProviderOverride(cfg.AILink, providerOverride)
+		if err != nil {
+			return err
+		}
+		cfg.AILink = ailinkCfg
 	}
 
 	// Show guidance about AI backend if not configured
@@ -481,6 +494,31 @@ enqueue:
 	}
 
 	return nil
+}
+
+// applyCheckProviderOverride redirects all AILink resolution for this run to
+// the supplied provider by overriding default_provider and clearing routing
+// entries so role-routed prompts also follow the override. Errors when the
+// provider key is unknown or disabled.
+func applyCheckProviderOverride(cfg ailink.Config, providerID string) (ailink.Config, error) {
+	providerID = strings.TrimSpace(providerID)
+	if providerID == "" {
+		return cfg, nil
+	}
+	providerCfg, ok := cfg.Providers[providerID]
+	if !ok {
+		return cfg, fmt.Errorf("unknown provider %q (valid: %s)", providerID, strings.Join(configuredProviderIDs(cfg.Providers), ", "))
+	}
+	if !providerCfg.Enabled {
+		return cfg, fmt.Errorf("provider %q is disabled", providerID)
+	}
+	out := cfg
+	out.DefaultProvider = providerID
+	out.Routing = cloneRoutingMap(cfg.Routing)
+	for role := range out.Routing {
+		out.Routing[role] = providerID
+	}
+	return out, nil
 }
 
 func validateName(name string) error {
