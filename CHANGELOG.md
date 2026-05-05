@@ -5,7 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this project adheres to Semantic
 Versioning.
 
-## [0.2.4] - 2026-03-11
+## [0.2.4] - 2026-05-05
+
+### Added
+
+- **`namelens check --provider <id>`**: provider override flag for `check`,
+  bringing it to parity with the equivalent flag on `generate`. Same validation
+  pattern (unknown / disabled provider keys fail with the list of valid IDs).
+  Surfaced as a CLI ergonomics gap during a dogfood naming session
+- **`make pr-final` strict local gate**: mirrors the same checks CI enforces
+  (auto-format + `goneat assess --check --categories format,lint,security` at
+  `--fail-on medium`) so contributors can catch CI surprises locally before
+  pushing PR updates. Documented in `AGENTS.md` and `RELEASE_CHECKLIST.md`
+- **`name-offconcept` prompt**: new hard-decorrelated name generator for cases
+  where `name-alternatives` produces too-correlated candidates
+- **Configurable context budgets** for `generate`: `--description-budget` and
+  `--scan-budget` flags cap how much description / scanned-file content is
+  injected into the prompt
+- **`.yamlfmt` and `.yamllint` configuration files** at repo root, with
+  `pad_line_comments: 2` set explicitly to align goneat / yamlfmt / yamllint on
+  YAML comment-padding and prevent CI oscillation
 
 ### Fixed
 
@@ -18,12 +37,55 @@ Versioning.
   Post-bulk fallback requests now serialized with 2s initial cooldown, 1.5s
   spacing, mutex-serialized execution, and exponential backoff retry (2s/4s/8s
   base, up to 3 attempts) with deterministic per-name jitter
+- **`make api-generate` idempotency**: oapi-codegen overwrote
+  `internal/api/openapi.gen.go` and dropped the `// #nosec G101` suppression
+  every regen, leaving `check-api` permanently dirty. Now re-injected via a perl
+  post-step so the file is byte-stable across regenerations
+- **Config layer repo-root validation** before using filesystem assets,
+  preventing nil-path errors in standalone deployments
+- **xAI driver: structured output preserved on tool calls**, fixing a regression
+  where tool-call responses lost the response schema
+- **AILink: short-domain tool mismatch fails fast** instead of silently
+  returning incomplete results
+- **`generate` renders prompt-specific structured output** matching the invoked
+  prompt's schema (previously fell back to a generic shape for some prompt
+  slugs)
 - **Lint cleanup (QF1012)**: Replaced `WriteString(fmt.Sprintf(...))` with
   `fmt.Fprintf()` across output formatting code
+- **errcheck cleanup in `internal/cmd/generate.go`**: ~80 unchecked
+  `fmt.Fprintf`/`Fprintln` calls in the result renderers refactored through a
+  small `errWriter` helper that captures the first write error. Public
+  signatures unchanged so existing tests still drive the renderers via
+  `bytes.Buffer`
 - **Security hardening (G115, G101)**: Added integer overflow bounds checks on
   uint64→int64 timestamp conversions, int→uint16 port conversions, and
   int→uint32 PID conversions in daemon lifecycle code; suppressed G101 false
   positive on generated OpenAPI constant
+- **Vulnerability dependencies cleared**: Go toolchain pinned to `1.26.2` via
+  `toolchain` directive in `go.mod` (clears 11 stdlib CVEs including
+  `CVE-2026-27143` critical); `golang.org/x/image` bumped `v0.35.0` → `v0.38.0`
+  to clear `GHSA-44p7-9xx4-hf2g`. Post-bump `goneat dependencies --vuln` returns
+  0 findings
+
+### Changed
+
+- **CI runner image** bumped `goneat-tools-runner-glibc` `v0.3.1` → `v0.4.0` (Go
+  1.26.2, bundled `golangci-lint v2.12.1`). Removed the redundant
+  `golangci/golangci-lint-action@v7` install step that previously shadowed the
+  bundled binary
+- **Local hooks regenerated without guardian intercept**: pre-commit and
+  pre-push no longer prompt for browser approval. The team is moving from
+  microteam direct-push to a PR-based workflow with branch protection on the
+  remote replacing the local approval prompt. The user-level guardian config at
+  `~/.goneat/guardian/config.yaml` is unchanged so other repos keep their
+  existing protections
+- **Documentation**: new "Choosing a provider for `--expert`" section in
+  `docs/ailink/README.md` explaining provider capability divergence — Grok
+  web-searches by default, Claude does not, so a user defaulting to Anthropic
+  for `--expert` gets confident-but-shallow verdicts that can miss recent or
+  niche conflicts
+- **Prompt cleanups**: brand-plan, brand-proposal, and name-alternatives prompts
+  generalized to reduce template-bound output
 
 ## [0.2.3] - 2026-02-23
 
