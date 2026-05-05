@@ -14,7 +14,7 @@ jobs:
   format-check:
     runs-on: ubuntu-latest-x64-s
     container:
-      image: ghcr.io/fulmenhq/goneat-tools-runner-glibc:v0.3.1
+      image: ghcr.io/fulmenhq/goneat-tools-runner-glibc:v0.4.0
       # goneat-tools-runner-glibc is a full CI runner image.
       # Use UID 1001 to match GitHub-hosted runner workspace ownership.
       options: --user 1001
@@ -46,7 +46,7 @@ jobs:
     needs: [format-check]
     runs-on: ubuntu-latest-x64-s
     container:
-      image: ghcr.io/fulmenhq/goneat-tools-runner-glibc:v0.3.1
+      image: ghcr.io/fulmenhq/goneat-tools-runner-glibc:v0.4.0
       # goneat-tools-runner-glibc is a full CI runner image.
       # Use UID 1001 to match GitHub-hosted runner workspace ownership.
       options: --user 1001
@@ -101,13 +101,10 @@ jobs:
           make fmt
           git diff --exit-code
         shell: bash
-      - name: Install golangci-lint (v2)
-        # goneat-tools-runner does not ship golangci-lint yet.
-        uses: golangci/golangci-lint-action@v7
-        with:
-          version: v2.4.0
-          args: --help
       - name: Verify golangci-lint
+        # Bundled in goneat-tools-runner v0.4.0+. Separately installing it
+        # here would shadow the bundled binary and re-introduce the Go
+        # version-mismatch class of bug.
         run: |
           set -euo pipefail
           golangci-lint --version
