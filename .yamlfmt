@@ -14,7 +14,11 @@ formatter:
 exclude:
   - node_modules/**
   - vendor/**
-  - .git/**
+  # In git worktrees, `.git` is a file (not a directory), which breaks
+  # the `.git/**` glob (yamlfmt stat-fails the pattern). The bare `.git`
+  # pattern excludes both the directory (primary checkout) and the file
+  # (worktree) without triggering the stat.
+  - .git
   - dist/**
   - bin/**
   - .cache/**
