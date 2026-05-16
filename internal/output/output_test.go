@@ -257,27 +257,27 @@ func TestJSONExpertParityWithMarkdownRow(t *testing.T) {
 	results := []*core.CheckResult{
 		{
 			CheckType: core.CheckTypeDomain,
-			Name:      "heddle.com",
+			Name:      "acme.com",
 			TLD:       "com",
 			Available: core.AvailabilityTaken,
 		},
 	}
 	resp := &ailink.SearchResponse{
 		RiskLevel: "high",
-		Summary:   "Heddle is a weaving loom component; high trademark conflict.",
+		Summary:   "synthetic high-risk fixture for the parity test",
 	}
 	batch := &core.BatchResult{
-		Name:    "heddle",
+		Name:    "acme",
 		Results: results,
 		AILink:  resp,
-		Expert:  core.NewExpertDigest("heddle", results, resp, nil),
+		Expert:  core.NewExpertDigest("acme", results, resp, nil),
 	}
 
 	// Expert digest is populated and matches markdown synthesis.
 	require.NotNil(t, batch.Expert)
 	_, mdName, mdStatus, mdNotes, ok := expertRow(batch)
 	require.True(t, ok)
-	require.Equal(t, "heddle", mdName)
+	require.Equal(t, "acme", mdName)
 	require.Equal(t, "risk: high", mdStatus)
 	require.Equal(t, resp.Summary, mdNotes)
 
