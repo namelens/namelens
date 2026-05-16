@@ -32,6 +32,12 @@ type ExpertDigest struct {
 // NewExpertDigest builds an ExpertDigest from the same source data the markdown
 // renderer uses. Returns nil when there is neither a response nor an error
 // (i.e., expert was not invoked for this batch).
+//
+// Producers of BatchResult that set AILink/AILinkError should also set Expert
+// to the result of this function. Direct json.Marshal of a BatchResult does
+// not synthesize Expert on the fly; only the renderer's expertRow() falls back
+// to in-place synthesis. See the BatchResult.Expert field comment for the
+// producer convention.
 func NewExpertDigest(name string, results []*CheckResult, resp *ailink.SearchResponse, errResp *ailink.SearchError) *ExpertDigest {
 	if resp == nil && errResp == nil {
 		return nil
