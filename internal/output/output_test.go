@@ -248,3 +248,63 @@ func TestExpertRowKeepsBatchNameWhenItMatchesChecks(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, "ailink", name)
 }
+
+// TestJSONExpertParityWithMarkdownRow asserts the v0.2.5 fix: when expert was
+// invoked for a batch (AILink or AILinkError set, Expert digest populated),
+// JSON output exposes an `expert` block whose name/status/notes match what the
+// markdown renderer's expert row would surface.
+func TestJSONExpertParityWithMarkdownRow(t *testing.T) {
+	results := []*core.CheckResult{
+		{
+			CheckType: core.CheckTypeDomain,
+			Name:      "heddle.com",
+			TLD:       "com",
+			Available: core.AvailabilityTaken,
+		},
+	}
+	resp := &ailink.SearchResponse{
+		RiskLevel: "high",
+		Summary:   "Heddle is a weaving loom component; high trademark conflict.",
+	}
+	batch := &core.BatchResult{
+		Name:    "heddle",
+		Results: results,
+		AILink:  resp,
+		Expert:  core.NewExpertDigest("heddle", results, resp, nil),
+	}
+
+	// Expert digest is populated and matches markdown synthesis.
+	require.NotNil(t, batch.Expert)
+	_, mdName, mdStatus, mdNotes, ok := expertRow(batch)
+	require.True(t, ok)
+	require.Equal(t, "heddle", mdName)
+	require.Equal(t, "risk: high", mdStatus)
+	require.Equal(t, resp.Summary, mdNotes)
+
+	// JSON output carries the same digest under the top-level `expert` key.
+	rendered, err := FormatBatchList(FormatJSON, []*core.BatchResult{batch})
+	require.NoError(t, err)
+	var parsed []map[string]any
+	require.NoError(t, json.Unmarshal([]byte(rendered), &parsed))
+	require.Len(t, parsed, 1)
+	expert, ok := parsed[0]["expert"].(map[string]any)
+	require.True(t, ok, "JSON output is missing top-level 'expert' digest field; rendered=%s", rendered)
+	require.Equal(t, mdName, expert["name"])
+	require.Equal(t, mdStatus, expert["status"])
+	require.Equal(t, mdNotes, expert["notes"])
+	require.Equal(t, "high", expert["risk_level"])
+}
+
+// TestJSONExpertOmittedWhenExpertNotInvoked guards against accidentally adding
+// an empty expert object to non-expert runs.
+func TestJSONExpertOmittedWhenExpertNotInvoked(t *testing.T) {
+	batch := &core.BatchResult{
+		Name: "alpha",
+		Results: []*core.CheckResult{
+			{CheckType: core.CheckTypeNPM, Name: "alpha", Available: core.AvailabilityAvailable},
+		},
+	}
+	rendered, err := FormatBatchList(FormatJSON, []*core.BatchResult{batch})
+	require.NoError(t, err)
+	require.NotContains(t, rendered, "\"expert\":", "non-expert run should omit 'expert' field; rendered=%s", rendered)
+}

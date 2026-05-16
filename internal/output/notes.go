@@ -7,123 +7,26 @@ import (
 	"github.com/namelens/namelens/internal/core"
 )
 
+// expertRow surfaces the expert digest for a batch as a (rowType, name, status,
+// notes, ok) tuple consumed by the markdown and table renderers.
+//
+// In v0.2.5 the synthesis moved into core.NewExpertDigest so JSON output gains
+// the same digest the markdown row shows. This function now reads the
+// pre-populated digest and falls back to synthesizing one in-place for any
+// caller that constructs a BatchResult without going through the standard
+// producer in internal/cmd/check.go (notably hand-built BatchResults in tests).
 func expertRow(result *core.BatchResult) (string, string, string, string, bool) {
 	if result == nil {
 		return "", "", "", "", false
 	}
-	name := expertDisplayName(result)
-	if result.AILinkError != nil {
-		notes := result.AILinkError.Message
-		if strings.TrimSpace(notes) == "" {
-			notes = result.AILinkError.Details
-		}
-		return "expert", name, "error", notes, true
+	digest := result.Expert
+	if digest == nil {
+		digest = core.NewExpertDigest(result.Name, result.Results, result.AILink, result.AILinkError)
 	}
-	if result.AILink == nil {
+	if digest == nil {
 		return "", "", "", "", false
 	}
-
-	status := "risk: unknown"
-	if level := strings.TrimSpace(result.AILink.RiskLevel); level != "" {
-		status = "risk: " + level
-	}
-
-	notes := strings.TrimSpace(result.AILink.Summary)
-	if notes == "" {
-		if len(result.AILink.Raw) > 0 {
-			notes = "expert analysis complete (see raw JSON in --output=json)"
-		} else {
-			notes = "expert analysis complete"
-		}
-	}
-
-	return "expert", name, status, notes, true
-}
-
-func expertDisplayName(result *core.BatchResult) string {
-	if result == nil {
-		return ""
-	}
-
-	name := strings.TrimSpace(result.Name)
-	if name != "" && expertNameAppearsInResults(name, result.Results) {
-		return name
-	}
-
-	inferred := expertInferredName(result.Results)
-	if inferred != "" {
-		return inferred
-	}
-
-	return name
-}
-
-func expertNameAppearsInResults(name string, results []*core.CheckResult) bool {
-	needle := strings.ToLower(strings.TrimSpace(name))
-	if needle == "" {
-		return false
-	}
-	for _, result := range results {
-		if expertResultCandidate(result) == needle {
-			return true
-		}
-	}
-	return false
-}
-
-func expertInferredName(results []*core.CheckResult) string {
-	counts := make(map[string]int)
-	order := make([]string, 0, len(results))
-	for _, result := range results {
-		candidate := expertResultCandidate(result)
-		if candidate == "" {
-			continue
-		}
-		if _, exists := counts[candidate]; !exists {
-			order = append(order, candidate)
-		}
-		counts[candidate]++
-	}
-
-	best := ""
-	bestCount := 0
-	for _, candidate := range order {
-		if count := counts[candidate]; count > bestCount {
-			best = candidate
-			bestCount = count
-		}
-	}
-	return best
-}
-
-func expertResultCandidate(result *core.CheckResult) string {
-	if result == nil {
-		return ""
-	}
-
-	name := strings.ToLower(strings.TrimSpace(result.Name))
-	if name == "" {
-		return ""
-	}
-
-	if result.CheckType == core.CheckTypeGitHub {
-		name = strings.TrimPrefix(name, "@")
-	}
-
-	if result.CheckType == core.CheckTypeDomain {
-		tld := strings.ToLower(strings.TrimSpace(result.TLD))
-		if tld != "" {
-			suffix := "." + tld
-			if strings.HasSuffix(name, suffix) && len(name) > len(suffix) {
-				return strings.TrimSuffix(name, suffix)
-			}
-		}
-		if label, _, ok := strings.Cut(name, "."); ok && label != "" {
-			return label
-		}
-	}
-
-	return name
+	return "expert", digest.Name, digest.Status, digest.Notes, true
 }
 
 func displayName(result *core.CheckResult) string {

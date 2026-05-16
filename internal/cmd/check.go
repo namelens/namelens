@@ -693,6 +693,7 @@ func summarizeResults(name string, results []*core.CheckResult, expert *ailink.S
 		CompletedAt:      time.Now().UTC(),
 		AILink:           expert,
 		AILinkError:      expertErr,
+		Expert:           core.NewExpertDigest(canonicalName, results, expert, expertErr),
 		Phonetics:        phonetics,
 		PhoneticsError:   phoneticsErr,
 		Suitability:      suitability,
