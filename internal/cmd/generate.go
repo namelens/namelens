@@ -45,6 +45,7 @@ func init() {
 	generateCmd.Flags().String("model", "", "Model override")
 	generateCmd.Flags().String("prompt", "name-alternatives", "Prompt slug to use")
 	generateCmd.Flags().String("provider", "", "Override provider for this run (must match an ailink.providers key)")
+	generateCmd.Flags().Duration("timeout", 0, "Per-call ailink timeout (e.g. 180s, 3m); overrides ailink.default_timeout from config. 0 = use config default.")
 }
 
 func runGenerate(cmd *cobra.Command, args []string) error {
@@ -67,6 +68,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 	modelOverride, _ := cmd.Flags().GetString("model")
 	promptSlug, _ := cmd.Flags().GetString("prompt")
 	providerOverride, _ := cmd.Flags().GetString("provider")
+	timeoutFlag, _ := cmd.Flags().GetDuration("timeout")
 
 	// Build variables map - use both "concept" and "name" keys for flexibility
 	// Different prompts may use different variable names for the main input
@@ -183,6 +185,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 		Depth:      depth,
 		Model:      modelOverride,
 		UseTools:   true,
+		TimeoutSec: timeoutFlagToSec(timeoutFlag),
 	})
 	if err != nil {
 		return fmt.Errorf("generation failed: %w", err)

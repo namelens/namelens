@@ -61,6 +61,7 @@ func init() {
 	checkCmd.Flags().StringSlice("locales", nil, "Locales to analyze (comma-separated)")
 	checkCmd.Flags().StringSlice("keyboards", nil, "Keyboard layouts for typeability analysis")
 	checkCmd.Flags().String("sensitivity", "", "Suitability sensitivity: minimal, standard, strict")
+	checkCmd.Flags().Duration("timeout", 0, "Per-call ailink timeout for expert/phonetics/suitability (e.g. 180s, 3m); overrides ailink.default_timeout from config. 0 = use config default.")
 }
 
 func runCheck(cmd *cobra.Command, args []string) error {
@@ -159,6 +160,11 @@ func runCheck(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	timeoutFlag, err := cmd.Flags().GetDuration("timeout")
+	if err != nil {
+		return err
+	}
+	timeoutSec := timeoutFlagToSec(timeoutFlag)
 
 	ctx := cmd.Context()
 	startedAt := time.Now()
@@ -215,7 +221,7 @@ func runCheck(cmd *cobra.Command, args []string) error {
 		if len(names) > expertBulkLimit {
 			return fmt.Errorf("--expert-bulk supports up to %d names (got %d)", expertBulkLimit, len(names))
 		}
-		bulkExpertByName, bulkFatalErr = runExpertBulk(ctx, cfg, store, names, expertDepth, expertModel, expertPrompt, !noCache)
+		bulkExpertByName, bulkFatalErr = runExpertBulk(ctx, cfg, store, names, expertDepth, expertModel, expertPrompt, timeoutSec, !noCache)
 		if bulkExpertByName == nil {
 			bulkExpertByName = map[string]*ailink.SearchResponse{}
 		}
@@ -310,7 +316,7 @@ func runCheck(cmd *cobra.Command, args []string) error {
 							}
 
 							fallbackExecMu.Lock()
-							expertResult, expertError = runExpertWithRetry(ctx, cfg, store, name, expertDepth, expertModel, expertPrompt, !noCache)
+							expertResult, expertError = runExpertWithRetry(ctx, cfg, store, name, expertDepth, expertModel, expertPrompt, timeoutSec, !noCache)
 							fallbackExecMu.Unlock()
 							if expertError != nil {
 								observability.CLILogger.Warn("Expert fallback failed",
@@ -328,7 +334,7 @@ func runCheck(cmd *cobra.Command, args []string) error {
 						}
 					}
 				} else {
-					expertResult, expertError = runExpert(ctx, cfg, store, name, expertDepth, expertModel, expertPrompt, !noCache)
+					expertResult, expertError = runExpert(ctx, cfg, store, name, expertDepth, expertModel, expertPrompt, timeoutSec, !noCache)
 				}
 			}
 			if phoneticsEnabled {
@@ -339,7 +345,7 @@ func runCheck(cmd *cobra.Command, args []string) error {
 				if len(keyboards) > 0 {
 					vars["keyboards"] = strings.Join(keyboards, ", ")
 				}
-				phoneticsResult, phoneticsError = runAnalysis(ctx, cfg, store, "name-phonetics", name, expertDepth, expertModel, vars, !noCache)
+				phoneticsResult, phoneticsError = runAnalysis(ctx, cfg, store, "name-phonetics", name, expertDepth, expertModel, vars, timeoutSec, !noCache)
 			}
 			if suitabilityEnabled {
 				vars := map[string]string{"name": name}
@@ -349,7 +355,7 @@ func runCheck(cmd *cobra.Command, args []string) error {
 				if trimmed := strings.TrimSpace(sensitivity); trimmed != "" {
 					vars["sensitivity_level"] = trimmed
 				}
-				suitabilityRaw, suitabilityErr = runAnalysis(ctx, cfg, store, "name-suitability", name, expertDepth, expertModel, vars, !noCache)
+				suitabilityRaw, suitabilityErr = runAnalysis(ctx, cfg, store, "name-suitability", name, expertDepth, expertModel, vars, timeoutSec, !noCache)
 			}
 
 			batches[job.index] = summarizeResults(name, results, expertResult, expertError, phoneticsResult, phoneticsError, suitabilityRaw, suitabilityErr)
@@ -783,7 +789,7 @@ func resultNameCandidate(result *core.CheckResult) string {
 	return name
 }
 
-func runExpert(ctx context.Context, cfg *config.Config, store *store.Store, name, depth, modelOverride, promptOverride string, useCache bool) (*ailink.SearchResponse, *ailink.SearchError) {
+func runExpert(ctx context.Context, cfg *config.Config, store *store.Store, name, depth, modelOverride, promptOverride string, timeoutSec int, useCache bool) (*ailink.SearchResponse, *ailink.SearchError) {
 	if cfg == nil {
 		return nil, &ailink.SearchError{Code: "AILINK_DISABLED", Message: "config not loaded"}
 	}
@@ -856,6 +862,7 @@ func runExpert(ctx context.Context, cfg *config.Config, store *store.Store, name
 		Depth:      depth,
 		Model:      modelOverride,
 		UseTools:   true,
+		TimeoutSec: timeoutSec,
 	})
 	if err != nil {
 		return nil, mapExpertError(err)
@@ -890,9 +897,9 @@ const (
 
 // runExpertWithRetry wraps runExpert with a single retry on rate-limit (429) errors.
 // This handles the burst pattern where fallback requests fire immediately after a bulk request.
-func runExpertWithRetry(ctx context.Context, cfg *config.Config, store *store.Store, name, depth, modelOverride, promptOverride string, useCache bool) (*ailink.SearchResponse, *ailink.SearchError) {
+func runExpertWithRetry(ctx context.Context, cfg *config.Config, store *store.Store, name, depth, modelOverride, promptOverride string, timeoutSec int, useCache bool) (*ailink.SearchResponse, *ailink.SearchError) {
 	for attempt := 1; attempt <= expertRateLimitMaxAttempts; attempt++ {
-		resp, searchErr := runExpert(ctx, cfg, store, name, depth, modelOverride, promptOverride, useCache)
+		resp, searchErr := runExpert(ctx, cfg, store, name, depth, modelOverride, promptOverride, timeoutSec, useCache)
 		if searchErr == nil || searchErr.Code != "AILINK_PROVIDER_RATE_LIMIT" {
 			return resp, searchErr
 		}
@@ -930,7 +937,7 @@ func rateLimitRetryDelay(name string, attempt int) time.Duration {
 	return backoff + jitter
 }
 
-func runExpertBulk(ctx context.Context, cfg *config.Config, store *store.Store, names []string, depth, modelOverride, promptOverride string, useCache bool) (map[string]*ailink.SearchResponse, *ailink.SearchError) {
+func runExpertBulk(ctx context.Context, cfg *config.Config, store *store.Store, names []string, depth, modelOverride, promptOverride string, timeoutSec int, useCache bool) (map[string]*ailink.SearchResponse, *ailink.SearchError) {
 	if cfg == nil {
 		return nil, &ailink.SearchError{Code: "AILINK_DISABLED", Message: "config not loaded"}
 	}
@@ -1012,6 +1019,7 @@ func runExpertBulk(ctx context.Context, cfg *config.Config, store *store.Store, 
 		Depth:      depth,
 		Model:      modelOverride,
 		UseTools:   true,
+		TimeoutSec: timeoutSec,
 	})
 	if err != nil && (bulk == nil || len(bulk.Items) == 0) {
 		return nil, mapExpertError(err)
@@ -1052,7 +1060,7 @@ func runExpertBulk(ctx context.Context, cfg *config.Config, store *store.Store, 
 	return out, nil
 }
 
-func runAnalysis(ctx context.Context, cfg *config.Config, store *store.Store, promptSlug, name, depth, modelOverride string, variables map[string]string, useCache bool) (json.RawMessage, *ailink.SearchError) {
+func runAnalysis(ctx context.Context, cfg *config.Config, store *store.Store, promptSlug, name, depth, modelOverride string, variables map[string]string, timeoutSec int, useCache bool) (json.RawMessage, *ailink.SearchError) {
 	if cfg == nil {
 		return nil, &ailink.SearchError{Code: "AILINK_DISABLED", Message: "config not loaded"}
 	}
@@ -1128,6 +1136,7 @@ func runAnalysis(ctx context.Context, cfg *config.Config, store *store.Store, pr
 		Depth:      depth,
 		Model:      modelOverride,
 		UseTools:   true,
+		TimeoutSec: timeoutSec,
 	})
 	if err != nil {
 		return nil, mapExpertError(err)
