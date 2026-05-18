@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -43,6 +44,7 @@ func init() {
 	markCmd.Flags().String("color", "", "Color mode: monochrome, brand, vibrant")
 	markCmd.Flags().String("description", "", "One-line product description (helps image direction)")
 	markCmd.Flags().String("audience", "", "Target audience (e.g. developers, startups)")
+	markCmd.Flags().Duration("timeout", 0, "Per-image-call ailink timeout (e.g. 120s, 3m); overrides ailink.default_timeout from config for the GenerateImage step. 0 = use config default.")
 }
 
 func runMark(cmd *cobra.Command, args []string) error {
@@ -65,6 +67,7 @@ func runMark(cmd *cobra.Command, args []string) error {
 	colorMode, _ := cmd.Flags().GetString("color")
 	description, _ := cmd.Flags().GetString("description")
 	audience, _ := cmd.Flags().GetString("audience")
+	timeoutFlag, _ := cmd.Flags().GetDuration("timeout")
 
 	promptSlug = strings.TrimSpace(promptSlug)
 	if promptSlug == "" {
@@ -190,9 +193,17 @@ func runMark(cmd *cobra.Command, args []string) error {
 		limit = len(parsed.Marks)
 	}
 
+	// Per-image timeout. mark bypasses Service.Search/Generate (which handles
+	// timeout layering for text calls), so we wrap the context here. Resolves
+	// the v0.2.5 PR-2 bypass-caller gap surfaced by devrev: without this,
+	// each GenerateImage call would inherit only the registry's hard
+	// maxTimeout (5m), ignoring ailink.default_timeout and the user's flag.
+	imageTimeout := markImageTimeout(timeoutFlag, cfg.AILink.DefaultTimeout)
+
 	for i := 0; i < limit; i++ {
 		mark := parsed.Marks[i]
-		imgResp, err := gen.GenerateImage(ctx, &driver.ImageRequest{
+		imgCtx, imgCancel := context.WithTimeout(ctx, imageTimeout)
+		imgResp, err := gen.GenerateImage(imgCtx, &driver.ImageRequest{
 			Model:        imageModel,
 			Prompt:       mark.ImagePrompt,
 			Count:        1,
@@ -202,6 +213,7 @@ func runMark(cmd *cobra.Command, args []string) error {
 			Background:   background,
 			PromptSlug:   promptSlug,
 		})
+		imgCancel()
 		if err != nil {
 			return fmt.Errorf("image generation failed: %w", err)
 		}

@@ -25,3 +25,27 @@ func timeoutFlagToSec(d time.Duration) int {
 	}
 	return sec
 }
+
+// markImageTimeoutFallback is the last-resort per-image-call deadline for
+// `mark` when neither the --timeout flag nor ailink.default_timeout has a
+// usable value. Generous enough for real image generation latency on both
+// xAI and OpenAI image APIs; tight enough that a stuck call doesn't hang
+// the CLI for the registry's 5m maxTimeout ceiling.
+const markImageTimeoutFallback = 120 * time.Second
+
+// markImageTimeout resolves the per-image-call timeout for `mark`. Bypasses
+// Service.Search/Generate (which performs this resolution internally for
+// text calls), so we replicate the precedence here: explicit flag wins,
+// then config default, then a generous package fallback. Added in v0.2.5
+// for the `--timeout` flag on `mark`; see v0.3.x expert-call-reliability
+// brief § 4b for the durable arc that moves this resolution into a single
+// shared policy across all driver consumers.
+func markImageTimeout(flag time.Duration, cfgDefault time.Duration) time.Duration {
+	if flag > 0 {
+		return flag
+	}
+	if cfgDefault > 0 {
+		return cfgDefault
+	}
+	return markImageTimeoutFallback
+}
