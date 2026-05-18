@@ -44,7 +44,11 @@ domain:
 # AILink Provider Configuration
 ailink:
   default_provider: namelens-xai
-  default_timeout: 60s
+  # Bumped from 60s in v0.2.5 — deep generate and bulk expert calls routinely
+  # exceeded 60s on Anthropic and xAI. The per-call --timeout flag on
+  # `check`/`generate` overrides this. The durable arc (per-depth policy,
+  # streaming, retries, async) is filed under v0.3.x expert-call-reliability.
+  default_timeout: 180s
   cache_ttl: 24h
   prompts_dir: ""
   debug:

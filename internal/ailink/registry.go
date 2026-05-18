@@ -238,20 +238,37 @@ func (r *Registry) driverFor(providerID string, providerCfg ProviderInstanceConf
 	}
 
 	providerType := strings.ToLower(strings.TrimSpace(providerCfg.AIProvider))
+	// Driver client.Timeout is the absolute ceiling per-provider call, NOT
+	// the effective per-call timeout. The service layer
+	// (Service.Search/Generate, see search.go:111-120) is the single source
+	// of truth for per-call deadlines: it derives the effective duration
+	// from req.TimeoutSec (when set) or r.cfg.DefaultTimeout (fallback),
+	// clamps to maxTimeout, and wraps the inbound context with that
+	// deadline before the driver is invoked.
+	//
+	// Setting client.Timeout = r.cfg.DefaultTimeout here would re-clamp the
+	// driver-side context with a shorter duration whenever the service
+	// resolved a longer-than-default timeout (e.g. user passed
+	// --timeout 240s with default 60s), silently capping the effective
+	// deadline at the config default. Using maxTimeout instead keeps the
+	// driver-level wrap as a hard defense-in-depth ceiling for any caller
+	// that bypasses the service (e.g. doctor connectivity sets its own
+	// shorter deadline up front), without ever cutting below the service's
+	// intent.
 	switch providerType {
 	case "xai":
 		client := xai.NewClient(providerCfg.BaseURL, cred.APIKey)
-		client.Timeout = r.cfg.DefaultTimeout
+		client.Timeout = maxTimeout
 		r.drivers[driverKey] = client
 		return client, nil
 	case "openai":
 		client := openai.NewClient(providerCfg.BaseURL, cred.APIKey)
-		client.Timeout = r.cfg.DefaultTimeout
+		client.Timeout = maxTimeout
 		r.drivers[driverKey] = client
 		return client, nil
 	case "anthropic":
 		client := anthropic.NewClient(providerCfg.BaseURL, cred.APIKey)
-		client.Timeout = r.cfg.DefaultTimeout
+		client.Timeout = maxTimeout
 		r.drivers[driverKey] = client
 		return client, nil
 	default:
