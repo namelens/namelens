@@ -245,3 +245,28 @@ func TestServiceGenerateHonorsRequestTimeoutSec(t *testing.T) {
 	require.LessOrEqual(t, remaining, 8*time.Second)
 	require.GreaterOrEqual(t, remaining, 6*time.Second)
 }
+
+// TestServiceSearchRequestTimeoutOverridesShorterConfigDefault is the v0.2.5
+// PR-2 regression guard for the direction that matters most in practice:
+// a user passing `--timeout` longer than the configured default must produce
+// a deadline that matches the request, not the (shorter) config default.
+// Pre-PR-2 this case bypassed the user's intent because the call sites in
+// `internal/cmd/check.go` left TimeoutSec at zero unconditionally; the
+// service-layer override logic was already correct in isolation but never
+// exercised.
+func TestServiceSearchRequestTimeoutOverridesShorterConfigDefault(t *testing.T) {
+	// Config default: 30s. Request: 90s. Expect ~90s, not ~30s.
+	svc, drv := timeoutSearchHarness(t, 30*time.Second)
+
+	_, err := svc.Search(context.Background(), SearchRequest{
+		Name:       "test",
+		PromptSlug: "name-availability",
+		TimeoutSec: 90,
+	})
+	require.NoError(t, err)
+
+	require.True(t, drv.hadDeadline)
+	remaining := time.Until(drv.deadline)
+	require.LessOrEqual(t, remaining, 91*time.Second, "deadline should track the request timeout (90s), not the shorter config default (30s)")
+	require.GreaterOrEqual(t, remaining, 89*time.Second)
+}
