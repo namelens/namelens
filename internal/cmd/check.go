@@ -311,12 +311,9 @@ func runCheck(cmd *cobra.Command, args []string) error {
 							}
 
 							if cancelErr := waitForFallbackSlot(ctx, targetStart); cancelErr != nil {
-								// Context canceled during the fallback delay. Tag
-								// the slot with an error so consumers see an
-								// entry for every requested name; falling
-								// through to summarizeResults preserves the
-								// invariant that batches[job.index] is populated
-								// for every job.
+								// Tag the slot with the cancel error and fall
+								// through to summarizeResults so every requested
+								// name still gets a populated batches[job.index].
 								expertError = cancelErr
 							} else {
 								fallbackExecMu.Lock()

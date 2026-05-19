@@ -25,11 +25,8 @@ func TestExpertBulkKey_LowersAndTrims(t *testing.T) {
 }
 
 func TestExpertBulkKey_LookupRoundTripSurvivesCaseAndWhitespace(t *testing.T) {
-	// Pre-v0.2.5 PR-3, three different normalizations across lookup / live /
-	// cache produced silent misses on any name whose raw input differed from
-	// the bulk response's item.Name in case or surrounding whitespace. With
-	// expertBulkKey applied at every site, any pair of strings that compares
-	// equal post-normalization must round-trip through the merge.
+	// Any two strings that compare equal after normalization must hash to
+	// the same key — the invariant the live/cache/lookup sites rely on.
 	pairs := []struct{ requested, returned string }{
 		{"Acme", "acme"},
 		{"  Acme  ", "ACME"},
@@ -102,11 +99,9 @@ func TestWaitForFallbackSlot_WaitsUntilTargetWhenContextHealthy(t *testing.T) {
 }
 
 func TestWaitForFallbackSlot_ReturnsCanceledErrorWhenContextExpiresDuringWait(t *testing.T) {
-	// Pre-PR-3 the worker code did `continue` here, dropping the batch slot
-	// for any name whose fallback was scheduled but canceled before retry.
-	// Post-PR-3 the cancel surfaces as an AILINK_FALLBACK_CANCELED error
-	// that the caller writes into the batch slot via summarizeResults, so
-	// every requested name gets an entry in the output.
+	// On ctx-cancel mid-wait, the function must return an error-tagged
+	// result so callers can populate a batch slot for the canceled name
+	// rather than dropping it silently.
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
 		time.Sleep(30 * time.Millisecond)
