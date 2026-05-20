@@ -285,7 +285,7 @@ func runCheck(cmd *cobra.Command, args []string) error {
 			)
 			if expertEnabled || cfg.Expert.Enabled {
 				if expertBulk && bulkAttempted {
-					expertResult = bulkExpertByName[name]
+					expertResult = bulkExpertByName[expertBulkKey(name)]
 					if expertResult == nil {
 						fallbackMu.Lock()
 						canFallback := fallbackRemain > 0
@@ -308,22 +308,24 @@ func runCheck(cmd *cobra.Command, args []string) error {
 									zap.Int("fallback_seq", seq),
 									zap.Duration("delay", delay),
 								)
-								select {
-								case <-time.After(delay):
-								case <-ctx.Done():
-									continue
-								}
 							}
 
-							fallbackExecMu.Lock()
-							expertResult, expertError = runExpertWithRetry(ctx, cfg, store, name, expertDepth, expertModel, expertPrompt, timeoutSec, !noCache)
-							fallbackExecMu.Unlock()
-							if expertError != nil {
-								observability.CLILogger.Warn("Expert fallback failed",
-									zap.String("name", name),
-									zap.String("code", expertError.Code),
-									zap.String("message", expertError.Message),
-								)
+							if cancelErr := waitForFallbackSlot(ctx, targetStart); cancelErr != nil {
+								// Tag the slot with the cancel error and fall
+								// through to summarizeResults so every requested
+								// name still gets a populated batches[job.index].
+								expertError = cancelErr
+							} else {
+								fallbackExecMu.Lock()
+								expertResult, expertError = runExpertWithRetry(ctx, cfg, store, name, expertDepth, expertModel, expertPrompt, timeoutSec, !noCache)
+								fallbackExecMu.Unlock()
+								if expertError != nil {
+									observability.CLILogger.Warn("Expert fallback failed",
+										zap.String("name", name),
+										zap.String("code", expertError.Code),
+										zap.String("message", expertError.Message),
+									)
+								}
 							}
 						} else {
 							if bulkFatalErr != nil {
@@ -986,20 +988,7 @@ func runExpertBulk(ctx context.Context, cfg *config.Config, store *store.Store, 
 			var cached ailink.BulkSearchResponse
 			jsonErr := json.Unmarshal([]byte(entry.ResponseJSON), &cached)
 			if jsonErr == nil {
-				out := make(map[string]*ailink.SearchResponse, len(cached.Items))
-				for _, item := range cached.Items {
-					resp := &ailink.SearchResponse{
-						Summary:         item.Summary,
-						LikelyAvailable: item.LikelyAvailable,
-						RiskLevel:       item.RiskLevel,
-						Confidence:      item.Confidence,
-						Insights:        item.Insights,
-						Mentions:        item.Mentions,
-						Recommendations: item.Recommendations,
-					}
-					out[item.Name] = resp
-				}
-				return out, nil
+				return bulkItemsToMap(cached.Items), nil
 			}
 			observability.CLILogger.Warn("Expert bulk cache decode failed", zap.Error(jsonErr))
 		}
@@ -1028,19 +1017,7 @@ func runExpertBulk(ctx context.Context, cfg *config.Config, store *store.Store, 
 		observability.CLILogger.Warn("Expert bulk response failed schema validation; using partial results", zap.Error(err))
 	}
 
-	out := make(map[string]*ailink.SearchResponse, len(bulk.Items))
-	for _, item := range bulk.Items {
-		resp := &ailink.SearchResponse{
-			Summary:         item.Summary,
-			LikelyAvailable: item.LikelyAvailable,
-			RiskLevel:       item.RiskLevel,
-			Confidence:      item.Confidence,
-			Insights:        item.Insights,
-			Mentions:        item.Mentions,
-			Recommendations: item.Recommendations,
-		}
-		out[strings.ToLower(strings.TrimSpace(item.Name))] = resp
-	}
+	out := bulkItemsToMap(bulk.Items)
 
 	if useCache && store != nil && cacheTTL > 0 {
 		raw := strings.TrimSpace(string(bulk.Raw))
