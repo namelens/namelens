@@ -125,7 +125,7 @@ func runReviewSearch(ctx context.Context, cfg *config.Config, store *corestore.S
 	return response, nil, raw
 }
 
-func runReviewGenerate(ctx context.Context, cfg *config.Config, store *corestore.Store, promptSlug, name, depth, modelOverride string, variables map[string]string, useCache bool) (json.RawMessage, *ailink.SearchError, json.RawMessage) {
+func runReviewGenerate(ctx context.Context, cfg *config.Config, store *corestore.Store, promptSlug, name, depth, modelOverride string, variables map[string]string, timeoutSec int, useCache bool) (json.RawMessage, *ailink.SearchError, json.RawMessage) {
 	if cfg == nil {
 		return nil, &ailink.SearchError{Code: "AILINK_DISABLED", Message: "config not loaded"}, nil
 	}
@@ -190,7 +190,7 @@ func runReviewGenerate(ctx context.Context, cfg *config.Config, store *corestore
 	}
 
 	svc := &ailink.Service{Providers: providers, Registry: registry, Catalog: catalog}
-	response, err := svc.Generate(ctx, ailink.GenerateRequest{Role: role, PromptSlug: promptSlug, Variables: cleaned, Depth: depth, Model: modelOverride, UseTools: true})
+	response, err := svc.Generate(ctx, ailink.GenerateRequest{Role: role, PromptSlug: promptSlug, Variables: cleaned, Depth: depth, Model: modelOverride, UseTools: true, TimeoutSec: timeoutSec})
 	if err != nil {
 		return nil, ailink.MapProviderError(err), rawFromAILinkError(err)
 	}
@@ -261,6 +261,7 @@ func init() {
 	reviewCmd.Flags().Int("scan-budget", 32000, "Max characters to include from scanned context files")
 	reviewCmd.Flags().String("locales", "", "Comma-separated locales for phonetics analysis (passed to name-phonetics prompt)")
 	reviewCmd.Flags().String("keyboards", "", "Comma-separated keyboard layouts for phonetics analysis (passed to name-phonetics prompt)")
+	reviewCmd.Flags().Duration("timeout", 0, "Per-prompt ailink timeout for the stitched review prompts (e.g. 240s, 4m); overrides ailink.default_timeout. 0 = use config default.")
 }
 
 func runReview(cmd *cobra.Command, args []string) error {
@@ -321,6 +322,11 @@ func runReview(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	timeoutFlag, err := cmd.Flags().GetDuration("timeout")
+	if err != nil {
+		return err
+	}
+	timeoutSec := timeoutFlagToSec(timeoutFlag)
 
 	format, err := resolveOutputFormat(cmd)
 	if err != nil {
@@ -424,15 +430,15 @@ func runReview(cmd *cobra.Command, args []string) error {
 				analyses[slug] = a
 			case "name-phonetics":
 				vars := reviewPhoneticsVariables(name, locales, keyboards)
-				phoneticsResult, phoneticsError, raw := runReviewGenerate(ctx, cfg, store, slug, name, depth, "", vars, !noCache)
+				phoneticsResult, phoneticsError, raw := runReviewGenerate(ctx, cfg, store, slug, name, depth, "", vars, timeoutSec, !noCache)
 				analyses[slug] = analysisFromGenerate(phoneticsResult, phoneticsError, raw, rawMode)
 			case "name-suitability":
 				vars := map[string]string{"name": name}
-				suitabilityRaw, suitabilityErr, raw := runReviewGenerate(ctx, cfg, store, slug, name, depth, "", vars, !noCache)
+				suitabilityRaw, suitabilityErr, raw := runReviewGenerate(ctx, cfg, store, slug, name, depth, "", vars, timeoutSec, !noCache)
 				analyses[slug] = analysisFromGenerate(suitabilityRaw, suitabilityErr, raw, rawMode)
 			default:
 				vars := reviewAnalysisVariables(slug, name, brandContext)
-				data, errInfo, raw := runReviewGenerate(ctx, cfg, store, slug, name, depth, "", vars, !noCache)
+				data, errInfo, raw := runReviewGenerate(ctx, cfg, store, slug, name, depth, "", vars, timeoutSec, !noCache)
 				analyses[slug] = analysisFromGenerate(data, errInfo, raw, rawMode)
 			}
 		}

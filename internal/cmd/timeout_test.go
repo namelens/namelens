@@ -63,3 +63,15 @@ func TestGenerateCmdExposesTimeoutFlag(t *testing.T) {
 	require.NotNil(t, flag, "generate should expose a --timeout flag")
 	require.Equal(t, "duration", flag.Value.Type())
 }
+
+func TestCompareCmdExposesTimeoutFlag(t *testing.T) {
+	flag := compareCmd.Flags().Lookup("timeout")
+	require.NotNil(t, flag, "compare should expose a --timeout flag")
+	require.Equal(t, "duration", flag.Value.Type())
+}
+
+func TestReviewCmdExposesTimeoutFlag(t *testing.T) {
+	flag := reviewCmd.Flags().Lookup("timeout")
+	require.NotNil(t, flag, "review should expose a --timeout flag")
+	require.Equal(t, "duration", flag.Value.Type())
+}

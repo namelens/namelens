@@ -44,7 +44,7 @@ func init() {
 	markCmd.Flags().String("color", "", "Color mode: monochrome, brand, vibrant")
 	markCmd.Flags().String("description", "", "One-line product description (helps image direction)")
 	markCmd.Flags().String("audience", "", "Target audience (e.g. developers, startups)")
-	markCmd.Flags().Duration("timeout", 0, "Per-image-call ailink timeout (e.g. 120s, 3m); overrides ailink.default_timeout from config for the GenerateImage step. 0 = use config default.")
+	markCmd.Flags().Duration("timeout", 0, "Per-call ailink timeout applied to both the mark-prompt text leg and each image-generation call (e.g. 120s, 3m); overrides ailink.default_timeout from config. 0 = use config default.")
 }
 
 func runMark(cmd *cobra.Command, args []string) error {
@@ -161,7 +161,7 @@ func runMark(cmd *cobra.Command, args []string) error {
 	if strings.TrimSpace(audience) != "" {
 		vars["audience"] = strings.TrimSpace(audience)
 	}
-	markJSON, genErr, _ := runReviewGenerate(ctx, cfg, nil, promptSlug, name, depth, resolvedText.Model, vars, false)
+	markJSON, genErr, _ := runReviewGenerate(ctx, cfg, nil, promptSlug, name, depth, resolvedText.Model, vars, timeoutFlagToSec(timeoutFlag), false)
 	if genErr != nil {
 		return fmt.Errorf("mark prompt failed: %s: %s", genErr.Code, genErr.Message)
 	}
