@@ -478,9 +478,15 @@ The model name may be incorrect or unsupported. Check the model configuration:
 xAI expert search can take 30-60 seconds due to live web searches. OpenAI is
 faster (1-5 seconds) but doesn't include live web intelligence.
 
-Increase timeout if needed:
+The `ailink.default_timeout` default is `180s` (v0.2.5+), which covers Anthropic
+deep `generate` and 10-name `--expert-bulk` budgets observed in practice. Raise
+it further if you're running deeper analyses or larger batches:
 
 ```yaml
 ailink:
-  default_timeout: 90s
+  default_timeout: 240s
 ```
+
+You can also override per-invocation with `--timeout` on `check`, `generate`,
+`mark`, `compare`, and `review` — e.g.
+`namelens check acmecorp --expert --timeout 240s`.

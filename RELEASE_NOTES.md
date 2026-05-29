@@ -49,9 +49,10 @@ reported timeouts at 60s on Anthropic deep `generate` (5KB brief) and on
 `--expert-bulk` over 10 names. Both flows now complete cleanly at the new `180s`
 default; per-invocation `--timeout` is available when you need more.
 
-`mark`'s pre-existing `--timeout` flag (from v0.2.4) previously only bounded the
-image-generation call; in v0.2.5 it now bounds the mark-prompt text leg too via
-the shared `runReviewGenerate` helper.
+`mark`'s `--timeout` flag was added earlier in the v0.2.5 cycle (PR-2 / #6) and
+initially only bounded the image-generation call. PR-4 (#8) threads the same
+flag through the shared `runReviewGenerate` helper so it now bounds the
+mark-prompt text leg too.
 
 ### JSON `expert` field parity
 

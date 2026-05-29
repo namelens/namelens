@@ -101,7 +101,7 @@ domain:
 # AILink providers
 ailink:
   default_provider: namelens-xai # or namelens-openai
-  default_timeout: 60s
+  default_timeout: 180s
   cache_ttl: 24h
   providers:
     # xAI provider - recommended for expert search (web intelligence)
@@ -293,7 +293,7 @@ support `json_schema`, AILink falls back to `json_object` mode.
 | Variable                           | Default        | Description               |
 | ---------------------------------- | -------------- | ------------------------- |
 | `NAMELENS_AILINK_DEFAULT_PROVIDER` | `namelens-xai` | Default provider id       |
-| `NAMELENS_AILINK_DEFAULT_TIMEOUT`  | `60s`          | Default request timeout   |
+| `NAMELENS_AILINK_DEFAULT_TIMEOUT`  | `180s`         | Default request timeout   |
 | `NAMELENS_AILINK_CACHE_TTL`        | `24h`          | Result cache TTL          |
 | `NAMELENS_AILINK_PROMPTS_DIR`      |                | Optional prompt overrides |
 
