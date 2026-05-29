@@ -63,6 +63,7 @@ func init() {
 	compareCmd.Flags().String("out-dir", "", "Write output to a directory")
 	_ = compareCmd.Flags().MarkHidden("out-dir") // compare outputs single table, not per-name files
 	compareCmd.Flags().Bool("no-cache", false, "Skip cache lookup")
+	compareCmd.Flags().Duration("timeout", 0, "Per-prompt ailink timeout for phonetics/suitability stitched analyses (e.g. 240s, 4m); overrides ailink.default_timeout. 0 = use config default.")
 }
 
 func runCompare(cmd *cobra.Command, args []string) error {
@@ -94,6 +95,11 @@ func runCompare(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	timeoutFlag, err := cmd.Flags().GetDuration("timeout")
+	if err != nil {
+		return err
+	}
+	timeoutSec := timeoutFlagToSec(timeoutFlag)
 
 	format, err := resolveOutputFormat(cmd)
 	if err != nil {
@@ -147,13 +153,13 @@ func runCompare(cmd *cobra.Command, args []string) error {
 
 		if !quickMode && row.AvailabilityError == "" {
 			// Run phonetics analysis
-			phonetics := runComparePhonetics(ctx, cfg, store, name, !noCache)
+			phonetics := runComparePhonetics(ctx, cfg, store, name, timeoutSec, !noCache)
 			if phonetics != nil {
 				row.Phonetics = phonetics
 			}
 
 			// Run suitability analysis
-			suitability := runCompareSuitability(ctx, cfg, store, name, !noCache)
+			suitability := runCompareSuitability(ctx, cfg, store, name, timeoutSec, !noCache)
 			if suitability != nil {
 				row.Suitability = suitability
 			}
@@ -225,9 +231,9 @@ func deriveRiskLevel(results []*core.CheckResult) string {
 	return "low"
 }
 
-func runComparePhonetics(ctx context.Context, cfg *config.Config, store *corestore.Store, name string, useCache bool) *comparePhonetics {
+func runComparePhonetics(ctx context.Context, cfg *config.Config, store *corestore.Store, name string, timeoutSec int, useCache bool) *comparePhonetics {
 	vars := map[string]string{"name": name}
-	raw, searchErr, _ := runReviewGenerate(ctx, cfg, store, "name-phonetics", name, "quick", "", vars, useCache)
+	raw, searchErr, _ := runReviewGenerate(ctx, cfg, store, "name-phonetics", name, "quick", "", vars, timeoutSec, useCache)
 	if searchErr != nil || len(raw) == 0 {
 		return nil
 	}
@@ -235,9 +241,9 @@ func runComparePhonetics(ctx context.Context, cfg *config.Config, store *coresto
 	return extractPhonetics(raw)
 }
 
-func runCompareSuitability(ctx context.Context, cfg *config.Config, store *corestore.Store, name string, useCache bool) *compareSuitability {
+func runCompareSuitability(ctx context.Context, cfg *config.Config, store *corestore.Store, name string, timeoutSec int, useCache bool) *compareSuitability {
 	vars := map[string]string{"name": name}
-	raw, searchErr, _ := runReviewGenerate(ctx, cfg, store, "name-suitability", name, "quick", "", vars, useCache)
+	raw, searchErr, _ := runReviewGenerate(ctx, cfg, store, "name-suitability", name, "quick", "", vars, timeoutSec, useCache)
 	if searchErr != nil || len(raw) == 0 {
 		return nil
 	}
