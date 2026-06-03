@@ -5,6 +5,76 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this project adheres to Semantic
 Versioning.
 
+## [0.2.5] - 2026-05-29
+
+Theme: **make `--expert` trustworthy.** JSON parity with markdown, calls that
+don't time out under realistic loads, bulk-fallback that actually delivers
+expert data, and `--timeout` coverage on every user-invoked AI call. Surfaced by
+the 2026-05-08 recipekit dogfood session; landed across four PRs.
+
+### Added
+
+- **`--timeout` flag on every AI-invoking command**: `check`, `generate`, `mark`
+  (covers both text-prompt and image-generation legs), `compare`, and `review`
+  all accept `--timeout <duration>` (e.g. `--timeout 240s`, `--timeout 4m`).
+  Overrides `ailink.default_timeout` for that invocation; `0` = use config
+  default. Same help-text shape across the five commands
+- **JSON `expert` field on `check` output**: `--output-format json` now includes
+  the synthesized expert digest (`risk`, `notes`, raw payload) alongside the
+  existing `ailink`/`ailink_error` fields. Parity with the markdown renderer.
+  JSON-consuming agents and pipelines can now read trademark/conflict
+  intelligence directly
+- **`internal/core/expert.go`** as the single source of truth for the
+  expert-digest synthesis. The markdown renderer in `internal/output/notes.go`
+  was the only producer pre-v0.2.5; both markdown and JSON now consume the same
+  `NewExpertDigest()` synthesizer
+- **`expertBulkKey` / `bulkItemsToMap` helpers** centralizing the name
+  canonicalization used by lookup, live-merge, and cache paths in
+  `--expert-bulk`. Replaces three inconsistent keyings that silently dropped
+  fallback merges
+
+### Fixed
+
+- **`--expert-bulk` silent merge miss on mixed-case names**: lookup used raw
+  input, live bulk map used lower/trimmed item names, and the cached bulk map
+  used raw item names — three different keys in three places, so
+  `Expert fallback scheduled` could log for a name and the response could still
+  contain `expert: null` for that name. Centralized canonicalization via
+  `expertBulkKey` closes the gap
+- **`--expert-bulk` ctx-cancel slot-drop**: Ctrl-C during the fallback cooldown
+  previously produced a missing batch slot (nil entry) rather than an
+  error-tagged entry, breaking downstream consumers that assumed every requested
+  name had a slot. `waitForFallbackSlot` now returns `AILINK_FALLBACK_CANCELED`
+  and falls through to the standard `summarizeResults` write path so every
+  requested name has a populated result row
+- **Anthropic deep `generate` and `check --expert-bulk` over ~10 names timing
+  out at 60s**: `ailink.default_timeout` raised from `60s` to `180s` in
+  `config/namelens/v0/namelens-defaults.yaml` and the embedded copy. The
+  registry-level driver clamp (`client.Timeout = maxTimeout`) no longer
+  re-clamps service deadlines longer than the default — service-set deadlines
+  now flow through to the underlying HTTP client honoring the per-call
+  `--timeout` value
+- **`mark` text-leg honors `--timeout`**: the existing `--timeout` flag on
+  `mark` (added in PR-2 / #6) previously only bounded the image-generation call.
+  PR-4 (#8) threads it through `runReviewGenerate` into the text-prompt leg too,
+  closing the `review` brand-mode silent-prompt evidence from prodmktg dogfood
+- **`compare` and `review` deadline coverage**: `runReviewGenerate` (the shared
+  helper backing `compare`'s phonetics/suitability legs, `mark`'s text-prompt
+  leg, and `review`'s three stitched-prompt sites) now accepts `timeoutSec` and
+  threads it into `service.Generate` so every caller's `--timeout` reaches the
+  underlying ailink call uniformly
+
+### Changed
+
+- **`ailink.default_timeout`**: `60s` → `180s` in
+  `config/namelens/v0/namelens-defaults.yaml:47` and
+  `internal/config/embedded/namelens/v0/namelens-defaults.yaml`. Default better
+  matches the realistic time budget for Anthropic deep `generate` and multi-name
+  `--expert-bulk` calls observed in dogfooding
+- **`mark --timeout` help text**: now reads "Per-call ailink timeout applied to
+  both the mark-prompt text leg and each image-generation call" to reflect the
+  convergence — the flag now bounds both legs rather than only the image leg
+
 ## [0.2.4] - 2026-05-05
 
 ### Added

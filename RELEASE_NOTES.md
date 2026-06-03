@@ -3,6 +3,105 @@
 This file keeps notes for the latest three releases in reverse chronological
 order.
 
+## v0.2.5 (2026-05-29)
+
+**Make `--expert` trustworthy.** JSON parity with markdown, calls that don't
+time out under realistic loads, bulk-fallback that actually delivers expert
+data, and `--timeout` coverage on every user-invoked AI call. Surfaced by the
+2026-05-08 recipekit dogfood session; landed across four PRs.
+
+Highlights:
+
+- **`--timeout` flag uniform across all five AI-invoking commands**: `check`,
+  `generate`, `mark` (text + image legs), `compare`, and `review` all accept
+  `--timeout <duration>` (e.g. `--timeout 240s`, `--timeout 4m`); overrides
+  `ailink.default_timeout` for that invocation
+- **`ailink.default_timeout` raised `60s` → `180s`**: matches realistic
+  Anthropic deep `generate` and multi-name `--expert-bulk` budgets observed in
+  dogfooding. Driver-layer ceiling fix lets per-call `--timeout` flow through to
+  the underlying HTTP client without re-clamping to the config default
+- **JSON `expert` field on `check` output**: `--output-format json` now includes
+  the synthesized expert digest (`risk`, `notes`, raw payload). JSON-consuming
+  agents and pipelines no longer blind to trademark/conflict intelligence
+- **`--expert-bulk` reliability fixes**: centralized name canonicalization
+  closes a silent-merge-miss on mixed-case input; `waitForFallbackSlot` closes
+  the ctx-cancel slot-drop hole so every requested name gets a populated batch
+  slot
+
+### `--timeout` flag uniform across commands
+
+Every AI-invoking command honors `--timeout` with the same semantics:
+
+```bash
+namelens check acmecorp --expert --timeout 240s
+namelens generate "agent gateway" --depth deep --timeout 4m
+namelens mark acmecorp --color brand --timeout 3m
+namelens compare alpha beta gamma --timeout 180s
+namelens review acmecorp --mode brand --timeout 240s
+```
+
+`--timeout` overrides `ailink.default_timeout` for that single call. `0` = use
+config default. Same help-text shape across all five commands.
+
+This closes the **make `--expert` trustworthy** theme — every user-invoked AI
+call can now be bounded with a known deadline. The 2026-05-08 dogfood session
+reported timeouts at 60s on Anthropic deep `generate` (5KB brief) and on
+`--expert-bulk` over 10 names. Both flows now complete cleanly at the new `180s`
+default; per-invocation `--timeout` is available when you need more.
+
+`mark`'s `--timeout` flag was added earlier in the v0.2.5 cycle (PR-2 / #6) and
+initially only bounded the image-generation call. PR-4 (#8) threads the same
+flag through the shared `runReviewGenerate` helper so it now bounds the
+mark-prompt text leg too.
+
+### JSON `expert` field parity
+
+`check --expert --output-format json` previously omitted the synthesized expert
+digest that the markdown renderer surfaced — JSON consumers had to parse
+`ailink`/`ailink_error` themselves and re-implement the digest. v0.2.5 adds an
+`Expert *ExpertDigest` field on `core.BatchResult`, populated by a single
+render-time synthesizer (`internal/core/expert.go` `NewExpertDigest`) shared by
+both the markdown and JSON paths.
+
+The synthesizer is a pure pass-through — it reads `risk_level` and `notes` from
+the AI response and surfaces them without transformation. Same payload in both
+`--output-format markdown` and `--output-format json`.
+
+### `--expert-bulk` keying + cancel-hole fixes
+
+Two bugs surfaced in dogfooding:
+
+1. **Silent merge miss on mixed-case names.** `lookup` used raw input, the live
+   bulk map used lower/trimmed item names, and the cached bulk map used raw item
+   names — three different keys in three places. `expert: null` could appear for
+   a name that had a successful fallback. Centralized canonicalization via
+   `expertBulkKey` / `bulkItemsToMap` closes the gap
+2. **Ctx-cancel slot-drop.** Ctrl-C during the fallback cooldown produced a
+   missing batch slot rather than an error-tagged entry. Downstream consumers
+   that assumed every requested name had a slot broke. `waitForFallbackSlot` now
+   returns `AILINK_FALLBACK_CANCELED` and falls through to the standard
+   `summarizeResults` write path
+
+Seven new tests in `internal/cmd/expert_bulk_test.go` exercise mixed-case input
+through the bulk + fallback path; the cancel-hole test exercises context
+cancellation during cooldown.
+
+### Upgrade notes
+
+No breaking changes. All v0.2.4 configurations remain valid.
+
+If you've pinned `ailink.default_timeout` to `60s` explicitly, no change — your
+pin holds. If you relied on the implicit `60s` default, you'll get `180s` now;
+on observable behavior, this means previously-timing-out calls will complete
+rather than fail. If you specifically want the old default back, pin
+`ailink.default_timeout: 60s` in your config.
+
+JSON consumers of `check` output will see a new `expert` field on results that
+have expert payload. Existing fields (`ailink`, `ailink_error`) are unchanged —
+the new field is additive.
+
+---
+
 ## v0.2.4 (2026-05-05)
 
 Stability hardening + small CLI ergonomics + supply-chain hygiene. Originally
@@ -218,38 +317,7 @@ more targets than before (4 TLDs + 3 registries + GitHub vs. just .com). Use
 
 ## v0.2.2 (2026-02-20)
 
-Model refresh: updated Anthropic and OpenAI model tiers to current releases.
+Model refresh: Anthropic default/reasoning to `claude-sonnet-4-6`, fast to
+`claude-haiku-4-5-20251001`; OpenAI reasoning tier added (`o3`).
 
-Highlights:
-
-- **Anthropic models updated**: Default and reasoning tiers now use
-  `claude-sonnet-4-6`; fast tier updated to `claude-haiku-4-5-20251001`
-- **OpenAI reasoning tier added**: `o3` configured as the `reasoning` model for
-  `--depth=deep` workloads — OpenAI's dedicated reasoning model delivers
-  significantly higher quality for deep brand analysis
-
-### Model Updates
-
-| Provider  | Tier        | Before                     | After                     |
-| --------- | ----------- | -------------------------- | ------------------------- |
-| Anthropic | `default`   | claude-sonnet-4-5-20250929 | claude-sonnet-4-6         |
-| Anthropic | `reasoning` | claude-sonnet-4-5-20250929 | claude-sonnet-4-6         |
-| Anthropic | `fast`      | claude-3-5-haiku-20241022  | claude-haiku-4-5-20251001 |
-| OpenAI    | `reasoning` | (not set)                  | o3                        |
-
-To update an existing config, re-run the setup wizard or edit
-`~/.config/namelens/config.yaml` directly.
-
-### Upgrade Notes
-
-No breaking changes. Existing configs with the old model names remain valid —
-the models are still available from Anthropic. Update at your convenience.
-
----
-
-## v0.2.1 (2026-02-14)
-
-Agent-ready deployment: headless server API, guided setup, and safety
-guardrails.
-
-See [v0.2.1 full release notes](docs/releases/v0.2.1.md) for details.
+See [v0.2.2 full release notes](docs/releases/v0.2.2.md) for details.
